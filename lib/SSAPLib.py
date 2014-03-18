@@ -1,6 +1,11 @@
 #!/usr/bin/python
 
-# templates
+############################################################
+#
+# SSAP message templates
+#
+############################################################
+
 SSAP_MESSAGE_TEMPLATE = '''<SSAP_message>
 <node_id>%s</node_id>
 <space_id>%s</space_id>
@@ -13,3 +18,4 @@ SSAP_MESSAGE_TEMPLATE = '''<SSAP_message>
 SSAP_SUCCESS_PARAM_TEMPLATE = '<parameter name = "status">%s</parameter>'
 
 SSAP_BNODES_PARAM_TEMPLATE = '<parameter name = "bnodes"><urllist>%s</urllist></parameter>'
+

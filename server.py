@@ -1,81 +1,11 @@
 #!/usr/bin/python
- 
+
+# requirements 
 import socket, select
+from lib.replies import *
+from lib.SSAPLib import *
 from termcolor import colored
 from xml.etree import ElementTree as ET
-
-SSAP_MESSAGE_TEMPLATE = '''<SSAP_message>
-<node_id>%s</node_id>
-<space_id>%s</space_id>
-<transaction_type>%s</transaction_type>
-<message_type>CONFIRM</message_type>
-<transaction_id>%s</transaction_id>
-%s
-</SSAP_message>'''
- 
-def reply_to_sib(conn, info):
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "REGISTER",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    conn.send(reply)
-
-
-def reply_to_join(conn, info):
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "JOIN",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    conn.send(reply)
-    if conn in KP_LIST:
-        KP_LIST.remove(conn)
-
-
-def reply_to_leave(conn, info):
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "LEAVE",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    conn.send(reply)
-    if conn in KP_LIST:
-        KP_LIST.remove(conn)
-
-
-def reply_to_insert_confirm(conn, ssap_msg):
-    for kp in KP_LIST:
-        kp.send(ssap_msg)
-
-def reply_to_insert(conn, ssap_msg):
-
-    # forwarding message to the publishers
-    print "Lista SIB"
-    for socket in SIB_LIST:
-        print str(socket)
-    print "Lista KP"
-    for socket in KP_LIST:
-        print str(socket)
-    print str(conn)
-
-    for socket in SIB_LIST:
-        if socket != vsibkp_socket and socket != sock :
-            socket.send(ssap_msg)
-
-    # TODO: reply to the kp. We disabled the reply in the SibLib class
-    # to avoid a crash due to incomplete message
-
-
-def reply_to_remove(conn, ssap_msg):
-
-    # forwarding message to the publishers
-    for socket in SIB_LIST:
-        if socket != vsibkp_socket and socket != sock :
-            socket.send(ssap_msg)
-
-    # TODO: reply to the kp. We disabled the reply in the SibLib class
-    # to avoid a crash due to incomplete message
 
  
 if __name__ == "__main__":
