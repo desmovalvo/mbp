@@ -64,12 +64,12 @@ if __name__ == "__main__":
         print 'Unable to connect to the real sib'
         sys.exit()
 
-    # building and sending a join request to the real sib
-    join_msg = SSAP_MESSAGE_TEMPLATE%(node_id,
-                                      space_id,
-                                      "JOIN",
-                                      transaction_id, "")
-    rs.send(join_msg)
+    # # building and sending a join request to the real sib
+    # join_msg = SSAP_MESSAGE_TEMPLATE%(node_id,
+    #                                   space_id,
+    #                                   "JOIN",
+    #                                   transaction_id, "")
+    # rs.send(join_msg)
 
     # main loop
     while 1:
@@ -110,7 +110,7 @@ if __name__ == "__main__":
                         # sent by the virtual sib to the real sib
                         print heading + "Received the following " + colored(info["message_type"], "blue", attrs=["bold"]) + " message from the " + colored("REAL SIB", "blue", attrs=["bold"])
                         print ssap_msg
-                        if not(info["transaction_type"] in ["JOIN", "LEAVE"]):
-                            print "send to vs"
-                            vs.send(ssap_msg)
+#                        if not(info["transaction_type"] in ["JOIN", "LEAVE"]):
+                        print "send to vs"
+                        vs.send(ssap_msg)
                     

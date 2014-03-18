@@ -22,15 +22,35 @@ def reply_to_sib(conn, info):
     conn.send(reply)
 
 
-def reply_to_join(conn, info):
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+def reply_to_join(conn, info, ssap_msg):
+    # reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+    #                                info["space_id"],
+    #                                "JOIN",
+    #                                info["transaction_id"],
+    #                                '<parameter name="status">m3:Success</parameter>')
+    # conn.send(reply)
+    # if conn in KP_LIST:
+    #     KP_LIST.remove(conn)
+
+    for socket in SIB_LIST:
+        if socket != vsibkp_socket and socket != sock :
+            try:
+                socket.send(ssap_msg)
+            except:
+                err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
                                    info["space_id"],
                                    "JOIN",
                                    info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    conn.send(reply)
-    if conn in KP_LIST:
-        KP_LIST.remove(conn)
+                                   '<parameter name="status">m3:Error</parameter>')
+                for kp in KP_LIST:
+                    kp.send(err_msg)
+
+
+def reply_to_join_confirm(conn, ssap_msg):
+    ''' This method forwards the join confirm message to all the KPs'''
+    print "sono qui"
+    for kp in KP_LIST:
+        kp.send(ssap_msg)
 
 
 def reply_to_leave(conn, info):
@@ -44,9 +64,8 @@ def reply_to_leave(conn, info):
         KP_LIST.remove(conn)
 
 
-def reply_to_insert_confirm(conn, ssap_msg):
-    for kp in KP_LIST:
-        kp.send(ssap_msg)
+def reply_to_insert_confirm(conn, ssap_msg, node_id):
+    KP_LIST[node_id].send(ssap_msg)
 
 def reply_to_insert(conn, ssap_msg):
 
@@ -61,7 +80,16 @@ def reply_to_insert(conn, ssap_msg):
 
     for socket in SIB_LIST:
         if socket != vsibkp_socket and socket != sock :
-            socket.send(ssap_msg)
+            try:
+                socket.send(ssap_msg)
+            except:
+                err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+                                   info["space_id"],
+                                   "INSERT",
+                                   info["transaction_id"],
+                                   '<parameter name="status">m3:Error</parameter>')
+                KP_LIST[info["node_id"]].send(err_msg)
+
 
     # TODO: reply to the kp. We disabled the reply in the SibLib class
     # to avoid a crash due to incomplete message
@@ -83,7 +111,8 @@ if __name__ == "__main__":
     # List to keep track of socket descriptors
     CONNECTION_LIST = []
     SIB_LIST = []
-    KP_LIST = []
+    KP_LIST = {}
+    CONFIRMS = {}
     RECV_BUFFER = 1024 # Advisable to keep it as an exponent of 2
     KP_PORT = 10010 # On this port we expect connections from the KPs
     PUB_PORT = 10011 # On this port we receive connections from the publishers
@@ -116,7 +145,7 @@ if __name__ == "__main__":
         for sock in read_sockets:
             # New connection
             if sock in [vsibkp_socket, vsibpub_socket]:
-                # Handle the case in which there is a new connection received through vsibkp_socket
+                # Handle the case in which there is a new connection received through vsibkp_socket or vsibpub_socket
                 conn, addr = sock.accept()
                 print str(type(conn))
                 CONNECTION_LIST.append(conn)
@@ -138,7 +167,11 @@ if __name__ == "__main__":
                             k = child.tag + "_" + str(child.attrib["name"])
                         else:
                             k = child.tag
-                            info[k] = child.text
+                        info[k] = child.text
+                
+                    if info["transaction_type"] in ["INSERT", "QUERY", "DELETE", "JOIN", "LEAVE", "SUBSCRIBE"] and info["message_type"] == "REQUEST":
+                        KP_LIST[info["node_id"]] = conn
+                        
                     print "Received a %s %s"%(info["transaction_type"], info["message_type"])
 
                     # check the type of message
@@ -151,7 +184,7 @@ if __name__ == "__main__":
                     # check whether we have to register a new KP
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "JOIN":
                         KP_LIST.append(conn)
-                        reply_to_join(conn, info)
+                        reply_to_join(conn, info, ssap_msg)
 
                     # check whether we have to delete a KP
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
@@ -160,7 +193,7 @@ if __name__ == "__main__":
 
                     # check whether it's an INSERT request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
-                        KP_LIST.append(conn)
+                        CONFIRMS[info["node_id"]] = len(SIB_LIST)
                         reply_to_insert(conn, ssap_msg)
 
                     # check whether it's an REMOVE request
@@ -169,7 +202,31 @@ if __name__ == "__main__":
 
                     # check whether it's an INSERT confirm
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
-                        reply_to_insert_confirm(conn, ssap_msg)
+
+                        if not CONFIRMS[info["node_id"]] == None:
+
+                            if info["parameter_status"] == "m3:Success":
+                                
+                                # insert successful
+                                CONFIRMS[info["node_id"]] -= 1
+                                if CONFIRMS[info["node_id"]] == 0:    
+                                    reply_to_insert_confirm(conn, ssap_msg, info["node_id"])
+                            else:
+
+                                # insert failed
+                                CONFIRMS[info["node_id"]] = None
+                                # send SSAP ERROR MESSAGE
+                                err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+                                                               info["space_id"],
+                                                               "INSERT",
+                                                               info["transaction_id"],
+                                                               '<parameter name="status">m3:Error</parameter>')
+                                KP_LIST[info["node_id"]].send(err_msg)
+ 
+
+                    # check whether it's an INSERT confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "JOIN":
+                        reply_to_join_confirm(conn, ssap_msg)
                  
                 except:
                     print "Client (%s, %s) is offline" % addr
