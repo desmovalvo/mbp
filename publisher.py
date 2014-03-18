@@ -111,5 +111,6 @@ if __name__ == "__main__":
                         print heading + "Received the following " + colored(info["message_type"], "blue", attrs=["bold"]) + " message from the " + colored("REAL SIB", "blue", attrs=["bold"])
                         print ssap_msg
                         if not(info["transaction_type"] in ["JOIN", "LEAVE"]):
+                            print "send to vs"
                             vs.send(ssap_msg)
                     

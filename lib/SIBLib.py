@@ -28,7 +28,7 @@ class SibLib(KP):
 
         # NOTE: the following line calls the send function
         # without confirm, to avoid socket errors
-        ins.send(triples, "python", confirm = False)
+        ins.send(triples, "python", confirm = True)
 
         self.CloseInsertTransaction(ins)
 
