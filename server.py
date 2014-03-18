@@ -1,17 +1,12 @@
 #!/usr/bin/python
- 
+
+# requirements 
 import socket, select
+from lib.replies import *
+from lib.SSAPLib import *
 from termcolor import colored
 from xml.etree import ElementTree as ET
 
-SSAP_MESSAGE_TEMPLATE = '''<SSAP_message>
-<node_id>%s</node_id>
-<space_id>%s</space_id>
-<transaction_type>%s</transaction_type>
-<message_type>CONFIRM</message_type>
-<transaction_id>%s</transaction_id>
-%s
-</SSAP_message>'''
  
 def reply_to_sib(conn, info):
     reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
@@ -23,14 +18,6 @@ def reply_to_sib(conn, info):
 
 
 def reply_to_join(conn, info, ssap_msg):
-    # reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-    #                                info["space_id"],
-    #                                "JOIN",
-    #                                info["transaction_id"],
-    #                                '<parameter name="status">m3:Success</parameter>')
-    # conn.send(reply)
-    # if conn in KP_LIST:
-    #     KP_LIST.remove(conn)
 
     for socket in SIB_LIST:
         if socket != vsibkp_socket and socket != sock :
@@ -66,33 +53,6 @@ def reply_to_leave(conn, info):
 
 def reply_to_insert_confirm(conn, ssap_msg, node_id):
     KP_LIST[node_id].send(ssap_msg)
-
-def reply_to_insert(conn, ssap_msg):
-
-    # forwarding message to the publishers
-    print "Lista SIB"
-    for socket in SIB_LIST:
-        print str(socket)
-    print "Lista KP"
-    for socket in KP_LIST:
-        print str(socket)
-    print str(conn)
-
-    for socket in SIB_LIST:
-        if socket != vsibkp_socket and socket != sock :
-            try:
-                socket.send(ssap_msg)
-            except:
-                err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "INSERT",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Error</parameter>')
-                KP_LIST[info["node_id"]].send(err_msg)
-
-
-    # TODO: reply to the kp. We disabled the reply in the SibLib class
-    # to avoid a crash due to incomplete message
 
 
 def reply_to_remove(conn, ssap_msg):
@@ -194,7 +154,7 @@ if __name__ == "__main__":
                     # check whether it's an INSERT request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
                         CONFIRMS[info["node_id"]] = len(SIB_LIST)
-                        reply_to_insert(conn, ssap_msg)
+                        handle_insert_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
 
                     # check whether it's an REMOVE request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
