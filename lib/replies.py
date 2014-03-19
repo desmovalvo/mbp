@@ -9,6 +9,22 @@ from SSAPLib import *
 #
 ######################################################
 
+def handle_join_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
+    """The present method is used to manage the join request received from a KP."""
+
+    print "handle join request----------"
+
+    for socket in SIB_LIST:
+        try:
+            socket.send(ssap_msg)
+        except:
+            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "JOIN",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            KP_LIST[info["node_id"]].send(err_msg)
+
 def handle_insert_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
     """The present method is used to manage the insert request received from a KP."""
 
@@ -35,23 +51,6 @@ def handle_register_request(conn, info):
                                    info["transaction_id"],
                                    '<parameter name="status">m3:Success</parameter>')
     conn.send(reply)
-
-
-def handle_join_request(conn, info):
-    """This method is used to forge and send a reply to the JOIN
-    REQUEST sent by a KP entity."""
-
-    # TODO: this method must be rewritten to forward the join
-    # request to all the real SIBs and forge a proper reply.
-
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "JOIN",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    conn.send(reply)
-    if conn in KP_LIST:
-        KP_LIST.remove(conn)
 
 
 def handle_leave_request(conn, info):
@@ -94,8 +93,12 @@ def handle_remove_request(conn, ssap_msg):
 #
 ######################################################
 
-def handle_insert_confirm(conn, ssap_msg):
+def handle_insert_confirm(conn, ssap_msg, info, KP_LIST):
     """This method is used to forge and send a reply for the LEAVE
     REQUEST sent by a KP entity."""
     for kp in KP_LIST:
         kp.send(ssap_msg)
+
+def handle_join_confirm(conn, ssap_msg, info, KP_LIST):
+    ''' This method forwards the join confirm message to the KP '''
+    KP_LIST[info["node_id"]].send(ssap_msg)
