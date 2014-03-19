@@ -49,21 +49,6 @@ def reply_to_leave(conn, info):
     if conn in KP_LIST:
         KP_LIST.remove(conn)
 
-
-def reply_to_insert_confirm(conn, ssap_msg, node_id):
-    KP_LIST[node_id].send(ssap_msg)
-
-
-def reply_to_remove(conn, ssap_msg):
-
-    # forwarding message to the publishers
-    for socket in SIB_LIST:
-        if socket != vsibkp_socket and socket != sock :
-            socket.send(ssap_msg)
-
-    # TODO: reply to the kp. We disabled the reply in the SibLib class
-    # to avoid a crash due to incomplete message
-
  
 if __name__ == "__main__":
      
