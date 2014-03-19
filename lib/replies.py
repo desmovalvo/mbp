@@ -106,9 +106,27 @@ def handle_remove_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
 #
 ######################################################
 
-def handle_join_confirm(conn, ssap_msg, info, KP_LIST):
+def handle_join_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
     ''' This method forwards the join confirm message to the KP '''
-    KP_LIST[info["node_id"]].send(ssap_msg)
+    
+    if not CONFIRMS[info["node_id"]] == None:
+        
+        if info["parameter_status"] == "m3:Success":
+            # insert successful
+            CONFIRMS[info["node_id"]] -= 1
+            if CONFIRMS[info["node_id"]] == 0:    
+                KP_LIST[info["node_id"]].send(ssap_msg)
+        else:
+            # insert failed
+            CONFIRMS[info["node_id"]] = None
+            # send SSAP ERROR MESSAGE
+            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "JOIN",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            KP_LIST[info["node_id"]].send(err_msg)
+
 
 def handle_insert_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
     """This method is used to decide what to do once an INSERT CONFIRM
