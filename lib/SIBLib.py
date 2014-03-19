@@ -35,7 +35,7 @@ class SibLib(KP):
     # remove: method to remove a triple from the sib
     def remove(self, triples):
         rem = self.CreateRemoveTransaction(self.ss_handle)                                       
-        rem.remove(triples, confirm = False)
+        rem.remove(triples)
         self.CloseRemoveTransaction(rem)
 
     # update: method to update a triple in the sib

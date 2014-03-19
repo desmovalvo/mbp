@@ -17,32 +17,6 @@ def reply_to_sib(conn, info):
     conn.send(reply)
 
 
-def reply_to_leave(conn, info):
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "LEAVE",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    conn.send(reply)
-    if conn in KP_LIST:
-        KP_LIST.remove(conn)
-
-
-def reply_to_insert_confirm(conn, ssap_msg, node_id):
-    KP_LIST[node_id].send(ssap_msg)
-
-
-def reply_to_remove(conn, ssap_msg):
-
-    # forwarding message to the publishers
-    for socket in SIB_LIST:
-        if socket != vsibkp_socket and socket != sock :
-            socket.send(ssap_msg)
-
-    # TODO: reply to the kp. We disabled the reply in the SibLib class
-    # to avoid a crash due to incomplete message
-
- 
 if __name__ == "__main__":
      
     # List to keep track of socket descriptors
@@ -86,8 +60,6 @@ if __name__ == "__main__":
                 print "sock = " + str(sock)
                 conn, addr = sock.accept()
                 CONNECTION_LIST.append(conn)
-                print "Client (%s, %s) connected" % addr
-                # broadcast_data(conn, "[%s:%s] entered room\n" % addr)
              
             # Some incoming message from a client
             else:
@@ -110,7 +82,11 @@ if __name__ == "__main__":
                     if info["transaction_type"] in ["INSERT", "QUERY", "DELETE", "JOIN", "LEAVE", "SUBSCRIBE"] and info["message_type"] == "REQUEST":
                         KP_LIST[info["node_id"]] = conn
                         
-                    print "Received a %s %s"%(info["transaction_type"], info["message_type"])
+                    # printing informations about the received message
+                    print "Received a %s %s from (%s, %s)"%(info["transaction_type"], 
+                                                            info["message_type"], 
+                                                            addr[0], 
+                                                            addr[1])
 
                     # check the type of message
 
@@ -129,11 +105,12 @@ if __name__ == "__main__":
                         #TODO: se non ci sono publisher connessi?
                         handle_join_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
 
-                    # check whether we have to delete a KP
+                    # check whether it's a LEAVE request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
-                        KP_LIST.append(conn)
                         #TODO: se non ci sono publisher connessi?
-                        reply_to_leave(conn, info)
+                        print "leaveeeeeeeeeeeeeeeeeeee"
+                        CONFIRMS[info["node_id"]] = len(SIB_LIST)
+                        handle_leave_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
 
                     # check whether it's an INSERT request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
@@ -143,32 +120,13 @@ if __name__ == "__main__":
 
                     # check whether it's an REMOVE request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
+                        CONFIRMS[info["node_id"]] = len(SIB_LIST)
                         #TODO: se non ci sono publisher connessi?
                         reply_to_remove(conn, ssap_msg)
 
                     # check whether it's an INSERT confirm
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
-
-                        if not CONFIRMS[info["node_id"]] == None:
-
-                            if info["parameter_status"] == "m3:Success":
-                                
-                                # insert successful
-                                CONFIRMS[info["node_id"]] -= 1
-                                if CONFIRMS[info["node_id"]] == 0:    
-                                    reply_to_insert_confirm(conn, ssap_msg, info["node_id"])
-                            else:
-
-                                # insert failed
-                                CONFIRMS[info["node_id"]] = None
-                                # send SSAP ERROR MESSAGE
-                                err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                                               info["space_id"],
-                                                               "INSERT",
-                                                               info["transaction_id"],
-                                                               '<parameter name="status">m3:Error</parameter>')
-                                KP_LIST[info["node_id"]].send(err_msg)
- 
+                        handle_insert_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST) 
 
                     # check whether it's a JOIN confirm
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "JOIN":
@@ -192,11 +150,16 @@ if __name__ == "__main__":
                                                                '<parameter name="status">m3:Error</parameter>')
                                 KP_LIST[info["node_id"]].send(err_msg)
 
+                    # check whether it's a LEAVE confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "LEAVE":
+                        handle_leave_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST)
+
+                    # check whether it's a REMOVE confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
+                        handle_remove_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST)
+
                  
-                except:
-                    print "eccezione"
-                    print "Client (%s, %s) is offline" % addr
-                    # sock.close()
+                except:                 
                     CONNECTION_LIST.remove(sock)
                     continue
      
