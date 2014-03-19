@@ -39,17 +39,6 @@ def reply_to_join_confirm(conn, ssap_msg):
         kp.send(ssap_msg)
 
 
-def reply_to_leave(conn, info):
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "LEAVE",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    conn.send(reply)
-    if conn in KP_LIST:
-        KP_LIST.remove(conn)
-
- 
 if __name__ == "__main__":
      
     # List to keep track of socket descriptors
@@ -131,24 +120,28 @@ if __name__ == "__main__":
                         KP_LIST.append(conn)
                         reply_to_join(conn, info, ssap_msg)
 
-                    # check whether we have to delete a KP
+                    # check whether it's a LEAVE request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
-                        KP_LIST.append(conn)
-                        reply_to_leave(conn, info)
+                        CONFIRMS[info["node_id"]] = len(SIB_LIST)
+                        handle_leave_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
+
+                    # check whether it's a LEAVE confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "LEAVE":
+                        handle_leave_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST)
 
                     # check whether it's an INSERT request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
                         CONFIRMS[info["node_id"]] = len(SIB_LIST)
                         handle_insert_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
 
+                    # check whether it's an INSERT confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
+                        handle_insert_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST) 
+
                     # check whether it's an REMOVE request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
                         CONFIRMS[info["node_id"]] = len(SIB_LIST)
                         handle_remove_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
-
-                    # check whether it's an INSERT confirm
-                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
-                        handle_insert_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST) 
 
                     # check whether it's a REMOVE confirm
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
