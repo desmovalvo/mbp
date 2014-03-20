@@ -24,6 +24,7 @@ if __name__ == "__main__":
     SIB_LIST = []
     KP_LIST = {}
     CONFIRMS = {}
+    QUERY_RESULTS = {}
     RECV_BUFFER = 1024 # Advisable to keep it as an exponent of 2
     KP_PORT = 10010 # On this port we expect connections from the KPs
     PUB_PORT = 10011 # On this port we receive connections from the publishers
@@ -124,6 +125,13 @@ if __name__ == "__main__":
                         #TODO: se non ci sono publisher connessi?
                         reply_to_remove(conn, ssap_msg)
 
+                    # check whether it's a sparql QUERY request
+                    elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "sparql":
+                        CONFIRMS[info["node_id"]] = len(SIB_LIST)
+                        QUERY_RESULTS[info["node_id"]] = []
+                        #TODO: se non ci sono publisher connessi?
+                        handle_sparql_query_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
+
                     # check whether it's an INSERT confirm
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
                         handle_insert_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST) 
@@ -139,6 +147,12 @@ if __name__ == "__main__":
                     # check whether it's a REMOVE confirm
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
                         handle_remove_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST)
+
+                    # check whether it's a QUERY confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY":
+                        print str(type(ssap_msg))
+                        handle_query_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS) 
+
 
                  
                 except:                 

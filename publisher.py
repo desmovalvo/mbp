@@ -6,18 +6,7 @@ import socket, select, string, sys
 from termcolor import colored
 import random
 import uuid
-
-# template
-SSAP_MESSAGE_TEMPLATE = '''<SSAP_message>
-<node_id>%s</node_id>
-<space_id>%s</space_id>
-<transaction_type>%s</transaction_type>
-<message_type>REQUEST</message_type>
-<transaction_id>%s</transaction_id>
-%s
-</SSAP_message>'''
-
-SSAP_SUCCESS_PARAM_TEMPLATE = '<parameter name = "status">%s</parameter>'
+from lib.SSAPLib import *
 
 # basic info 
 node_id = str(uuid.uuid4())
@@ -50,10 +39,10 @@ if __name__ == "__main__":
     # building and sending the register request
     space_id = "X"
     transaction_id = random.randint(0, 1000)
-    register_msg = SSAP_MESSAGE_TEMPLATE%(node_id,
-                                          space_id,
-                                          "REGISTER",
-                                          transaction_id, "")
+    register_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(node_id,
+                                                  space_id,
+                                                  "REGISTER",
+                                                  transaction_id, "")
     vs.send(register_msg)
      
     # connect to the real sib specified as a parameter
@@ -85,7 +74,10 @@ if __name__ == "__main__":
                 ssap_msg = sock.recv(1024)
                 if ssap_msg:
 
-                    # parse the ssap message
+                    #ssap_list = ssap_msg.split("\n")
+                    #ssap_msg = "".join(ssap_list)
+
+                    # parse the ssap message                                         
                     root = ET.fromstring(ssap_msg)
                     info = {}
                     for child in root:
