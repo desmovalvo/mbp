@@ -58,3 +58,23 @@ SSAP_MESSAGE_REQUEST_TEMPLATE = '''<SSAP_message>
 
 SSAP_SUCCESS_PARAM_TEMPLATE = '<parameter name = "status">%s</parameter>'
 
+SSAP_RESULTS_RDF_PARAM_TEMPLATE = """
+<parameter name="status">m3:Success</parameter>
+<parameter name="results">
+%s
+</parameter>
+"""
+
+SSAP_TRIPLE_TEMPLATE = """
+<triple>
+<subject type="uri">%s</subject>
+<predicate>%s</predicate>
+<object type="uri">%s</object>
+</triple>
+"""
+
+SSAP_TRIPLE_LIST_TEMPLATE = """
+<triple_list>
+%s
+</triple_list>
+"""

@@ -132,6 +132,14 @@ if __name__ == "__main__":
                         #TODO: se non ci sono publisher connessi?
                         handle_sparql_query_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
 
+                    # check whether it's a rdf QUERY request
+                    elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "RDF-M3":
+                        CONFIRMS[info["node_id"]] = len(SIB_LIST)
+                        QUERY_RESULTS[info["node_id"]] = []
+                        #TODO: se non ci sono publisher connessi?
+                        handle_rdf_query_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
+
+
                     # check whether it's an INSERT confirm
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
                         handle_insert_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST) 
@@ -148,10 +156,13 @@ if __name__ == "__main__":
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
                         handle_remove_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST)
 
-                    # check whether it's a QUERY confirm
-                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY":
-                        print str(type(ssap_msg))
-                        handle_query_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS) 
+                    # check whether it's a sparql QUERY confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
+                        handle_query_sparql_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS) 
+
+                    # check whether it's a rdf QUERY confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
+                        handle_query_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS) 
 
 
                  

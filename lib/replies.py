@@ -21,7 +21,7 @@ def handle_join_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
         try:
             socket.send(ssap_msg)
         except:
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "JOIN",
                                              info["transaction_id"],
@@ -40,7 +40,7 @@ def handle_leave_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
         try:
             socket.send(ssap_msg)
         except:
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "JOIN",
                                              "LEAVE",
@@ -60,7 +60,7 @@ def handle_insert_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
         try:
             socket.send(ssap_msg)
         except:
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "INSERT",
                                              info["transaction_id"],
@@ -75,7 +75,7 @@ def handle_register_request(conn, info):
     # debug info
     print colored(" * replies.py: handle_register_request", "cyan", attrs=[])
 
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+    reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                    info["space_id"],
                                    "REGISTER",
                                    info["transaction_id"],
@@ -94,7 +94,7 @@ def handle_remove_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
         try:
             socket.send(ssap_msg)
         except:
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "REMOVE",
                                              info["transaction_id"],
@@ -102,17 +102,36 @@ def handle_remove_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
             KP_LIST[info["node_id"]].send(err_msg)
 
 def handle_sparql_query_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
-    """The present method is used to manage the query request received from a KP."""
+    """The present method is used to manage the sparql query request received from a KP."""
 
     # debug info
-    print colored(" * replies.py: handle_query_request", "cyan", attrs=[])
+    print colored(" * replies.py: handle_sparql_query_request", "cyan", attrs=[])
 
     # forwarding message to the publishers
     for socket in SIB_LIST:
         try:
             socket.send(ssap_msg)
         except:
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "QUERY",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            KP_LIST[info["node_id"]].send(err_msg)
+
+
+def handle_rdf_query_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
+    """The present method is used to manage the rdf query request received from a KP."""
+
+    # debug info
+    print colored(" * replies.py: handle_rdf_query_request", "cyan", attrs=[])
+
+    # forwarding message to the publishers
+    for socket in SIB_LIST:
+        try:
+            socket.send(ssap_msg)
+        except:
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "QUERY",
                                              info["transaction_id"],
@@ -141,7 +160,7 @@ def handle_join_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
             # insert failed
             CONFIRMS[info["node_id"]] = None
             # send SSAP ERROR MESSAGE
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "JOIN",
                                              info["transaction_id"],
@@ -173,7 +192,7 @@ def handle_insert_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
             
             CONFIRMS[info["node_id"]] = None
             # send SSAP ERROR MESSAGE
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "INSERT",
                                              info["transaction_id"],
@@ -206,7 +225,7 @@ def handle_remove_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
             
             CONFIRMS[info["node_id"]] = None
             # send SSAP ERROR MESSAGE
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "REMOVE",
                                              info["transaction_id"],
@@ -239,16 +258,15 @@ def handle_leave_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
             
             CONFIRMS[info["node_id"]] = None
             # send SSAP ERROR MESSAGE
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "LEAVE",
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             KP_LIST[info["node_id"]].send(err_msg)
 
-def handle_query_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS):
-    """This method is used manage QUERY CONFIRM
-    is received. """
+def handle_query_sparql_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS):
+    """This method is used to manage sparql QUERY CONFIRM received. """
 
     # debug info
     print colored(" * replies.py: handle_query_confirm", "cyan", attrs=[])
@@ -299,7 +317,7 @@ def handle_query_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS)
             
             CONFIRMS[info["node_id"]] = None
             # send SSAP ERROR MESSAGE
-            err_msg = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "INSERT",
                                              info["transaction_id"],
@@ -330,6 +348,82 @@ def reply_to_sparql_query(node_id, space_id, transaction_id, results):
     results_string = SSAP_RESULTS_TEMPLATE%(result_string)
     body = SSAP_RESULTS_SPARQL_PARAM_TEMPLATE%(head + results_string)
 
+    # finalizing the reply
+    reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(node_id, 
+                                    space_id, 
+                                    "QUERY",
+                                    transaction_id,
+                                    body)
+    return reply
+
+
+def handle_query_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS):
+    """This method is used to manage rdf QUERY CONFIRM received. """
+
+    # debug info
+    print colored(" * replies.py: handle_query_rdf_confirm", "cyan", attrs=[])
+    
+    # check if we already received a failure
+    if not CONFIRMS[info["node_id"]] == None:
+
+        # check if the current message represent a successful insertion
+        if info["parameter_status"] == "m3:Success":
+            CONFIRMS[info["node_id"]] -= 1
+            
+            # convert ssap_msg to dict
+            ssap_msg_dict = {}
+            parser = make_parser()
+            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+            parser.setContentHandler(ssap_mh)
+            parser.parse(StringIO(ssap_msg))
+
+            # extract triples from ssap reply
+            triple_list = parse_M3RDF(ssap_msg_dict["results"])
+              
+            for triple in triple_list:
+                QUERY_RESULTS[info["node_id"]].append(triple)
+            
+            # remove duplicates
+            result = []
+            for triple in QUERY_RESULTS[info["node_id"]]:
+                if not triple in result:
+                    result.append(triple)
+                    
+            QUERY_RESULTS[info["node_id"]] = result
+            for r in result:
+                print str(r)
+
+            if CONFIRMS[info["node_id"]] == 0:    
+                # build ssap reply
+                ssap_reply = reply_to_rdf_query(ssap_msg_dict["node_id"],
+                                      ssap_msg_dict["space_id"],
+                                      ssap_msg_dict["transaction_id"],
+                                      result)
+
+                KP_LIST[info["node_id"]].send(ssap_reply)
+
+
+        # if the current message represent a failure...
+        else:
+            
+            CONFIRMS[info["node_id"]] = None
+            # send SSAP ERROR MESSAGE
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "INSERT",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            KP_LIST[info["node_id"]].send(err_msg)
+
+
+def reply_to_rdf_query(node_id, space_id, transaction_id, results):
+
+    tr = ""
+    for el in results:
+        tr = tr + SSAP_TRIPLE_TEMPLATE%(el[0], el[1], el[2])
+            
+    body = SSAP_RESULTS_RDF_PARAM_TEMPLATE%(SSAP_TRIPLE_LIST_TEMPLATE%(tr))
+    
     # finalizing the reply
     reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(node_id, 
                                     space_id, 
