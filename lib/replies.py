@@ -200,7 +200,7 @@ def handle_insert_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
             KP_LIST[info["node_id"]].send(err_msg)
                             
 
-def handle_remove_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
+def handle_remove_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, remove_requests):
     """This method is used to decide what to do once an REMOVE CONFIRM
     is received. We can send the confirm back to the KP (if all the
     sibs sent a confirm), decrement a counter (if we are waiting for
@@ -218,7 +218,10 @@ def handle_remove_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
 
             CONFIRMS[info["node_id"]] -= 1
             if CONFIRMS[info["node_id"]] == 0:    
-                KP_LIST[info["node_id"]].send(ssap_msg)
+                remove_requests[info["node_id"]].send(ssap_msg)
+
+                # removing the request
+                del remove_requests[info["node_id"]]
 
         # if the current message represent a failure...
         else:
@@ -231,6 +234,9 @@ def handle_remove_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             KP_LIST[info["node_id"]].send(err_msg)
+
+            # removing the request
+            del remove_requests[info["node_id"]]
                             
 
 def handle_leave_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST):
