@@ -139,6 +139,26 @@ def handle_rdf_query_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
             KP_LIST[info["node_id"]].send(err_msg)
 
 
+def handle_rdf_subscription_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
+    """The present method is used to manage the rdf subscription request received from a KP."""
+
+    # debug info
+    print colored(" * replies.py: handle_rdf_subscription_request", "cyan", attrs=[])
+
+    # forwarding message to the publishers
+    for socket in SIB_LIST:
+        try:
+            print "inoltro la sub request"
+            socket.send(ssap_msg)
+        except:
+            print "errore"
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "SUBSCRIBE",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            KP_LIST[info["node_id"]].send(err_msg)
+
 
 ######################################################
 #
@@ -434,6 +454,83 @@ def reply_to_rdf_query(node_id, space_id, transaction_id, results):
     reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(node_id, 
                                     space_id, 
                                     "QUERY",
+                                    transaction_id,
+                                    body)
+    return reply
+
+
+def handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIAL_RESULTS, subscribe_requests):
+    """This method is used to manage rdf SUBSCRIBE CONFIRM received. """
+
+    # debug info
+    print colored(" * replies.py: handle_subscribe_rdf_confirm", "cyan", attrs=[])
+    
+    # check if we already received a failure
+    if not CONFIRMS[info["node_id"]] == None:
+
+        # check if the current message represent a successful insertion
+        if info["parameter_status"] == "m3:Success":
+            CONFIRMS[info["node_id"]] -= 1
+            
+            # convert ssap_msg to dict
+            ssap_msg_dict = {}
+            parser = make_parser()
+            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+            parser.setContentHandler(ssap_mh)
+            parser.parse(StringIO(ssap_msg))
+
+            # extract triples from ssap reply
+            triple_list = parse_M3RDF(ssap_msg_dict["results"])
+              
+            for triple in triple_list:
+                INITIAL_RESULTS[info["node_id"]].append(triple)
+            
+            # remove duplicates
+            result = []
+            for triple in INITIAL_RESULTS[info["node_id"]]:
+                if not triple in result:
+                    result.append(triple)
+                    
+            INITIAL_RESULTS[info["node_id"]] = result
+            for r in result:
+                print str(r)
+
+            if CONFIRMS[info["node_id"]] == 0:    
+                # build ssap reply
+                ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
+                                      ssap_msg_dict["space_id"],
+                                      ssap_msg_dict["transaction_id"],
+                                      result,
+                                      info["parameter_subscription_id"])
+
+                KP_LIST[info["node_id"]].send(ssap_reply)
+
+
+        # if the current message represent a failure...
+        else:
+            
+            CONFIRMS[info["node_id"]] = None
+            # send SSAP ERROR MESSAGE
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "SUBSCRIBE",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            KP_LIST[info["node_id"]].send(err_msg)
+
+
+def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscription_id):
+
+    tr = ""
+    for el in results:
+        tr = tr + SSAP_TRIPLE_TEMPLATE%(el[0], el[1], el[2])
+            
+    body = SSAP_RESULTS_SUB_RDF_PARAM_TEMPLATE%(subscription_id, SSAP_TRIPLE_LIST_TEMPLATE%(tr))
+    
+    # finalizing the reply
+    reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(node_id, 
+                                    space_id, 
+                                    "SUBSCRIBE",
                                     transaction_id,
                                     body)
     return reply

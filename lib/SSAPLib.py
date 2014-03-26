@@ -65,6 +65,14 @@ SSAP_RESULTS_RDF_PARAM_TEMPLATE = """
 </parameter>
 """
 
+SSAP_RESULTS_SUB_RDF_PARAM_TEMPLATE = """
+<parameter name="status">m3:Success</parameter>
+<parameter name="subscription_id">%s</parameter>
+<parameter name="results">
+%s
+</parameter>
+"""
+
 SSAP_TRIPLE_TEMPLATE = """
 <triple>
 <subject type="uri">%s</subject>

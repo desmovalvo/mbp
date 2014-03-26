@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements 
+import sys
 import socket, select
 from lib.replies import *
 from lib.SSAPLib import *
@@ -25,9 +26,11 @@ if __name__ == "__main__":
     KP_LIST = {}
     CONFIRMS = {}
     QUERY_RESULTS = {}
+    INITIAL_RESULTS = {}
 
     # requests
     remove_requests = {}
+    subscribe_requests = {}
 
     RECV_BUFFER = 1024 # Advisable to keep it as an exponent of 2
     KP_PORT = 10010 # On this port we expect connections from the KPs
@@ -144,6 +147,17 @@ if __name__ == "__main__":
                         #TODO: se non ci sono publisher connessi?
                         handle_rdf_query_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
 
+                    # check whether it's a rdf SUBSCRIBE request
+                    elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
+                        subscribe_requests[info["node_id"]] = {}
+                        subscribe_requests[info["node_id"]]["conn"] = conn
+                        CONFIRMS[info["node_id"]] = len(SIB_LIST)
+                        INITIAL_RESULTS[info["node_id"]] = []
+                        #TODO: se non ci sono publisher connessi?
+                        handle_rdf_subscription_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
+                        print "ricevuta richiesta di sottoscrizione"
+
+
 
                     ### CONFIRMS
 
@@ -171,9 +185,16 @@ if __name__ == "__main__":
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
                         handle_query_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, QUERY_RESULTS) 
 
+                    # check whether it's a rdf SUBSCRIBE confirm
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg:
+                        subscribe_requests[info["node_id"]]["sub_id"] = info["parameter_subscription_id"]
+                        print "ricevuta subscribe confirm"
+                        handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIAL_RESULTS, subscribe_requests) 
+
 
                  
-                except:                 
+                except:                
+                    print str(sys.exc_info())
                     CONNECTION_LIST.remove(sock)
                     continue
      

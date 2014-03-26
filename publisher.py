@@ -72,7 +72,7 @@ if __name__ == "__main__":
             # incoming message from the real sib or from the virtual sib
             if sock in [vs, rs]:
                 ssap_msg = sock.recv(1024)
-                if ssap_msg:
+                if ssap_msg and ssap_msg != " ":
 
                     #ssap_list = ssap_msg.split("\n")
                     #ssap_msg = "".join(ssap_list)
