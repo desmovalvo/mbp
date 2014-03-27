@@ -8,15 +8,6 @@ from lib.SSAPLib import *
 from termcolor import colored
 from xml.etree import ElementTree as ET
 
- 
-def reply_to_sib(conn, info):
-    reply = SSAP_MESSAGE_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "REGISTER",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    conn.send(reply)
-
 
 if __name__ == "__main__":
      
@@ -107,7 +98,7 @@ if __name__ == "__main__":
                     # check if we have to register a new SIB
                     if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
                         SIB_LIST.append(conn)
-                        reply_to_sib(conn, info)
+                        handle_register_request(conn, info)
                         
                     # check whether we have to register a new KP
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "JOIN":
@@ -203,6 +194,10 @@ if __name__ == "__main__":
                     # skipping empty messages
                     pass
                  
+                except KeyboardInterrupt:
+                    print "Bye!"
+                    sys.exit(0)
+
                 except:                
                     print str(sys.exc_info())
                     CONNECTION_LIST.remove(sock)
