@@ -512,6 +512,7 @@ def handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIA
                                                     ssap_msg_dict["transaction_id"],
                                                     result,
                                                     active_subscriptions[info["node_id"]][info["transaction_id"]]["subscription_id"])
+                print "LA SUBSCRIBE CONFIRM CHE ABBIAMO COSTRUITO E':" + str(ssap_reply)
 
                 active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(ssap_reply)
 
@@ -545,3 +546,32 @@ def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscript
                                     transaction_id,
                                     body)
     return reply
+
+
+######################################################
+#
+# INDICATIONS
+#
+######################################################
+
+def handle_rdf_subscribe_indication(ssap_msg, info, active_subscriptions):
+
+    # debug info
+    print colored(" * replies.py: handle_rdf_subscribe_indication", "cyan", attrs=[])
+
+    # convert ssap_msg to dict to edit the subscription id
+    ssap_msg_dict = {}
+    parser = make_parser()
+    ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+    parser.setContentHandler(ssap_mh)
+    parser.parse(StringIO(ssap_msg))
+    print "DICT " + str(ssap_msg_dict["subscription_id"])
+    print "DICT2 " + str(active_subscriptions[info["node_id"]])
+    ssap_msg_dict["subscription_id"] = active_subscriptions[info["node_id"]][info["transaction_id"]]["subscription_id"]
+    
+    #print str(ssap_msg_dict)
+    
+    # print str(info.keys())
+    active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(ssap_msg)
+
+    pass

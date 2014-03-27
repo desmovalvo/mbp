@@ -82,7 +82,7 @@ if __name__ == "__main__":
             if sock in read_sockets: # [vs, rs]:
 
                 try:
-                    ssap_msg = sock.recv(1024)
+                    ssap_msg = sock.recv(4096)
                     if ssap_msg and ssap_msg != " ":
                         print colored("Ricevuto un messaggio ", "red", attrs=["bold"])
     
@@ -170,8 +170,9 @@ if __name__ == "__main__":
                                 # vs.send(ssap_msg)
     
                         except ET.ParseError:
-    
+                            print "Parse Error" + str(ssap_msg)
                             pass                    
     
                 except socket.error:
+                    print "Socket Error"
                     pass

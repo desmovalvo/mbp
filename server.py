@@ -157,7 +157,6 @@ if __name__ == "__main__":
                         print "ricevuta richiesta di sottoscrizione"
 
 
-
                     ### CONFIRMS
 
                     # check whether it's an INSERT confirm
@@ -186,9 +185,17 @@ if __name__ == "__main__":
 
                     # check whether it's a rdf SUBSCRIBE confirm
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg:
+                        print "SONO QUI"
                         subscribe_requests[info["node_id"]]["sub_id"] = info["parameter_subscription_id"]
                         print "ricevuta subscribe confirm"
                         handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIAL_RESULTS, subscribe_requests, active_subscriptions) 
+
+
+                    ### INDICATIONS
+
+                    elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE":
+                        handle_rdf_subscribe_indication(ssap_msg, info, active_subscriptions)
+
 
                 except ET.ParseError:
                     # skipping empty messages
