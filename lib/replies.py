@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
 # requirements
+import uuid
 from SSAPLib import *
-from termcolor import colored
 from smart_m3.m3_kp import *
+from termcolor import colored
 from xml.sax import make_parser
 
 ######################################################
@@ -139,7 +140,7 @@ def handle_rdf_query_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
             KP_LIST[info["node_id"]].send(err_msg)
 
 
-def handle_rdf_subscription_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
+def handle_rdf_subscription_request(conn, ssap_msg, info, SIB_LIST, KP_LIST, active_subscriptions):
     """The present method is used to manage the rdf subscription request received from a KP."""
 
     # debug info
@@ -157,9 +158,16 @@ def handle_rdf_subscription_request(conn, ssap_msg, info, SIB_LIST, KP_LIST):
                                              "SUBSCRIBE",
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
-            KP_LIST[info["node_id"]].send(err_msg)
+            
+            active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(err_msg)
+            
+            # remove subscription from active_subscriptions dict
+            del active_subscriptions[info["node_id"]][info["transaction_id"]]
+            
+            if len(active_subscriptions[info["node_id"]].keys) == 0:
+                del active_subscriptions[info["node_id"]]
 
-
+            
 ######################################################
 #
 # CONFIRMS
@@ -459,7 +467,7 @@ def reply_to_rdf_query(node_id, space_id, transaction_id, results):
     return reply
 
 
-def handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIAL_RESULTS, subscribe_requests):
+def handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIAL_RESULTS, subscribe_requests, active_subscriptions):
     """This method is used to manage rdf SUBSCRIBE CONFIRM received. """
 
     # debug info
@@ -496,14 +504,16 @@ def handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIA
                 print str(r)
 
             if CONFIRMS[info["node_id"]] == 0:    
+                # generate a random subscription_id
+                active_subscriptions[info["node_id"]][info["transaction_id"]]["subscription_id"] = uuid.uuid4()
                 # build ssap reply
                 ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
-                                      ssap_msg_dict["space_id"],
-                                      ssap_msg_dict["transaction_id"],
-                                      result,
-                                      info["parameter_subscription_id"])
+                                                    ssap_msg_dict["space_id"],
+                                                    ssap_msg_dict["transaction_id"],
+                                                    result,
+                                                    active_subscriptions[info["node_id"]][info["transaction_id"]]["subscription_id"])
 
-                KP_LIST[info["node_id"]].send(ssap_reply)
+                active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(ssap_reply)
 
 
         # if the current message represent a failure...
@@ -516,8 +526,9 @@ def handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIA
                                              "SUBSCRIBE",
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
-            KP_LIST[info["node_id"]].send(err_msg)
 
+            active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(err_msg)
+                
 
 def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscription_id):
 

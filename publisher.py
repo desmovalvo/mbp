@@ -78,31 +78,44 @@ if __name__ == "__main__":
                     #ssap_msg = "".join(ssap_list)
 
                     # parse the ssap message                                         
-                    root = ET.fromstring(ssap_msg)
-                    info = {}
-                    for child in root:
-                        if child.attrib.has_key("name"):
-                            k = child.tag + "_" + str(child.attrib["name"])
-                        else:
-                            k = child.tag
+                    try:
+                        root = ET.fromstring(ssap_msg)                        
+
+                        info = {}
+                        for child in root:
+                            if child.attrib.has_key("name"):
+                                k = child.tag + "_" + str(child.attrib["name"])
+                            else:
+                                k = child.tag
                             info[k] = child.text
 
-                    if sock == vs:
+                        if sock == vs:
+    
+                            # if it's not a register confirmation, we have to forward the message 
+                            # sent by the virtual sib to the real sib
+                            print heading + "Received the following " + colored(info["message_type"], "blue", attrs=["bold"]) + " message from the " + colored("VIRTUAL SIB", "blue", attrs=["bold"])
+                            print ssap_msg                            
+                            if not(info["transaction_type"] == "REGISTER"):
+                                
+                                print "Invio alla sib reale"
+                                rs.send(ssap_msg)
+    
+                        elif sock == rs:
+                            rs.close()
+                            rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            try :
+                                rs.connect((realsib_host, realsib_port))
+                            except :
+                                print 'Unable to connect to the real sib'
+                                sys.exit()
 
-                        # if it's not a register confirmation, we have to forward the message 
-                        # sent by the virtual sib to the real sib
-                        print heading + "Received the following " + colored(info["message_type"], "blue", attrs=["bold"]) + " message from the " + colored("VIRTUAL SIB", "blue", attrs=["bold"])
-                        print ssap_msg
-                        if not(info["transaction_type"] == "REGISTER"):
-                            rs.send(ssap_msg)
+                            # if it's not a register confirmation, we have to forward the message 
+                            # sent by the virtual sib to the real sib
+                            print heading + "Received the following " + colored(info["message_type"], "blue", attrs=["bold"]) + " message from the " + colored("REAL SIB", "blue", attrs=["bold"])
+                            print ssap_msg
+    #                        if not(info["transaction_type"] in ["JOIN", "LEAVE"]):
+                            print "send to vs"
+                            vs.send(ssap_msg)
 
-                    elif sock == rs:
-                        
-                        # if it's not a register confirmation, we have to forward the message 
-                        # sent by the virtual sib to the real sib
-                        print heading + "Received the following " + colored(info["message_type"], "blue", attrs=["bold"]) + " message from the " + colored("REAL SIB", "blue", attrs=["bold"])
-                        print ssap_msg
-#                        if not(info["transaction_type"] in ["JOIN", "LEAVE"]):
-                        print "send to vs"
-                        vs.send(ssap_msg)
-                    
+                    except ET.ParseError:
+                        pass                    

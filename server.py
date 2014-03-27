@@ -31,9 +31,11 @@ if __name__ == "__main__":
     # requests
     remove_requests = {}
     subscribe_requests = {}
+    active_subscriptions = {}
 
     RECV_BUFFER = 1024 # Advisable to keep it as an exponent of 2
     KP_PORT = 10010 # On this port we expect connections from the KPs
+
     PUB_PORT = 10011 # On this port we receive connections from the publishers
 
     # configuring the socket dedicated to the kps     
@@ -78,7 +80,7 @@ if __name__ == "__main__":
 
                     # parse the ssap message
                     root = ET.fromstring(ssap_msg)
-
+                    
                     info = {}
                     for child in root:
                         if child.attrib.has_key("name"):
@@ -149,12 +151,18 @@ if __name__ == "__main__":
 
                     # check whether it's a rdf SUBSCRIBE request
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
+                        if not active_subscriptions.has_key(info["node_id"]):
+                            active_subscriptions[info["node_id"]] = {}
+                        
+                        active_subscriptions[info["node_id"]][info["transaction_id"]] = {}
+                        active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"] = conn
+
                         subscribe_requests[info["node_id"]] = {}
                         subscribe_requests[info["node_id"]]["conn"] = conn
                         CONFIRMS[info["node_id"]] = len(SIB_LIST)
                         INITIAL_RESULTS[info["node_id"]] = []
                         #TODO: se non ci sono publisher connessi?
-                        handle_rdf_subscription_request(conn, ssap_msg, info, SIB_LIST, KP_LIST)
+                        handle_rdf_subscription_request(conn, ssap_msg, info, SIB_LIST, KP_LIST, active_subscriptions)
                         print "ricevuta richiesta di sottoscrizione"
 
 
@@ -189,9 +197,11 @@ if __name__ == "__main__":
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg:
                         subscribe_requests[info["node_id"]]["sub_id"] = info["parameter_subscription_id"]
                         print "ricevuta subscribe confirm"
-                        handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIAL_RESULTS, subscribe_requests) 
+                        handle_subscribe_rdf_confirm(conn, ssap_msg, info, CONFIRMS, KP_LIST, INITIAL_RESULTS, subscribe_requests, active_subscriptions) 
 
-
+                except ET.ParseError:
+                    # skipping empty messages
+                    pass
                  
                 except:                
                     print str(sys.exc_info())
