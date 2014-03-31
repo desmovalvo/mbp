@@ -2,8 +2,9 @@
 
 # requirements
 from xml.etree import ElementTree as ET
+from lib.treplies import *
 from termcolor import *
-from socket import *
+import socket, select
 import threading
 import thread
 
@@ -13,9 +14,17 @@ HOST = 'localhost'
 BUFSIZ = 1024
 KP_ADDR = (HOST, KP_PORT)
 PUB_ADDR = (HOST, PUB_PORT)
+sib_list = []
+kp_list = {}
+confirms = {}
 
+##############################################################
+#
 # handler
-def handler(clientsock,addr):
+#
+##############################################################
+
+def handler(clientsock, addr):
     while 1:
         ssap_msg = clientsock.recv(BUFSIZ)
         
@@ -35,7 +44,33 @@ def handler(clientsock,addr):
                 else:
                     k = child.tag
                 info[k] = child.text
-                
+
+            # REGISTER REQUEST
+            if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
+                if handle_register_request(clientsock, info):
+                    # add the sib to the list
+                    sib_list.append(clientsock)
+                    
+            # JOIN REQUEST
+            elif info["message_type"] == "REQUEST" and info["transaction_type"] == "JOIN":
+                confirms[info["node_id"]] = len(sib_list)
+                kp_list[info["node_id"]] = clientsock
+                handle_join_request(info, ssap_msg, sib_list, kp_list)
+
+            # LEAVE REQUEST
+            elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
+                confirms[info["node_id"]] = len(sib_list)
+                kp_list[info["node_id"]] = clientsock
+                handle_leave_request(info, ssap_msg, sib_list, kp_list)
+            
+            # JOIN CONFIRM
+            elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "JOIN":
+                handle_join_confirm(clientsock, info, ssap_msg, confirms, kp_list)
+
+            # LEAVE CONFIRM
+            elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "LEAVE":
+                handle_leave_confirm(info, ssap_msg, confirms, kp_list)
+
             # debug info
             print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
 
@@ -43,24 +78,49 @@ def handler(clientsock,addr):
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
             pass
 
-        # clientsock.send(msg)
-    clientsock.close()
 
+##############################################################
+#
 # main program
+#
+##############################################################
+
 if __name__=='__main__':
     
     # creating and activating the socket for the KPs
-    kp_socket = socket(AF_INET, SOCK_STREAM)
+    kp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     kp_socket.bind(KP_ADDR)
     kp_socket.listen(2)
     
     # creating and activating the socket for the Publishers
-    pub_socket = socket(AF_INET, SOCK_STREAM)
+    pub_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     pub_socket.bind(PUB_ADDR)
     pub_socket.listen(2)
 
+    # sockets
+    sockets = [kp_socket, pub_socket]
+
+    # loop
     while 1:
+
         print colored("tserver> ", "blue", attrs=["bold"]) + ' waiting for connections...'
-        clientsock, addr = kp_socket.accept()
-        print colored("tserver> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
-        thread.start_new_thread(handler, (clientsock, addr))
+        
+        # select the read_sockets
+        read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
+
+        # look for a connection on both the ports
+        for sock in read_sockets:
+            
+            # new connection
+            if sock in sockets:
+                clientsock, addr = sock.accept()
+                print colored("tserver> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
+                thread.start_new_thread(handler, (clientsock, addr))
+
+            # incoming data
+            else:
+                print colored("tserver> ", "blue", attrs=["bold"]) + ' incoming DATA'
