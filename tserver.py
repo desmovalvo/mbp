@@ -17,6 +17,7 @@ PUB_ADDR = (HOST, PUB_PORT)
 sib_list = []
 kp_list = {}
 confirms = {}
+query_results = {}
 
 ##############################################################
 #
@@ -80,6 +81,13 @@ def handler(clientsock, addr):
                 kp_list[info["node_id"]] = clientsock
                 handle_remove_request(info, ssap_msg, sib_list, kp_list)
 
+            # SPARQL QUERY REQUEST
+            elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "sparql":
+                confirms[info["node_id"]] = len(sib_list)
+                query_results[info["node_id"]] = []
+                kp_list[info["node_id"]] = clientsock
+                handle_sparql_query_request(info, ssap_msg, sib_list, kp_list)
+
             ### CONFIRMS
 
             # JOIN CONFIRM
@@ -97,6 +105,10 @@ def handler(clientsock, addr):
             # REMOVE CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
                 handle_remove_confirm(info, ssap_msg, confirms, kp_list)
+
+            # SPARQL QUERY CONFIRM
+            elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
+                handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results)
 
         except ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
