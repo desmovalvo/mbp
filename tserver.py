@@ -45,6 +45,8 @@ def handler(clientsock, addr):
                     k = child.tag
                 info[k] = child.text
 
+            ### REQUESTS
+
             # REGISTER REQUEST
             if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
                 if handle_register_request(clientsock, info):
@@ -62,7 +64,15 @@ def handler(clientsock, addr):
                 confirms[info["node_id"]] = len(sib_list)
                 kp_list[info["node_id"]] = clientsock
                 handle_leave_request(info, ssap_msg, sib_list, kp_list)
-            
+
+            # INSERT REQUEST
+            elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
+                confirms[info["node_id"]] = len(sib_list)
+                kp_list[info["node_id"]] = clientsock
+                handle_insert_request(info, ssap_msg, sib_list, kp_list)
+
+            ### CONFIRMS
+
             # JOIN CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "JOIN":
                 handle_join_confirm(clientsock, info, ssap_msg, confirms, kp_list)
@@ -70,6 +80,10 @@ def handler(clientsock, addr):
             # LEAVE CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "LEAVE":
                 handle_leave_confirm(info, ssap_msg, confirms, kp_list)
+
+            # INSERT CONFIRM
+            elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
+                handle_insert_confirm(info, ssap_msg, confirms, kp_list)
 
             # debug info
             print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
