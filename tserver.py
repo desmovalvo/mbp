@@ -45,6 +45,9 @@ def handler(clientsock, addr):
                     k = child.tag
                 info[k] = child.text
 
+            # debug info
+            print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
+
             ### REQUESTS
 
             # REGISTER REQUEST
@@ -71,6 +74,12 @@ def handler(clientsock, addr):
                 kp_list[info["node_id"]] = clientsock
                 handle_insert_request(info, ssap_msg, sib_list, kp_list)
 
+            # REMOVE REQUEST
+            elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
+                confirms[info["node_id"]] = len(sib_list)
+                kp_list[info["node_id"]] = clientsock
+                handle_remove_request(info, ssap_msg, sib_list, kp_list)
+
             ### CONFIRMS
 
             # JOIN CONFIRM
@@ -85,8 +94,9 @@ def handler(clientsock, addr):
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
                 handle_insert_confirm(info, ssap_msg, confirms, kp_list)
 
-            # debug info
-            print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
+            # REMOVE CONFIRM
+            elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
+                handle_remove_confirm(info, ssap_msg, confirms, kp_list)
 
         except ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"

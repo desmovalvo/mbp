@@ -96,6 +96,24 @@ def handle_insert_request(info, ssap_msg, sib_list, kp_list):
             kp_list[info["node_id"]].send(err_msg)
 
 
+# REMOVE REQUEST
+def handle_remove_request(info, ssap_msg, sib_list, kp_list):
+    """The present method is used to manage the remove request received from a KP."""
+
+    # debug info
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_remove_request"
+
+    # forwarding message to the publishers
+    for socket in sib_list:
+        try:
+            socket.send(ssap_msg)
+        except socket.error:
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "REMOVE",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            kp_list[info["node_id"]].send(err_msg)
 
 ##############################################################
 #
@@ -198,6 +216,42 @@ def handle_insert_confirm(info, ssap_msg, confirms, kp_list):
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
                                              "INSERT",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            kp_list[info["node_id"]].send(err_msg)
+            kp_list[info["node_id"]].close()
+
+
+# REMOVE CONFIRM
+def handle_remove_confirm(info, ssap_msg, confirms, kp_list):
+    """This method is used to decide what to do once an REMOVE CONFIRM
+    is received. We can send the confirm back to the KP (if all the
+    sibs sent a confirm), decrement a counter (if we are waiting for
+    other sibs to reply) or send an error message (if the current
+    message or one of the previous replies it's a failure)"""
+
+    # debug message
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_remove_confirm"
+        
+    # check if we already received a failure
+    if not confirms[info["node_id"]] == None:
+
+        # check if the current message represent a successful insertion
+        if info["parameter_status"] == "m3:Success":
+
+            confirms[info["node_id"]] -= 1
+            if confirms[info["node_id"]] == 0:    
+                kp_list[info["node_id"]].send(ssap_msg)
+                kp_list[info["node_id"]].close()
+
+        # if the current message represent a failure...
+        else:
+            
+            confirms[info["node_id"]] = None
+            # send SSAP ERROR MESSAGE
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "REMOVE",
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
