@@ -88,6 +88,14 @@ def handler(clientsock, addr):
                 kp_list[info["node_id"]] = clientsock
                 handle_sparql_query_request(info, ssap_msg, sib_list, kp_list)
 
+            # RDF QUERY REQUEST
+            elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "RDF-M3":
+                confirms[info["node_id"]] = len(sib_list)
+                query_results[info["node_id"]] = []
+                kp_list[info["node_id"]] = clientsock
+                handle_rdf_query_request(info, ssap_msg, sib_list, kp_list)
+
+
             ### CONFIRMS
 
             # JOIN CONFIRM
@@ -109,6 +117,10 @@ def handler(clientsock, addr):
             # SPARQL QUERY CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
                 handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results)
+
+            # SPARQL QUERY CONFIRM
+            elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
+                handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results)
 
         except ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
