@@ -44,9 +44,9 @@ def handle_join_request(info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
 
     # forwarding message to the publishers
-    for socket in sib_list:
+    for sock in sib_list:
         try:
-            socket.send(ssap_msg)
+            sock.send(ssap_msg)
         except socket.error:
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],

@@ -26,9 +26,10 @@ query_results = {}
 ##############################################################
 
 def handler(clientsock, addr):
+    complete_ssap_msg = ""
     while 1:
         ssap_msg = clientsock.recv(BUFSIZ)
-        
+        print "RICEVUTO: " + str(ssap_msg)
         # check whether we received a blank message
         if not ssap_msg:
             break
@@ -36,8 +37,12 @@ def handler(clientsock, addr):
         # try to decode the message
         try:
 
+            complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+            
+            print "CONCATENATO: " + str(complete_ssap_msg)
+
             # parse the ssap message
-            root = ET.fromstring(ssap_msg)                    
+            root = ET.fromstring(complete_ssap_msg)           
             info = {}
             for child in root:
                 if child.attrib.has_key("name"):
@@ -48,6 +53,11 @@ def handler(clientsock, addr):
 
             # debug info
             print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
+
+            if "</SSAP_message>" in ssap_msg:
+                ssap_msg = complete_ssap_msg
+                complete_ssap_msg = ""
+
 
             ### REQUESTS
 
@@ -125,6 +135,7 @@ def handler(clientsock, addr):
         except ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
             pass
+
 
 
 ##############################################################
