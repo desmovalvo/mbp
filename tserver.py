@@ -6,7 +6,9 @@ from lib.treplies import *
 from termcolor import *
 import socket, select
 import threading
+import logging
 import thread
+import time
 
 KP_PORT = 10010
 PUB_PORT = 10011
@@ -20,6 +22,12 @@ confirms = {}
 query_results = {}
 initial_results = {}
 active_subscriptions = {}
+
+# logging configuration
+LOG_DIRECTORY = "log/"
+LOG_FILE = LOG_DIRECTORY + str(time.strftime("%Y%m%d-%H%M-")) + "tserver.log"
+logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
+logger = logging.getLogger("tserver")
 
 ##############################################################
 #
@@ -52,17 +60,19 @@ def handler(clientsock, addr):
 
             # debug info
             print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
+            logger.info("Received the following  message from " + str(addr))
+            logger.info(str(complete_ssap_msg).replace("\n", ""))
+            logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
 
             if "</SSAP_message>" in ssap_msg:
                 ssap_msg = complete_ssap_msg
                 complete_ssap_msg = ""
 
-
             ### REQUESTS
 
             # REGISTER REQUEST
             if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
-                if handle_register_request(clientsock, info):
+                if handle_register_request(logger, clientsock, info):
                     # add the sib to the list
                     sib_list.append(clientsock)
                     
@@ -70,39 +80,39 @@ def handler(clientsock, addr):
             elif info["message_type"] == "REQUEST" and info["transaction_type"] == "JOIN":
                 confirms[info["node_id"]] = len(sib_list)
                 kp_list[info["node_id"]] = clientsock
-                handle_join_request(info, ssap_msg, sib_list, kp_list)
+                handle_join_request(logger, info, ssap_msg, sib_list, kp_list)
 
             # LEAVE REQUEST
             elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
                 confirms[info["node_id"]] = len(sib_list)
                 kp_list[info["node_id"]] = clientsock
-                handle_leave_request(info, ssap_msg, sib_list, kp_list)
+                handle_leave_request(logger, info, ssap_msg, sib_list, kp_list)
 
             # INSERT REQUEST
             elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
                 confirms[info["node_id"]] = len(sib_list)
                 kp_list[info["node_id"]] = clientsock
-                handle_insert_request(info, ssap_msg, sib_list, kp_list)
+                handle_insert_request(logger, info, ssap_msg, sib_list, kp_list)
 
             # REMOVE REQUEST
             elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
                 confirms[info["node_id"]] = len(sib_list)
                 kp_list[info["node_id"]] = clientsock
-                handle_remove_request(info, ssap_msg, sib_list, kp_list)
+                handle_remove_request(logger, info, ssap_msg, sib_list, kp_list)
 
             # SPARQL QUERY REQUEST
             elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "sparql":
                 confirms[info["node_id"]] = len(sib_list)
                 query_results[info["node_id"]] = []
                 kp_list[info["node_id"]] = clientsock
-                handle_sparql_query_request(info, ssap_msg, sib_list, kp_list)
+                handle_sparql_query_request(logger, info, ssap_msg, sib_list, kp_list)
 
             # RDF QUERY REQUEST
             elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "RDF-M3":
                 confirms[info["node_id"]] = len(sib_list)
                 query_results[info["node_id"]] = []
                 kp_list[info["node_id"]] = clientsock
-                handle_rdf_query_request(info, ssap_msg, sib_list, kp_list)
+                handle_rdf_query_request(logger, info, ssap_msg, sib_list, kp_list)
 
             # RDF SUBSCRIPTION REQUEST
             elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
@@ -116,39 +126,38 @@ def handler(clientsock, addr):
                 initial_results[info["node_id"]] = []
 
                 kp_list[info["node_id"]] = clientsock
-                handle_rdf_subscribe_request(info, ssap_msg, sib_list, kp_list, initial_results)
+                handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, initial_results)
     
 
             ### CONFIRMS
 
             # JOIN CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "JOIN":
-                handle_join_confirm(clientsock, info, ssap_msg, confirms, kp_list)
+                handle_join_confirm(logger, clientsock, info, ssap_msg, confirms, kp_list)
 
             # LEAVE CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "LEAVE":
-                handle_leave_confirm(info, ssap_msg, confirms, kp_list)
+                handle_leave_confirm(logger, info, ssap_msg, confirms, kp_list)
 
             # INSERT CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
-                handle_insert_confirm(info, ssap_msg, confirms, kp_list)
+                handle_insert_confirm(logger, info, ssap_msg, confirms, kp_list)
 
             # REMOVE CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
-                handle_remove_confirm(info, ssap_msg, confirms, kp_list)
+                handle_remove_confirm(logger, info, ssap_msg, confirms, kp_list)
 
             # SPARQL QUERY CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
-                handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results)
+                handle_sparql_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results)
 
             # RDF QUERY CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
-                handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results)
+                handle_rdf_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results)
 
             # RDF SUBSCRIBE CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg
-
-                handle_rdf_subscribe_confirm(info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions)
+                handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions)
 
         except ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
@@ -170,6 +179,7 @@ if __name__=='__main__':
     kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     kp_socket.bind(KP_ADDR)
     kp_socket.listen(2)
+    logger.info('Server waiting for KPs on port ' + str(KP_PORT))
     
     # creating and activating the socket for the Publishers
     pub_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -177,6 +187,7 @@ if __name__=='__main__':
     pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     pub_socket.bind(PUB_ADDR)
     pub_socket.listen(2)
+    logger.info('Server waiting for publishers on port ' + str(PUB_PORT))
 
     # sockets
     sockets = [kp_socket, pub_socket]
@@ -196,6 +207,7 @@ if __name__=='__main__':
             if sock in sockets:
                 clientsock, addr = sock.accept()
                 print colored("tserver> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
+                logger.info('Incoming connection from ' + str(addr))
                 thread.start_new_thread(handler, (clientsock, addr))
 
             # incoming data

@@ -14,12 +14,13 @@ from xml.sax import make_parser
 ##############################################################
 
 # REGISTER REQUEST
-def handle_register_request(conn, info):
+def handle_register_request(logger, conn, info):
     """This method is used to forge and send a reply to the REGISTER
     REQUEST sent by a publisher entity."""
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_register_request"
+    logger.info("REGISTER REQUEST handled by handle_register_request")
 
     # build a reply message
     reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
@@ -33,15 +34,17 @@ def handle_register_request(conn, info):
         conn.send(reply)
         return True
     except socket.error:
+        logger.error("REGISTER CONFIRM not sent!")
         return False
 
 
 # JOIN REQUEST
-def handle_join_request(info, ssap_msg, sib_list, kp_list):
+def handle_join_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the join request received from a KP."""
 
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
+    logger.info("JOIN REQUEST handled by handle_join_request")
 
     # forwarding message to the publishers
     for sock in sib_list:
@@ -56,14 +59,16 @@ def handle_join_request(info, ssap_msg, sib_list, kp_list):
             # send a notification error to the KP
             kp_list[info["node_id"]].send(err_msg)
             del kp_list[info["node_id"]]
+            logger.error("JOIN REQUEST forwarding failed")
 
 
 # LEAVE REQUEST
-def handle_leave_request(info, ssap_msg, sib_list, kp_list):
+def handle_leave_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the leave request received from a KP."""
 
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_leave_request"
+    logger.info("LEAVE REQUEST handled by handle_leave_request")
 
     # forwarding message to the publishers
     for sock in sib_list:
@@ -76,14 +81,16 @@ def handle_leave_request(info, ssap_msg, sib_list, kp_list):
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
+            logger.error("LEAVE REQUEST forwarding failed")
 
 
 # INSERT REQUEST
-def handle_insert_request(info, ssap_msg, sib_list, kp_list):
+def handle_insert_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the insert request received from a KP."""
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_insert_request"
+    logger.info("INSERT REQUEST handled by handle_insert_request")
 
     # forwarding message to the publishers
     for sock in sib_list:
@@ -96,14 +103,16 @@ def handle_insert_request(info, ssap_msg, sib_list, kp_list):
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
+            logger.error("INSERT REQUEST forwarding failed")
 
 
 # REMOVE REQUEST
-def handle_remove_request(info, ssap_msg, sib_list, kp_list):
+def handle_remove_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the remove request received from a KP."""
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_remove_request"
+    logger.info("REMOVE REQUEST handled by handle_remove_request")
 
     # forwarding message to the publishers
     for sock in sib_list:
@@ -116,13 +125,15 @@ def handle_remove_request(info, ssap_msg, sib_list, kp_list):
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
+            logger.error("REMOVE REQUEST forwarding failed")
 
 # SPARQL QUERY REQUEST
-def handle_sparql_query_request(info, ssap_msg, sib_list, kp_list):
+def handle_sparql_query_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the sparql query request received from a KP."""
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_query_request"
+    logger.info("SPARQL QUERY REQUEST handled by handle_sparql_query_request")
 
     # forwarding message to the publishers
     for sock in sib_list:
@@ -135,14 +146,16 @@ def handle_sparql_query_request(info, ssap_msg, sib_list, kp_list):
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
+            logger.error("SPARQL QUERY REQUEST forwarding failed")
 
 
 # RDF QUERY REQUEST
-def handle_rdf_query_request(info, ssap_msg, sib_list, kp_list):
+def handle_rdf_query_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the rdf query request received from a KP."""
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_query_request"
+    logger.info("RDF QUERY REQUEST handled by handle_rdf_query_request")
 
     # forwarding message to the publishers
     for sock in sib_list:
@@ -155,14 +168,16 @@ def handle_rdf_query_request(info, ssap_msg, sib_list, kp_list):
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
+            logger.error("RDF QUERY REQUEST forwarding failed")
 
 
 # RDF SUBSCRIBE REQUEST
-def handle_rdf_subscribe_request(info, ssap_msg, sib_list, kp_list, initial_results):
+def handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, initial_results):
     """The present method is used to manage the rdf query request received from a KP."""
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_request"
+    logger.info("RDF SUBSCRIBE REQUEST handled by handle_rdf_subscribe_request")
 
     # forwarding message to the publishers
     for sock in sib_list:
@@ -183,6 +198,8 @@ def handle_rdf_subscribe_request(info, ssap_msg, sib_list, kp_list, initial_resu
             if len(active_subscriptions[info["node_id"]].keys) == 0:
                 del active_subscriptions[info["node_id"]]
 
+            logger.error("RDF SUBSCRIBE REQUEST forwarding failed")
+
 
 ##############################################################
 #
@@ -191,11 +208,12 @@ def handle_rdf_subscribe_request(info, ssap_msg, sib_list, kp_list, initial_resu
 ##############################################################
 
 # JOIN CONFIRM
-def handle_join_confirm(conn, info, ssap_msg, confirms, kp_list):
+def handle_join_confirm(logger, conn, info, ssap_msg, confirms, kp_list):
     ''' This method forwards the join confirm message to the KP '''
     
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_confirm"
+    logger.info("JOIN CONFIRM handled by handle_join_confirm")
 
     if not confirms[info["node_id"]] == None:
         
@@ -205,6 +223,7 @@ def handle_join_confirm(conn, info, ssap_msg, confirms, kp_list):
             if confirms[info["node_id"]] == 0:    
                 kp_list[info["node_id"]].send(ssap_msg)
                 kp_list[info["node_id"]].close()
+                print kp_list[info["node_id"]]
         else:
             # insert failed
             confirms[info["node_id"]] = None
@@ -217,10 +236,11 @@ def handle_join_confirm(conn, info, ssap_msg, confirms, kp_list):
             kp_list[info["node_id"]].send(err_msg)            
             kp_list[info["node_id"]].close()
             del kp_list[info["node_id"]]
+            logger.error("JOIN CONFIRM forwarding failed")
 
 
 # LEAVE CONFIRM
-def handle_leave_confirm(info, ssap_msg, confirms, kp_list):
+def handle_leave_confirm(logger, info, ssap_msg, confirms, kp_list):
     """This method is used to decide what to do once an LEAVE CONFIRM
     is received. We can send the confirm back to the KP (if all the
     sibs sent a confirm), decrement a counter (if we are waiting for
@@ -229,6 +249,7 @@ def handle_leave_confirm(info, ssap_msg, confirms, kp_list):
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_leave_confirm"
+    logger.info("LEAVE CONFIRM handled by handle_leave_confirm")
 
     # check if we already received a failure
     if not confirms[info["node_id"]] == None:
@@ -255,9 +276,11 @@ def handle_leave_confirm(info, ssap_msg, confirms, kp_list):
             kp_list[info["node_id"]].send(err_msg)
             kp_list[info["node_id"]].close()
 
+            logger.error("LEAVE CONFIRM forwarding failed")
+
 
 # INSERT CONFIRM
-def handle_insert_confirm(info, ssap_msg, confirms, kp_list):
+def handle_insert_confirm(logger, info, ssap_msg, confirms, kp_list):
     """This method is used to decide what to do once an INSERT CONFIRM
     is received. We can send the confirm back to the KP (if all the
     sibs sent a confirm), decrement a counter (if we are waiting for
@@ -266,6 +289,7 @@ def handle_insert_confirm(info, ssap_msg, confirms, kp_list):
 
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_insert_confirm"
+    logger.info("INSERT CONFIRM handled by handle_insert_confirm")
     
     # check if we already received a failure
     if not confirms[info["node_id"]] == None:
@@ -289,10 +313,12 @@ def handle_insert_confirm(info, ssap_msg, confirms, kp_list):
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
             kp_list[info["node_id"]].close()
+            
+            logger.error("INSERT CONFIRM forwarding failed")
 
 
 # REMOVE CONFIRM
-def handle_remove_confirm(info, ssap_msg, confirms, kp_list):
+def handle_remove_confirm(logger, info, ssap_msg, confirms, kp_list):
     """This method is used to decide what to do once an REMOVE CONFIRM
     is received. We can send the confirm back to the KP (if all the
     sibs sent a confirm), decrement a counter (if we are waiting for
@@ -301,6 +327,7 @@ def handle_remove_confirm(info, ssap_msg, confirms, kp_list):
 
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_remove_confirm"
+    logger.info("REMOVE CONFIRM handled by handle_remove_confirm")
         
     # check if we already received a failure
     if not confirms[info["node_id"]] == None:
@@ -325,14 +352,16 @@ def handle_remove_confirm(info, ssap_msg, confirms, kp_list):
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
             kp_list[info["node_id"]].close()
+            logger.error("REMOVE CONFIRM forwarding failed")
 
 
 # SPARQL QUERY CONFIRM
-def handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results):
+def handle_sparql_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results):
     """This method is used to manage sparql QUERY CONFIRM received. """
 
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_query_confirm"
+    logger.info("SPARQL QUERY CONFIRM handled by handle_sparql_query_confirm")
             
     # check if we already received a failure
     if not confirms[info["node_id"]] == None:
@@ -380,19 +409,21 @@ def handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results
             # send SSAP ERROR MESSAGE
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
-                                             "INSERT",
+                                             "QUERY",
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
             kp_list[info["node_id"]].close()
+            logger.error("SPARQL CONFIRM forwarding failed")
 
 
 # RDF QUERY CONFIRM
-def handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results):
+def handle_rdf_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results):
     """This method is used to manage rdf QUERY CONFIRM received. """
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_query_confirm"
+    logger.info("RDF QUERY CONFIRM handled by handle_rdf_query_confirm")
     
     # check if we already received a failure
     if not confirms[info["node_id"]] == None:
@@ -440,19 +471,21 @@ def handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results):
             # send SSAP ERROR MESSAGE
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
-                                             "INSERT",
+                                             "QUERY",
                                              info["transaction_id"],
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
             kp_list[info["node_id"]].close()
+            logger.error("RDF QUERY CONFIRM forwarding failed")
 
 
 # RDF SUBSCRIBE CONFIRM
-def handle_rdf_subscribe_confirm(info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions):
+def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions):
     """This method is used to manage rdf SUBSCRIBE CONFIRM received. """
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_confirm"
+    logger.info("RDF SUBSCRIBE CONFIRM handled by handle_rdf_subscribe_confirm")
     
     # check if we already received a failure
     if not confirms[info["node_id"]] == None:
@@ -508,7 +541,7 @@ def handle_rdf_subscribe_confirm(info, ssap_msg, confirms, kp_list, initial_resu
                                              '<parameter name="status">m3:Error</parameter>')
 
             active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(err_msg)
-                
+            logger.error("SUBSCRIBE CONFIRM forwarding failed")
 
 
 ##############################################################
