@@ -66,9 +66,9 @@ def handle_leave_request(info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_leave_request"
 
     # forwarding message to the publishers
-    for socket in sib_list:
+    for sock in sib_list:
         try:
-            socket.send(ssap_msg)
+            sock.send(ssap_msg)
         except socket.error:
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
@@ -86,9 +86,9 @@ def handle_insert_request(info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_insert_request"
 
     # forwarding message to the publishers
-    for socket in sib_list:
+    for sock in sib_list:
         try:
-            socket.send(ssap_msg)
+            sock.send(ssap_msg)
         except socket.error:
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
@@ -106,9 +106,9 @@ def handle_remove_request(info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_remove_request"
 
     # forwarding message to the publishers
-    for socket in sib_list:
+    for sock in sib_list:
         try:
-            socket.send(ssap_msg)
+            sock.send(ssap_msg)
         except socket.error:
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
@@ -125,9 +125,9 @@ def handle_sparql_query_request(info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_query_request"
 
     # forwarding message to the publishers
-    for socket in sib_list:
+    for sock in sib_list:
         try:
-            socket.send(ssap_msg)
+            sock.send(ssap_msg)
         except socket.error:
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
@@ -145,9 +145,9 @@ def handle_rdf_query_request(info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_query_request"
 
     # forwarding message to the publishers
-    for socket in sib_list:
+    for sock in sib_list:
         try:
-            socket.send(ssap_msg)
+            sock.send(ssap_msg)
         except socket.error:
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
@@ -156,6 +156,32 @@ def handle_rdf_query_request(info, ssap_msg, sib_list, kp_list):
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
 
+
+# RDF SUBSCRIBE REQUEST
+def handle_rdf_subscribe_request(info, ssap_msg, sib_list, kp_list, initial_results):
+    """The present method is used to manage the rdf query request received from a KP."""
+
+    # debug info
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_request"
+
+    # forwarding message to the publishers
+    for sock in sib_list:
+        try:
+            sock.send(ssap_msg)
+        except socket.error:
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "SUBSCRIBE",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+            
+            active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(err_msg)
+            
+            # remove subscription from active_subscriptions dict
+            del active_subscriptions[info["node_id"]][info["transaction_id"]]
+            
+            if len(active_subscriptions[info["node_id"]].keys) == 0:
+                del active_subscriptions[info["node_id"]]
 
 
 ##############################################################
@@ -301,6 +327,7 @@ def handle_remove_confirm(info, ssap_msg, confirms, kp_list):
             kp_list[info["node_id"]].close()
 
 
+# SPARQL QUERY CONFIRM
 def handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results):
     """This method is used to manage sparql QUERY CONFIRM received. """
 
@@ -334,8 +361,6 @@ def handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results
                     result.append(triple)
                     
             query_results[info["node_id"]] = result
-            for r in result:
-                print str(r)
 
             if confirms[info["node_id"]] == 0:    
                 # build ssap reply
@@ -362,6 +387,7 @@ def handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results
             kp_list[info["node_id"]].close()
 
 
+# RDF QUERY CONFIRM
 def handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results):
     """This method is used to manage rdf QUERY CONFIRM received. """
 
@@ -395,8 +421,6 @@ def handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results):
                     result.append(triple)
                     
             query_results[info["node_id"]] = result
-            for r in result:
-                print str(r)
 
             if confirms[info["node_id"]] == 0:    
                 # build ssap reply
@@ -423,6 +447,68 @@ def handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results):
             kp_list[info["node_id"]].close()
 
 
+# RDF SUBSCRIBE CONFIRM
+def handle_rdf_subscribe_confirm(info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions):
+    """This method is used to manage rdf SUBSCRIBE CONFIRM received. """
+
+    # debug info
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_confirm"
+    
+    # check if we already received a failure
+    if not confirms[info["node_id"]] == None:
+
+        # check if the current message represent a successful insertion
+        if info["parameter_status"] == "m3:Success":
+            confirms[info["node_id"]] -= 1
+            
+            # convert ssap_msg to dict
+            ssap_msg_dict = {}
+            parser = make_parser()
+            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+            parser.setContentHandler(ssap_mh)
+            parser.parse(StringIO(ssap_msg))
+
+            # extract triples from ssap reply
+            triple_list = parse_M3RDF(ssap_msg_dict["results"])
+              
+            for triple in triple_list:
+                initial_results[info["node_id"]].append(triple)
+            
+            # remove duplicates
+            result = []
+            for triple in initial_results[info["node_id"]]:
+                if not triple in result:
+                    result.append(triple)
+                    
+            initial_results[info["node_id"]] = result
+
+            if confirms[info["node_id"]] == 0:    
+                # generate a random subscription_id
+                active_subscriptions[info["node_id"]][info["transaction_id"]]["subscription_id"] = uuid.uuid4()
+                # build ssap reply
+                ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
+                                                    ssap_msg_dict["space_id"],
+                                                    ssap_msg_dict["transaction_id"],
+                                                    result,
+                                                    active_subscriptions[info["node_id"]][info["transaction_id"]]["subscription_id"])
+
+                active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(ssap_reply)
+
+
+
+        # if the current message represent a failure...
+        else:
+            
+            confirms[info["node_id"]] = None
+            # send SSAP ERROR MESSAGE
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                             info["space_id"],
+                                             "SUBSCRIBE",
+                                             info["transaction_id"],
+                                             '<parameter name="status">m3:Error</parameter>')
+
+            active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(err_msg)
+                
 
 
 ##############################################################
@@ -440,8 +526,6 @@ def handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results):
 ##############################################################
 
 def reply_to_sparql_query(node_id, space_id, transaction_id, results):
-
-    print results
 
     # building HEAD part of the query results
     variable_list = []
@@ -483,6 +567,21 @@ def reply_to_rdf_query(node_id, space_id, transaction_id, results):
     reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(node_id, 
                                     space_id, 
                                     "QUERY",
+                                    transaction_id,
+                                    body)
+    return reply
+
+
+def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscription_id):
+    tr = ""
+    for el in results:
+        tr = tr + SSAP_TRIPLE_TEMPLATE%(el[0], el[1], el[2])            
+    body = SSAP_RESULTS_SUB_RDF_PARAM_TEMPLATE%(subscription_id, SSAP_TRIPLE_LIST_TEMPLATE%(tr))
+    
+    # finalizing the reply
+    reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(node_id, 
+                                    space_id, 
+                                    "SUBSCRIBE",
                                     transaction_id,
                                     body)
     return reply

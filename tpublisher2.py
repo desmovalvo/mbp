@@ -14,17 +14,23 @@ from termcolor import *
 def handler(sock, ssap_msg):
     print "thread>" + ssap_msg
     
+    # socket to the real SIB
     rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    rs.settimeout(2)
     rs.connect((realsib_host, realsib_port))
-    rs.send(ssap_msg)
 
-    ssap_msg = rs.recv(4096)
-    if ssap_msg:
-        print colored("tpublisher >", "red", attrs=["bold"]) + " Received confirm message from the Real Sib"
-        rs.close()
-        print colored("tpublisher >", "red", attrs=["bold"]) + " Forwarding confirm message to the Virtual Sib"
-        vs.send(ssap_msg)
+    # forward the message to the real SIB
+    if not "<transaction_type>REGISTER</transaction_type>" in ssap_msg:
+        rs.send(ssap_msg)
+
+        # receive data from the socket
+        ssap_msg = rs.recv(4096)
+        if ssap_msg:
+            print colored("tpublisher>", "red", attrs=["bold"]) + " Received confirm message from the Real Sib"
+
+            if not ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>CONFIRM</message_type>" in ssap_msg):
+                rs.close()
+            print colored("tpublisher>", "red", attrs=["bold"]) + " Forwarding confirm message to the Virtual Sib"
+            vs.send(ssap_msg)
 
  
 #main function

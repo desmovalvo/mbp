@@ -18,6 +18,8 @@ sib_list = []
 kp_list = {}
 confirms = {}
 query_results = {}
+initial_results = {}
+active_subscriptions = {}
 
 ##############################################################
 #
@@ -29,7 +31,6 @@ def handler(clientsock, addr):
     complete_ssap_msg = ""
     while 1:
         ssap_msg = clientsock.recv(BUFSIZ)
-        print "RICEVUTO: " + str(ssap_msg)
         # check whether we received a blank message
         if not ssap_msg:
             break
@@ -39,8 +40,6 @@ def handler(clientsock, addr):
 
             complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
             
-            print "CONCATENATO: " + str(complete_ssap_msg)
-
             # parse the ssap message
             root = ET.fromstring(complete_ssap_msg)           
             info = {}
@@ -105,6 +104,20 @@ def handler(clientsock, addr):
                 kp_list[info["node_id"]] = clientsock
                 handle_rdf_query_request(info, ssap_msg, sib_list, kp_list)
 
+            # RDF SUBSCRIPTION REQUEST
+            elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
+                if not active_subscriptions.has_key(info["node_id"]):
+                    active_subscriptions[info["node_id"]] = {}
+                        
+                active_subscriptions[info["node_id"]][info["transaction_id"]] = {}
+                active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"] = clientsock
+
+                confirms[info["node_id"]] = len(sib_list)
+                initial_results[info["node_id"]] = []
+
+                kp_list[info["node_id"]] = clientsock
+                handle_rdf_subscribe_request(info, ssap_msg, sib_list, kp_list, initial_results)
+    
 
             ### CONFIRMS
 
@@ -128,9 +141,14 @@ def handler(clientsock, addr):
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
                 handle_sparql_query_confirm(info, ssap_msg, confirms, kp_list, query_results)
 
-            # SPARQL QUERY CONFIRM
+            # RDF QUERY CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
                 handle_rdf_query_confirm(info, ssap_msg, confirms, kp_list, query_results)
+
+            # RDF SUBSCRIBE CONFIRM
+            elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg
+
+                handle_rdf_subscribe_confirm(info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions)
 
         except ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
