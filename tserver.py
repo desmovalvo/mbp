@@ -3,6 +3,7 @@
 # requirements
 from xml.etree import ElementTree as ET
 from lib.treplies import *
+from lib.Subreq import *
 from termcolor import *
 import socket, select
 import threading
@@ -22,6 +23,7 @@ confirms = {}
 query_results = {}
 initial_results = {}
 active_subscriptions = {}
+val_subscriptions = []
 
 # logging configuration
 LOG_DIRECTORY = "log/"
@@ -114,19 +116,18 @@ def handler(clientsock, addr):
                 kp_list[info["node_id"]] = clientsock
                 handle_rdf_query_request(logger, info, ssap_msg, sib_list, kp_list)
 
-            # RDF SUBSCRIPTION REQUEST
+            # RDF SUBSCRIBE REQUEST
             elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
-                if not active_subscriptions.has_key(info["node_id"]):
-                    active_subscriptions[info["node_id"]] = {}
-                        
-                active_subscriptions[info["node_id"]][info["transaction_id"]] = {}
-                active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"] = clientsock
 
                 confirms[info["node_id"]] = len(sib_list)
                 initial_results[info["node_id"]] = []
-
                 kp_list[info["node_id"]] = clientsock
-                handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, initial_results)
+
+                handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
+
+            # RDF UNSUBSCRIBE REQUEST
+            elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
+                handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
     
 
             ### CONFIRMS
@@ -157,7 +158,12 @@ def handler(clientsock, addr):
 
             # RDF SUBSCRIBE CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg
-                handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions)
+                handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
+
+            # RDF UNSUBSCRIBE CONFIRM
+            elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
+                pass
+                #handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
 
         except ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
