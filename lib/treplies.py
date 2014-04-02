@@ -593,67 +593,49 @@ def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, in
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_unsubscribe_confirm"
     logger.info("RDF UNSUBSCRIBE CONFIRM handled by handle_rdf_unsubscribe_confirm")
+
+
+    for s in val_subscriptions:
+        virtual_sub_id = s.get_virtual_subscription_id(clientsock, info["parameter_subscription_id"])
+        if virtual_sub_id != False:
     
-    # # check if we already received a failure
-    # if not confirms[info["node_id"]] == None:
+            # check if we already received a failure
+            if not confirms[info["node_id"]] == None:
 
-    #     # check if the current message represent a successful insertion
-    #     if info["parameter_status"] == "m3:Success":
-    #         confirms[info["node_id"]] -= 1
+                # check if the current message represent a successful insertion
+                if info["parameter_status"] == "m3:Success":
+                    confirms[info["node_id"]] -= 1
 
-    #         # store the corrispondence between the real sib and the real_subscription_id
-    #         for s in val_subscriptions:
-    #             if s.node_id == info["node_id"] and s.transaction_id == ["transaction_id"]:
-    #                 s.received_confirm(clientsock, info["subscription_id"])
+                    if confirms[info["node_id"]] == 0:    
+                        
+                        # build ssap reply
+                        ssap_reply = err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                                              info["space_id"],
+                                                                              "UNSUBSCRIBE",
+                                                                              info["transaction_id"],
+                                                                              '<parameter name="status">m3:Success</parameter><parameter name="subscription_id">virtual_sub_id</parameter>')
+
+                        s.conn.send(ssap_reply)
+                        #active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(ssap_reply)
+
+
+
+                # if the current message represent a failure...
+                else:
             
-    #         # convert ssap_msg to dict
-    #         ssap_msg_dict = {}
-    #         parser = make_parser()
-    #         ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-    #         parser.setContentHandler(ssap_mh)
-    #         parser.parse(StringIO(ssap_msg))
+                    confirms[info["node_id"]] = None
+                    # send SSAP ERROR MESSAGE
+                    err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                             info["space_id"],
+                                                             "UNSUBSCRIBE",
+                                                             info["transaction_id"],
+                                                             '<parameter name="status">m3:Error</parameter><parameter name="subscription_id">virtual_sub_id</parameter>')
 
-    #         # extract triples from ssap reply
-    #         triple_list = parse_M3RDF(ssap_msg_dict["results"])
-              
-    #         for triple in triple_list:
-    #             initial_results[info["node_id"]].append(triple)
-            
-    #         # remove duplicates
-    #         result = []
-    #         for triple in initial_results[info["node_id"]]:
-    #             if not triple in result:
-    #                 result.append(triple)
-                    
-    #         initial_results[info["node_id"]] = result
+                    s.conn.send(ssap_reply)
 
-    #         if confirms[info["node_id"]] == 0:    
-    #             # generate a random subscription_id
-    #             active_subscriptions[info["node_id"]][info["transaction_id"]]["subscription_id"] = uuid.uuid4()
-    #             # build ssap reply
-    #             ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
-    #                                                 ssap_msg_dict["space_id"],
-    #                                                 ssap_msg_dict["transaction_id"],
-    #                                                 result,
-    #                                                 active_subscriptions[info["node_id"]][info["transaction_id"]]["subscription_id"])
-
-    #             active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(ssap_reply)
-
-
-
-    #     # if the current message represent a failure...
-    #     else:
-            
-    #         confirms[info["node_id"]] = None
-    #         # send SSAP ERROR MESSAGE
-    #         err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-    #                                          info["space_id"],
-    #                                          "SUBSCRIBE",
-    #                                          info["transaction_id"],
-    #                                          '<parameter name="status">m3:Error</parameter>')
-
-    #         active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(err_msg)
-    #         logger.error("SUBSCRIBE CONFIRM forwarding failed")
+#                    active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(err_msg)
+                    logger.error("SUBSCRIBE CONFIRM forwarding failed")
+                    del s
 
 
 ##############################################################
