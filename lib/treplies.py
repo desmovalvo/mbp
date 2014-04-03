@@ -643,28 +643,38 @@ def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, in
 #
 ##############################################################
 
-def handle_rdf_subscribe_indication(logger, info, ssap_msg, active_subscriptions, clientsock, val_subscriptions, kp_list):
+def handle_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscriptions):
 
     # debug info
-    print colored(" * replies.py: handle_rdf_subscribe_indication", "cyan", attrs=[])
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_indication"
+    logger.info("SUBSCRIBE INDICATION handled by handle_subscribe_indication")
 
+    # get the real subscription id
+    rsi = info["parameter_subscription_id"]
+    
+    # get the virtual subscription id
     for s in val_subscriptions:
-        virtual_sub_id = s.get_virtual_subscription_id(clientsock, info["parameter_subscription_id"])
-        if virtual_sub_id != False:
+        vsi = s.get_virtual_subscription_id(fromsocket, rsi)
+        if vsi:
 
-            
-            # convert ssap_msg to dict to edit the subscription id
+            # convert ssap_msg to dict
             ssap_msg_dict = {}
             parser = make_parser()
             ssap_mh = SSAPMsgHandler(ssap_msg_dict)
             parser.setContentHandler(ssap_mh)
-            parser.parse(StringIO(ssap_msg))
+            parser.parse(StringIO(ssap_msg))        
 
-            ssap_msg_dict["subscription_id"] = virtual_sub_id
-
-            print str(ssap_msg_dict)
-#            s.conn.send(str(ssap_msg_dict))
-            kp_list[info["node_id"]].send(str(ssap_msg_dict))
+            # build the message
+            final_msg = SSAP_INDICATION_TEMPLATE%(info["space_id"],
+                                                  info["node_id"],
+                                                  info["transaction_id"],
+                                                  ssap_msg_dict["ind_sequence"],
+                                                  vsi,
+                                                  ssap_msg_dict["new_results"],
+                                                  ssap_msg_dict["obsolete_results"])
+            # send the message to the kp
+            s.conn.send(final_msg)
+            
                 
 
 ##############################################################

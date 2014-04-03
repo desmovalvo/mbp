@@ -45,6 +45,8 @@ def handler(clientsock, addr):
         if not ssap_msg:
             break
 
+        print "RICEVUTO: " + ssap_msg
+
         # try to decode the message
         try:
 
@@ -164,13 +166,16 @@ def handler(clientsock, addr):
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
                 handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
 
-            # INDICATIONS
-            elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE":
-                print "sono qui nella cosa dei cosi"
-                handle_rdf_subscribe_indication(logger, info, ssap_msg, active_subscriptions, clientsock, val_subscriptions, kp_list)
+            ### INDICATIONS
+                
+            # SUBSCRIBE INDICATION
+            elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
+                print colored("INDICATION", "red", attrs=["bold"])
+                handle_subscribe_indication(logger, ssap_msg, info, clientsock, val_subscriptions)
+
 
         except ET.ParseError:
-            print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
+            print colored("tserver> ", "red", attrs=["bold"]) + " ParseError - Incomplete message"
             pass
 
 
