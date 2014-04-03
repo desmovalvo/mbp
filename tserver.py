@@ -43,7 +43,7 @@ def handler(clientsock, addr):
         ssap_msg = clientsock.recv(BUFSIZ)
         # check whether we received a blank message
         if not ssap_msg:
-            break
+            continue
 
         print "RICEVUTO: " + ssap_msg
 
@@ -67,6 +67,9 @@ def handler(clientsock, addr):
             logger.info("Received the following  message from " + str(addr))
             logger.info(str(complete_ssap_msg).replace("\n", ""))
             logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
+
+            print "MESSAGGIO COMPLETO: "
+            print complete_ssap_msg
 
             if "</SSAP_message>" in ssap_msg:
                 ssap_msg = complete_ssap_msg
@@ -175,9 +178,10 @@ def handler(clientsock, addr):
 
 
         except ET.ParseError:
-            print colored("tserver> ", "red", attrs=["bold"]) + " ParseError - Incomplete message"
+            print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
             pass
 
+    print "Uscito dal ciclo"
 
 
 ##############################################################
