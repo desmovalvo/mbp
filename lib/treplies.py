@@ -644,6 +644,45 @@ def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, in
 #
 ##############################################################
 
+def handle_subscribe_indication(ssap_msg, info, fromsocket, val_subscriptions):
+    
+    print colored("INDICATION HANDLER", "red", attrs=["bold"])
+
+    # get the virtual subscription id
+    print str(info.keys())
+
+    # get the real subscription id
+    rsi = info["parameter_subscription_id"]
+    
+    # get the virtual subscription id
+    for s in val_subscriptions:
+        vsi = s.get_virtual_subscription_id(fromsocket, rsi)
+        if vsi:
+            print "Trovata la sottoscrizione cercata, modifico il messaggio"
+
+            # convert ssap_msg to dict
+            ssap_msg_dict = {}
+            parser = make_parser()
+            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+            parser.setContentHandler(ssap_mh)
+            parser.parse(StringIO(ssap_msg))        
+
+            print "CHIAVI: " + str(ssap_msg_dict.keys())
+            print "new_results: " + str(ssap_msg_dict["new_results"])
+
+            print "COSTRUISCO IL MESSAGGIO"
+            final_msg = SSAP_INDICATION_TEMPLATE%(info["space_id"],
+                                                  info["node_id"],
+                                                  info["transaction_id"],
+                                                  ssap_msg_dict["ind_sequence"],
+                                                  vsi,
+                                                  ssap_msg_dict["new_results"],
+                                                  ssap_msg_dict["obsolete_results"])
+            print "MESSAGGIO FINITO: " + str(final_msg)
+            print "invio il messaggio"
+            s.conn.send(final_msg)
+            
+            # dict from message
 
 
 ##############################################################
