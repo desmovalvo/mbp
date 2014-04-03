@@ -162,10 +162,9 @@ def handler(clientsock, addr):
 
             # RDF UNSUBSCRIBE CONFIRM
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
-                pass
-                #handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
+                handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
 
-        except ET.ParseError:
+        except ZeroDivisionError:#ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
             pass
 
