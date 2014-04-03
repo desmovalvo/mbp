@@ -24,45 +24,65 @@ def handler(sock, ssap_msg):
         rs.send(ssap_msg)
 
         # receive data from the socket
-        if ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
-            # parse the ssap message to get the subscription ID and store the relative socket                
-            print "Parsing message"
-            root = ET.fromstring(ssap_msg)           
-            info = {}
-            for child in root:
-                if child.attrib.has_key("name"):
-                    k = child.tag + "_" + str(child.attrib["name"])
-                else:
-                    k = child.tag
-                info[k] = child.text                    
+        # if ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
+        #     # parse the ssap message to get the subscription ID and store the relative socket                
+        #     print "Parsing message"
+        #     root = ET.fromstring(ssap_msg)           
+        #     info = {}
+        #     for child in root:
+        #         if child.attrib.has_key("name"):
+        #             k = child.tag + "_" + str(child.attrib["name"])
+        #         else:
+        #             k = child.tag
+        #         info[k] = child.text                    
                 
-            # receive ON THE PORT DEDICATED TO THAT SUBSCRIPTION!
-            ssap_msg = subs[info["parameter_subscription_id"]].recv(4096)
+        #     # receive ON THE PORT DEDICATED TO THAT SUBSCRIPTION!
+        #     ssap_msg = subs[info["parameter_subscription_id"]].recv(4096)
+        # else:
+        #     ssap_msg = rs.recv(4096)
+        if ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
+            # start a new thread to handle it
+            thread.start_new_thread(subscription_handler, (rs, vs))
+            pass
         else:
             ssap_msg = rs.recv(4096)
+            
+            if ssap_msg:
+                print colored("tpublisher>", "red", attrs=["bold"]) + " Received confirm message from the Real Sib"
+    
+                # if not ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>CONFIRM</message_type>" in ssap_msg):
+                #     rs.close()
+                #     if ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
+                #         subs[info["parameter_subscription_id"]].close()                
+                # else:
 
-        if ssap_msg:
-            print colored("tpublisher>", "red", attrs=["bold"]) + " Received confirm message from the Real Sib"
-
-            if not ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>CONFIRM</message_type>" in ssap_msg):
-                rs.close()
-                if ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
-                    subs[info["parameter_subscription_id"]].close()
-            else:
                 # parse the ssap message to get the subscription ID and store the relative socket                
-                print "Parsing message"
-                root = ET.fromstring(ssap_msg)           
-                info = {}
-                for child in root:
-                    if child.attrib.has_key("name"):
-                        k = child.tag + "_" + str(child.attrib["name"])
-                    else:
-                        k = child.tag
-                    info[k] = child.text                    
-                subs[info["parameter_subscription_id"]] = rs
-                    
-            print colored("tpublisher>", "red", attrs=["bold"]) + " Forwarding confirm message to the Virtual Sib"
+                # print "Parsing message"
+                # root = ET.fromstring(ssap_msg)           
+                # info = {}
+                # for child in root:
+                #     if child.attrib.has_key("name"):
+                #         k = child.tag + "_" + str(child.attrib["name"])
+                #     else:
+                #         k = child.tag
+                #     info[k] = child.text                    
+                # subs[info["parameter_subscription_id"]] = rs
+                        
+                rs.close()
+                print colored("tpublisher>", "red", attrs=["bold"]) + " Forwarding confirm message to the Virtual Sib"
+                vs.send(ssap_msg)
+
+
+def subscription_handler(rs, vs):
+
+    # wait for messages and examinate them!
+    while 1:
+        ssap_msg = rs.recv(4096)
+        if len(ssap_msg) > 1:
+            print "sub_handler > " + ssap_msg
             vs.send(ssap_msg)
+            
+    pass
 
  
 #main function
