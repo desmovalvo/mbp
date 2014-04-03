@@ -229,7 +229,6 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, cl
                                                      info["transaction_id"],
                                                      '<parameter name="status">m3:Error</parameter>')
                     newsub.conn.send(err_msg)
-                    #TODO delete class!
                     
                     logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
 
@@ -644,7 +643,29 @@ def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, in
 #
 ##############################################################
 
+def handle_rdf_subscribe_indication(logger, info, ssap_msg, active_subscriptions, clientsock, val_subscriptions, kp_list):
 
+    # debug info
+    print colored(" * replies.py: handle_rdf_subscribe_indication", "cyan", attrs=[])
+
+    for s in val_subscriptions:
+        virtual_sub_id = s.get_virtual_subscription_id(clientsock, info["parameter_subscription_id"])
+        if virtual_sub_id != False:
+
+            
+            # convert ssap_msg to dict to edit the subscription id
+            ssap_msg_dict = {}
+            parser = make_parser()
+            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+            parser.setContentHandler(ssap_mh)
+            parser.parse(StringIO(ssap_msg))
+
+            ssap_msg_dict["subscription_id"] = virtual_sub_id
+
+            print str(ssap_msg_dict)
+#            s.conn.send(str(ssap_msg_dict))
+            kp_list[info["node_id"]].send(str(ssap_msg_dict))
+                
 
 ##############################################################
 #
@@ -712,3 +733,5 @@ def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscript
                                     transaction_id,
                                     body)
     return reply
+
+

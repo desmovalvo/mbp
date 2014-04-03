@@ -164,7 +164,12 @@ def handler(clientsock, addr):
             elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
                 handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
 
-        except ZeroDivisionError:#ET.ParseError:
+            # INDICATIONS
+            elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE":
+                print "sono qui nella cosa dei cosi"
+                handle_rdf_subscribe_indication(logger, info, ssap_msg, active_subscriptions, clientsock, val_subscriptions, kp_list)
+
+        except ET.ParseError:
             print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
             pass
 

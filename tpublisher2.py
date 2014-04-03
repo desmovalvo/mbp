@@ -13,7 +13,8 @@ from termcolor import *
 
 def handler(sock, ssap_msg):
     print "thread>" + ssap_msg
-    
+    print
+
     # socket to the real SIB
     rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     rs.connect((realsib_host, realsib_port))
@@ -79,7 +80,8 @@ def subscription_handler(rs, vs):
     while 1:
         ssap_msg = rs.recv(4096)
         if len(ssap_msg) > 1:
-            print "sub_handler > " + ssap_msg
+            print colored("tpublisher (sub_handler)>", "red", attrs=["bold"]) + ssap_msg
+            print
             vs.send(ssap_msg)
             
     pass
@@ -136,7 +138,6 @@ if __name__ == "__main__":
                     print '\nDisconnected from chat server'
                     sys.exit()
                 else :
-                    #print data
                     thread.start_new_thread(handler, (sock, ssap_msg))
                 
              
