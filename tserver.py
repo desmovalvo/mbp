@@ -46,8 +46,6 @@ def handler(clientsock, addr):
             if not ssap_msg:
                 continue
     
-            print "RICEVUTO: " + ssap_msg
-            
             complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
 
             if "</SSAP_message>" in complete_ssap_msg:
@@ -72,9 +70,9 @@ def handler(clientsock, addr):
                 logger.info("Received the following  message from " + str(addr))
                 logger.info(str(complete_ssap_msg).replace("\n", ""))
                 logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
-    
-                print "MESSAGGIO COMPLETO: "
-                print ssap_msg
+                
+                # message parsed
+                #print ssap_msg
     
                 ### REQUESTS
     
@@ -128,7 +126,6 @@ def handler(clientsock, addr):
                     confirms[info["node_id"]] = len(sib_list)
                     initial_results[info["node_id"]] = []
                     kp_list[info["node_id"]] = clientsock
-    
                     handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
     
                 # RDF UNSUBSCRIBE REQUEST
@@ -174,21 +171,18 @@ def handler(clientsock, addr):
                     
                 # SUBSCRIBE INDICATION
                 elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
-                    print colored("INDICATION", "red", attrs=["bold"])
                     handle_subscribe_indication(logger, ssap_msg, info, clientsock, val_subscriptions)
     
     
             except ET.ParseError:
-                print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
+                #print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:
-            print "catturata eccezione socket.error"
+            #print colored("tserver> ", "red", attrs=["bold"]) + " socket.error: break!"
             break
 
-    print "Uscito dal ciclo"
-
-
+    
 ##############################################################
 #
 # main program
@@ -223,7 +217,7 @@ if __name__=='__main__':
         
         # select the read_sockets
         read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
-
+        
         # look for a connection on both the ports
         for sock in read_sockets:
             

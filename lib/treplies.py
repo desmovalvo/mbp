@@ -218,8 +218,6 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, cl
                     real_subscription_id = s.get_real_subscription_id(sock)
                     fixed_msg = ssap_msg.replace(info["parameter_subscription_id"], real_subscription_id)
                     
-                    print fixed_msg
-                    
                     # send the message
                     sock.send(fixed_msg)                
                 except socket.error:
@@ -258,7 +256,7 @@ def handle_join_confirm(logger, conn, info, ssap_msg, confirms, kp_list):
             if confirms[info["node_id"]] == 0:    
                 kp_list[info["node_id"]].send(ssap_msg)
                 kp_list[info["node_id"]].close()
-                print kp_list[info["node_id"]]
+         
         else:
             # insert failed
             confirms[info["node_id"]] = None
@@ -582,8 +580,7 @@ def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, init
                 if s.node_id == info["node_id"] and s.request_transaction_id == ["transaction_id"]:
                     s.conn.send(err_msg)
                     logger.error("SUBSCRIBE CONFIRM forwarding failed")
-                    # TODO: destroy the class instance!
-
+                    
 
 # RDF UNSUBSCRIBE CONFIRM
 def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions):
@@ -615,8 +612,6 @@ def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, in
                                                                               '<parameter name="status">m3:Success</parameter><parameter name="subscription_id">virtual_sub_id</parameter>')
 
                         s.conn.send(ssap_reply)
-                        #active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(ssap_reply)
-
 
 
                 # if the current message represent a failure...
@@ -632,8 +627,9 @@ def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, in
 
                     s.conn.send(ssap_reply)
 
-#                    active_subscriptions[info["node_id"]][info["transaction_id"]]["conn"].send(err_msg)
                     logger.error("SUBSCRIBE CONFIRM forwarding failed")
+                    
+                    # destroy the class instance
                     del s
 
 
