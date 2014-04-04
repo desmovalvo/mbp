@@ -46,7 +46,6 @@ def handler(clientsock, addr):
             if not ssap_msg:
                 break
 
-            print "RICEVUTO: " + ssap_msg
             complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
 
             if "</SSAP_message>" in complete_ssap_msg:
@@ -71,10 +70,7 @@ def handler(clientsock, addr):
                 logger.info("Received the following  message from " + str(addr))
                 logger.info(str(complete_ssap_msg).replace("\n", ""))
                 logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
-                
-                # message parsed
-                #print ssap_msg
-    
+                    
                 ### REQUESTS
     
                 # REGISTER REQUEST
