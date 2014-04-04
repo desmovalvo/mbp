@@ -45,7 +45,8 @@ def handler(clientsock, addr):
             # check whether we received a blank message
             if not ssap_msg:
                 break
-    
+
+            print "RICEVUTO: " + ssap_msg
             complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
 
             if "</SSAP_message>" in complete_ssap_msg:

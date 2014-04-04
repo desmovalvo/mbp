@@ -27,25 +27,37 @@ def handler(sock, ssap_msg):
             thread.start_new_thread(subscription_handler, (rs, vs))
 
         else:
-            ssap_msg = rs.recv(4096)
-            
-            if ssap_msg:
-                print colored("tpublisher>", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib"
-                        
-                rs.close()
-                print colored("tpublisher>", "blue", attrs=["bold"]) + " Forwarding confirm message to the Virtual Sib"
+            # start a generic handler
+            thread.start_new_thread(generic_handler, (rs, vs))
 
-                # socket to the virtual sib
-                tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                tvs.settimeout(2)
-     
-                # connect to remote host
-                try :
-                    tvs.connect((vsib_host, vsib_port))
-                    tvs.send(ssap_msg)
-                    tvs.close()
-                except socket.error:
-                    print "Socket error"
+
+
+def generic_handler(rs, vs):
+
+    # socket to the virtual sib
+    tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tvs.settimeout(2)
+    tvs.connect((vsib_host, vsib_port))
+
+    while 1:
+        # receive the confirm message
+        ssap_msg = rs.recv(4096)
+        
+        if ssap_msg:
+            print colored("tpublisher>", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib"
+            print colored("tpublisher>", "blue", attrs=["bold"]) + " Forwarding confirm message to the Virtual Sib"
+    
+            # connect to remote host
+            try :
+                tvs.send(ssap_msg)
+                print "INVIATO: " + ssap_msg
+            except socket.error:
+                print "Socket error"
+
+        else:
+            rs.close()
+            tvs.close()
+            break    
 
 
 def subscription_handler(rs, vs):
@@ -127,6 +139,8 @@ if __name__ == "__main__":
                     print colored("tpublisher> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB'
                     sys.exit()
                 else :
+                    print 'Starting a new thread...'
                     thread.start_new_thread(handler, (sock, ssap_msg))
+
                 
              
