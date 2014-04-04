@@ -50,9 +50,8 @@ def generic_handler(rs, vs):
             # connect to remote host
             try :
                 tvs.send(ssap_msg)
-                print "INVIATO: " + ssap_msg
             except socket.error:
-                print "Socket error"
+                print colored("tpublisher>", "red", attrs=["bold"]) + "Socket error"
 
         else:
             rs.close()
@@ -83,7 +82,7 @@ def subscription_handler(rs, vs):
                 #     break
 
             except socket.error:
-                print "Socket error"
+                print colored("tpublisher>", "red", attrs=["bold"]) + "Socket error"
                 
             
  
@@ -139,7 +138,7 @@ if __name__ == "__main__":
                     print colored("tpublisher> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB'
                     sys.exit()
                 else :
-                    print 'Starting a new thread...'
+                    print colored("tpublisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
                     thread.start_new_thread(handler, (sock, ssap_msg))
 
                 
