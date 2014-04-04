@@ -44,7 +44,7 @@ def handler(clientsock, addr):
             ssap_msg = clientsock.recv(BUFSIZ)
             # check whether we received a blank message
             if not ssap_msg:
-                continue
+                break
     
             complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
 
@@ -175,12 +175,12 @@ def handler(clientsock, addr):
     
     
             except ET.ParseError:
-                #print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
+                print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:
-            #print colored("tserver> ", "red", attrs=["bold"]) + " socket.error: break!"
-            break
+            print colored("tserver> ", "red", attrs=["bold"]) + " socket.error: break!"
+#            break
 
     
 ##############################################################

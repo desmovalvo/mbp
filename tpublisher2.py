@@ -34,10 +34,26 @@ def handler(sock, ssap_msg):
                         
                 rs.close()
                 print colored("tpublisher>", "blue", attrs=["bold"]) + " Forwarding confirm message to the Virtual Sib"
-                vs.send(ssap_msg)
+
+                # socket to the virtual sib
+                tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                tvs.settimeout(2)
+     
+                # connect to remote host
+                try :
+                    tvs.connect((vsib_host, vsib_port))
+                    tvs.send(ssap_msg)
+                    tvs.close()
+                except socket.error:
+                    print "Socket error"
 
 
 def subscription_handler(rs, vs):
+
+    # we open a socket for each subscription
+    tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tvs.settimeout(2)
+    tvs.connect((vsib_host, vsib_port))
 
     # wait for messages and examinate them!
     while 1:
@@ -45,7 +61,18 @@ def subscription_handler(rs, vs):
         if len(ssap_msg) > 1:
             # forwarding subscription-related message to the virtual sib
             print colored("tpublisher>", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
-            vs.send(ssap_msg)
+     
+            # connect to remote host
+            try :
+                tvs.send(ssap_msg)
+
+                # if "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>UNSUBSCRIBE</transaction_type>":
+                #     tvs.close()
+                #     break
+
+            except socket.error:
+                print "Socket error"
+                
             
  
 #main function

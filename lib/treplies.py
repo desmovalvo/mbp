@@ -216,6 +216,10 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, cl
                 try:
                     # replace the virtual_subscription_id with the real_subscription_id
                     real_subscription_id = s.get_real_subscription_id(sock)
+                    print "PRE-FIXED: " + str(ssap_msg)
+                    print "PRE-FIXED2:" + info["parameter_subscription_id"]
+                    print "PRE-FIXED3:" + real_subscription_id
+
                     fixed_msg = ssap_msg.replace(info["parameter_subscription_id"], real_subscription_id)
                     
                     # send the message
@@ -669,7 +673,11 @@ def handle_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscrip
                                                   ssap_msg_dict["new_results"],
                                                   ssap_msg_dict["obsolete_results"])
             # send the message to the kp
-            s.conn.send(final_msg)
+            print "Inoltro la indication"
+            try:
+                s.conn.send(final_msg)
+            except:
+                print "inoltro indication fallito"
             
                 
 
