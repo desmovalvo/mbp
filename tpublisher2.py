@@ -54,10 +54,33 @@ def handler(sock, ssap_msg):
             # start a new thread to handle it
             thread.start_new_thread(subscription_handler, (rs, vs, ssap_msg_dict["virtual_subscription_id"]))
 
+        elif ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
+            # convert ssap_msg to dict
+            ssap_msg_dict = {}
+            parser = make_parser()
+            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+            parser.setContentHandler(ssap_mh)
+            parser.parse(StringIO(ssap_msg))        
+
+            # get real subscription id from subscriptions structure
+            subscription_id = subscriptions[ssap_msg_dict["subscription_id"]]
+            
+            pars = '<parameter name = "subscription_id">' + subscription_id + '</parameter>'
+
+            # build unsubscribe request with real subscription id
+            ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                      ssap_msg_dict["space_id"],
+                                                      "UNSUBSCRIBE",
+                                                      ssap_msg_dict["transaction_id"],
+                                                      pars)
+
+            # send to the real sib
+            rs.send(ssap_msg)
+            
         else:
             # send to the real sib
             rs.send(ssap_msg)
-
+            
             # start a generic handler
             thread.start_new_thread(generic_handler, (rs, vs))
             
@@ -118,7 +141,6 @@ def subscription_handler(rs, vs, vsub_id):
                 subscriptions[vsub_id] = ssap_msg_dict["subscription_id"]
                             
                 if "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg:
-                    print "ricevuta subscribe confirm"
                     
                     # replace subscription id with virtual subscription id
                     pars = '<parameter name="status">' + ssap_msg_dict["status"] + '</parameter><parameter name="subscription_id">' + vsub_id + '</parameter><parameter name="results">' + ssap_msg_dict["results"] + '</parameter>'
@@ -130,8 +152,9 @@ def subscription_handler(rs, vs, vsub_id):
                                                               pars
                                                               )
 
+                    tvs.send(ssap_msg)
+
                 elif "<message_type>INDICATION</message_type>" in ssap_msg and "<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg:
-                    print "ricevuta subscribe indication"
                     
                     # replace subscription id with virtual subscription id
                     ssap_msg = SSAP_INDICATION_TEMPLATE%(ssap_msg_dict["space_id"],
@@ -143,12 +166,27 @@ def subscription_handler(rs, vs, vsub_id):
                                                                  ssap_msg_dict["obsolete_results"]
                                                               )
 
+                    tvs.send(ssap_msg)
 
-                tvs.send(ssap_msg)
 
-                # if "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>UNSUBSCRIBE</transaction_type>":
-                #     tvs.close()
-                #     break
+                elif "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg:
+                    
+                    # replace real subscription id with virtual subscription id
+                    pars = '<parameter name="status">' + ssap_msg_dict["status"] + '</parameter><parameter name="subscription_id">' + vsub_id + '</parameter>'
+
+                    ssap_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                              ssap_msg_dict["space_id"],
+                                                              ssap_msg_dict["transaction_type"],
+                                                              ssap_msg_dict["transaction_id"],
+                                                              pars
+                                                              )
+
+
+                    tvs.send(ssap_msg)
+                    tvs.close()
+                    rs.close()
+                    break
+                                
 
             except socket.error:
                 print colored("tpublisher>", "red", attrs=["bold"]) + "Socket error"

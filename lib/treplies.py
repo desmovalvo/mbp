@@ -232,23 +232,15 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, cl
             # forwarding message to the publishers
             for sock in sib_list:
                 try:
-                    # replace the virtual_subscription_id with the real_subscription_id
-                    real_subscription_id = s.get_real_subscription_id(sock)
-                    print "PRE-FIXED: " + str(ssap_msg)
-                    print "PRE-FIXED2:" + info["parameter_subscription_id"]
-                    print "PRE-FIXED3:" + real_subscription_id
-
-                    fixed_msg = ssap_msg.replace(info["parameter_subscription_id"], real_subscription_id)
-                    
                     # send the message
-                    sock.send(fixed_msg)                
+                    sock.send(ssap_msg)                
                 except socket.error:
                     err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                                      info["space_id"],
                                                      "UNSUBSCRIBE",
                                                      info["transaction_id"],
                                                      '<parameter name="status">m3:Error</parameter>')
-                    newsub.conn.send(err_msg)
+                    s.conn.send(err_msg)
                     
                     logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
 
@@ -613,26 +605,17 @@ def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, in
 
 
     for s in val_subscriptions:
-        virtual_sub_id = s.get_virtual_subscription_id(clientsock, info["parameter_subscription_id"])
-        if virtual_sub_id != False:
-    
+        if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
             # check if we already received a failure
             if not confirms[info["node_id"]] == None:
-
                 # check if the current message represent a successful insertion
                 if info["parameter_status"] == "m3:Success":
+
                     confirms[info["node_id"]] -= 1
 
                     if confirms[info["node_id"]] == 0:    
-                        
-                        # build ssap reply
-                        ssap_reply = err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                              info["space_id"],
-                                                                              "UNSUBSCRIBE",
-                                                                              info["transaction_id"],
-                                                                              '<parameter name="status">m3:Success</parameter><parameter name="subscription_id">virtual_sub_id</parameter>')
 
-                        s.conn.send(ssap_reply)
+                        s.conn.send(ssap_msg)
 
 
                 # if the current message represent a failure...
@@ -665,30 +648,6 @@ def handle_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscrip
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_indication"
     logger.info("SUBSCRIBE INDICATION handled by handle_subscribe_indication")
-
-    # get the real subscription id
-#    rsi = info["parameter_subscription_id"]
-    
-    # # get the virtual subscription id
-    # for s in val_subscriptions:
-    #     vsi = s.get_virtual_subscription_id(fromsocket, rsi)
-    #     if vsi:
-
-    #         # convert ssap_msg to dict
-    #         ssap_msg_dict = {}
-    #         parser = make_parser()
-    #         ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-    #         parser.setContentHandler(ssap_mh)
-    #         parser.parse(StringIO(ssap_msg))        
-
-    #         # build the message
-    #         final_msg = SSAP_INDICATION_TEMPLATE%(info["space_id"],
-    #                                               info["node_id"],
-    #                                               info["transaction_id"],
-    #                                               ssap_msg_dict["ind_sequence"],
-    #                                               vsi,
-    #                                               ssap_msg_dict["new_results"],
-    #                                               ssap_msg_dict["obsolete_results"])
 
     for s in val_subscriptions:
         if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
