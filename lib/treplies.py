@@ -184,10 +184,28 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clie
     newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
     val_subscriptions.append(newsub)
 
+    # convert ssap_msg to dict
+    ssap_msg_dict = {}
+    parser = make_parser()
+    ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+    parser.setContentHandler(ssap_mh)
+    parser.parse(StringIO(ssap_msg))        
+
     # forwarding message to the publishers
     for sock in sib_list:
         try:
+            
+            pars = '<parameter name = "type">RDF-M3</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter><virtual_subscription_id>' + str(newsub.virtual_subscription_id) + '</virtual_subscription_id>'
+
+            ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(info["node_id"],
+                                                      info["space_id"],
+                                                      "SUBSCRIBE",
+                                                      info["transaction_id"],
+                                                      pars
+                                                      )
+
             sock.send(ssap_msg)
+
         except socket.error:
             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                              info["space_id"],
@@ -536,7 +554,7 @@ def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, init
             for s in val_subscriptions:                              
                 
                 if s.node_id == info["node_id"] and s.request_transaction_id == info["transaction_id"]:
-                    s.received_confirm(clientsock, info["parameter_subscription_id"])
+#                    s.received_confirm(clientsock, info["parameter_subscription_id"])
                     subreq_instance = s
                 
                     # convert ssap_msg to dict
@@ -553,19 +571,18 @@ def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, init
                         initial_results[info["node_id"]].append(triple)
                     
                     # remove duplicates
-                    result = []
                     for triple in initial_results[info["node_id"]]:
-                        if not triple in result:
-                            result.append(triple)
+                        if not triple in s.result:
+                            s.result.append(triple)
                             
-                    initial_results[info["node_id"]] = result
+                    initial_results[info["node_id"]] = s.result
         
                     if confirms[info["node_id"]] == 0:    
                         # build ssap reply                
                         ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
                                                             ssap_msg_dict["space_id"],
                                                             ssap_msg_dict["transaction_id"],
-                                                            result,
+                                                            s.result,
                                                             subreq_instance.virtual_subscription_id)                        
                         subreq_instance.conn.send(ssap_reply)
 
@@ -650,35 +667,40 @@ def handle_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscrip
     logger.info("SUBSCRIBE INDICATION handled by handle_subscribe_indication")
 
     # get the real subscription id
-    rsi = info["parameter_subscription_id"]
+#    rsi = info["parameter_subscription_id"]
     
-    # get the virtual subscription id
+    # # get the virtual subscription id
+    # for s in val_subscriptions:
+    #     vsi = s.get_virtual_subscription_id(fromsocket, rsi)
+    #     if vsi:
+
+    #         # convert ssap_msg to dict
+    #         ssap_msg_dict = {}
+    #         parser = make_parser()
+    #         ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+    #         parser.setContentHandler(ssap_mh)
+    #         parser.parse(StringIO(ssap_msg))        
+
+    #         # build the message
+    #         final_msg = SSAP_INDICATION_TEMPLATE%(info["space_id"],
+    #                                               info["node_id"],
+    #                                               info["transaction_id"],
+    #                                               ssap_msg_dict["ind_sequence"],
+    #                                               vsi,
+    #                                               ssap_msg_dict["new_results"],
+    #                                               ssap_msg_dict["obsolete_results"])
+
     for s in val_subscriptions:
-        vsi = s.get_virtual_subscription_id(fromsocket, rsi)
-        if vsi:
+        if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
 
-            # convert ssap_msg to dict
-            ssap_msg_dict = {}
-            parser = make_parser()
-            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-            parser.setContentHandler(ssap_mh)
-            parser.parse(StringIO(ssap_msg))        
-
-            # build the message
-            final_msg = SSAP_INDICATION_TEMPLATE%(info["space_id"],
-                                                  info["node_id"],
-                                                  info["transaction_id"],
-                                                  ssap_msg_dict["ind_sequence"],
-                                                  vsi,
-                                                  ssap_msg_dict["new_results"],
-                                                  ssap_msg_dict["obsolete_results"])
             # send the message to the kp
             print "Inoltro la indication"
             try:
-                s.conn.send(final_msg)
-            except:
+                s.conn.send(ssap_msg)
+            except socket.error:
                 print "inoltro indication fallito"
             
+            break
                 
 
 ##############################################################

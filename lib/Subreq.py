@@ -13,6 +13,7 @@ class Subreq:
         self.request_transaction_id = request_transaction_id
         self.virtual_subscription_id = uuid.uuid4()
         self.real_sib_id = {}
+        self.result = []
 
     # received_confirm: when we receive a SUBSCRIBE CONFIRM we store
     # the corrispondence between real_sib and the subscription_id that
