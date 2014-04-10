@@ -35,7 +35,7 @@ for r in rsib.keys():
     subprocess.Popen(command)
 
     # a little pause...
-    time.sleep(25)
+    time.sleep(1)
 
     # starting sib-tcp
     print colored("realsib_starter> ", "green", attrs=["bold"]) + "Starting sib-tcp for sib " + r
