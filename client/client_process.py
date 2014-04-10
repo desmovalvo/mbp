@@ -8,6 +8,8 @@ import socket, select, string, sys
 from lib.SIBLib import SibLib
 from smart_m3.m3_kp import *
 
+ns = "http://smartM3Lab/Ontology.owl#"
+
 ancillary_ip = '127.0.0.1'
 ancillary_port = '10088'
 manager_ip = '127.0.0.1'
@@ -22,28 +24,19 @@ class AncillaryHandler:
              self.information = str(i[2])
              print "handle"
              print self.information
-             virtual_sib_ip = self.information.split("-")[0]
-             virtual_sib_port = self.information.split("-")[1]
-             print virtual_sib_ip
-             print virtual_sib_port
-             # TODO: lancio tpublisher2 
+             vm_sib_ip = self.information.split("-")[0]
+             vm_sib_port = self.information.split("-")[1]
+             print vm_sib_ip
+             print vm_sib_port
              # close subscription
              self.a.CloseSubscribeTransaction(sub)
              print "Subscription closed!"
              
                  
 
-
 #main function
 if __name__ == "__main__":
     try:
-        # if(len(sys.argv) < 2) :
-        #     print colored("newpublisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner'
-        #     sys.exit()
-        
-        # real sib information
-        # owner = sys.argv[1]   
-
         # socket to the manager process
         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         manager.settimeout(2)
@@ -68,6 +61,7 @@ if __name__ == "__main__":
             if msg:
                 print colored("client_process> ", "red", attrs=["bold"]) + 'Received the following message:'
                 print msg
+                manager.close()
                 break
 
         parsed_msg = json.loads(msg)
@@ -90,36 +84,76 @@ if __name__ == "__main__":
 
             choice = raw_input("> ")
             if choice == "0":
+                vm_sib = []
                 # create new virtual multi sib
-                pass
+                while 1:
+                    print colored("client_process> ", "blue", attrs=["bold"]) + "Select a sib ([0] to break): "
+                    sib = raw_input("> ")
+                    if sib == "0": 
+                        break
+                    else:
+                        if not vsib[int(sib)-1] in vm_sib:
+                            vm_sib.append(vsib[int(sib)-1])
+
+                print colored("client_process> ", "blue", attrs=['bold']) + 'Sending NewVirtualMultiSIB request to the manager!'
+
+                # socket to the manager process
+                manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                manager.settimeout(2)
+
+                # connect to the manager
+                try :
+                    manager.connect((manager_ip, manager_port))
+                except :
+                    print colored("client_process> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
+                    sys.exit()        
+
+                # build and send NewVirtualMultiSIB request to the manager
+                msg = {'command':'NewVirtualMultiSIB','sib_list':vm_sib}
+                request = json.dumps(msg)
+                manager.send(request)
+        
+                # wait for reply from manager
+                while 1:
+                    msg = manager.recv(4096)
+                    if msg:
+                        print colored("client_process> ", "red", attrs=["bold"]) + 'Received the following message:'
+                        print msg
+                        break
+
+                parsed_msg = json.loads(msg)
+                vmsib_id = parsed_msg["virtual_multi_sib_id"]
+                # print vmsib_id
+
+                # subscribe to the ancillary sib
+                t = Triple(URI(ns + str(vmsib_id)), URI(ns + "hasKpIpPort"), None)
+                a = SibLib('127.0.0.1', 10088)
+                a.join_sib()
+                sub = a.CreateSubscribeTransaction(a.ss_handle)
+                initial_results = sub.subscribe_rdf(t, AncillaryHandler(a))
+                if initial_results != []:
+                    for i in initial_results:
+                        print i
+                        print i[2]
+                        vm_sib_ip = str(i[2]).split("-")[0].split("#")[1]
+                        vm_sib_port = int(str(i[2]).split("-")[1])
+                        print vm_sib_ip
+                        print vm_sib_port
+
+
+
+
+                
             else:
                 sib_id = vsib[int(choice)-1]
                 sib_ip = virtual_sib_list[sib_id]["ip"]
                 sib_port = virtual_sib_list[sib_id]["port"]
-                
-                a = SibLib(sib_ip, int(sib_port))
-                
-        #     # subscribe to the ancillary sib
-        #     t = Triple(URI(virtual_sib_id), URI("hasPubIpPort"), None)
-        #     a = SibLib('127.0.0.1', 10088)
-                a.join_sib()
-        #     sub = a.CreateSubscribeTransaction(a.ss_handle)
-        #     initial_results = sub.subscribe_rdf(t, AncillaryHandler(a))
-        #     if initial_results != []:
-        #         for i in initial_results:
-        #             print i
-        #             print i[2]
-        #             virtual_sib_ip = str(i[2]).split("-")[0]
-        #             virtual_sib_port = int(str(i[2]).split("-")[1])
-        #             print virtual_sib_ip
-        #             print virtual_sib_port
-                    
-        #             # lancio publisher
-        #             StartConnection(virtual_sib_ip, virtual_sib_port, a, sub)
+                print colored("client_process> ", "blue", attrs=["bold"]) + "Type the commands: "
+                print "a = SibLib(" + sib_ip + ", " + sib_port + ")"
+                print "a.join_sib()"
+                print "to connect to the sib"
+                # a = SibLib(sib_ip, int(sib_port))
+                # a.join_sib()
 
-                
-        #         # print "Subscription closed!"
-        #         # a.CloseSubscribeTransaction(sub)
-                                
     except KeyboardInterrupt:
-        print colored("Publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
+        print colored("client_process> ", "blue", attrs=["bold"]) + "Goodbye!"
