@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+import sys
 from SSAPLib import *
 from termcolor import *
 from lib.Subreq import *
@@ -170,6 +171,49 @@ def handle_rdf_query_request(logger, info, ssap_msg, sib_list, kp_list):
                                              '<parameter name="status">m3:Error</parameter>')
             kp_list[info["node_id"]].send(err_msg)
             logger.error("RDF QUERY REQUEST forwarding failed")
+
+# RDF SUBSCRIBE REQUEST
+def handle_sparql_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions):
+    """The present method is used to manage the rdf query request received from a KP."""
+
+    # debug info
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_subscribe_request"
+    logger.info("SPARQL SUBSCRIBE REQUEST handled by handle_sparql_subscribe_request")
+
+    # generating a Subreq instance
+    newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
+    val_subscriptions.append(newsub)
+
+    # convert ssap_msg to dict
+    ssap_msg_dict = {}
+    parser = make_parser()
+    ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+    parser.setContentHandler(ssap_mh)
+    parser.parse(StringIO(ssap_msg))        
+
+    # forwarding message to the publishers
+    for sock in sib_list:
+        try:
+            
+            pars = '<parameter name = "type">sparql</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter><virtual_subscription_id>' + str(newsub.virtual_subscription_id) + '</virtual_subscription_id>'
+
+            ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(info["node_id"],
+                                                      info["space_id"],
+                                                      "SUBSCRIBE",
+                                                      info["transaction_id"],
+                                                      pars)
+            sock.send(ssap_msg)
+
+        except socket.error:
+            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                     info["space_id"],
+                                                     "SUBSCRIBE",
+                                                     info["transaction_id"],
+                                                     '<parameter name="status">m3:Error</parameter>')
+            newsub.conn.send(err_msg)
+            #TODO delete class!
+            
+            logger.error("SPARQL SUBSCRIBE REQUEST forwarding failed")
 
 
 # RDF SUBSCRIBE REQUEST
@@ -428,15 +472,8 @@ def handle_sparql_query_confirm(logger, info, ssap_msg, confirms, kp_list, query
             triple_list = parse_sparql(ssap_msg_dict["results"])
               
             for triple in triple_list:
-                query_results[info["node_id"]].append(triple)
-            
-            # remove duplicates
-            result = []
-            for triple in query_results[info["node_id"]]:
-                if not triple in result:
-                    result.append(triple)
-                    
-            query_results[info["node_id"]] = result
+                if not triple in query_results[info["node_id"]]:
+                    query_results[info["node_id"]].append(triple)
 
             if confirms[info["node_id"]] == 0:    
                 # build ssap reply
@@ -526,14 +563,14 @@ def handle_rdf_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_re
             logger.error("RDF QUERY CONFIRM forwarding failed")
 
 
-# RDF SUBSCRIBE CONFIRM
-def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions):
-    """This method is used to manage rdf SUBSCRIBE CONFIRM received. """
+# SPARQL SUBSCRIBE CONFIRM
+def handle_sparql_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions):
+    """This method is used to manage sparql SUBSCRIBE CONFIRM received. """
 
     # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_confirm"
-    logger.info("RDF SUBSCRIBE CONFIRM handled by handle_rdf_subscribe_confirm")
-    
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_subscribe_confirm"
+    logger.info("SPARQL SUBSCRIBE CONFIRM handled by handle_sparql_subscribe_confirm")
+
     # check if we already received a failure
     if not confirms[info["node_id"]] == None:
 
@@ -546,7 +583,6 @@ def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, init
             for s in val_subscriptions:                              
                 
                 if s.node_id == info["node_id"] and s.request_transaction_id == info["transaction_id"]:
-#                    s.received_confirm(clientsock, info["parameter_subscription_id"])
                     subreq_instance = s
                 
                     # convert ssap_msg to dict
@@ -557,10 +593,11 @@ def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, init
                     parser.parse(StringIO(ssap_msg))
         
                     # extract triples from ssap reply
-                    triple_list = parse_M3RDF(ssap_msg_dict["results"])
+                    triple_list = parse_sparql(ssap_msg_dict["results"])
                       
                     for triple in triple_list:
-                        initial_results[info["node_id"]].append(triple)
+                        if triple not in initial_results[info["node_id"]]:
+                            initial_results[info["node_id"]].append(triple)
                     
                     # remove duplicates
                     for triple in initial_results[info["node_id"]]:
@@ -568,14 +605,19 @@ def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, init
                             s.result.append(triple)
                             
                     initial_results[info["node_id"]] = s.result
+
+                    print 'Time to build the reply'
         
                     if confirms[info["node_id"]] == 0:    
-                        # build ssap reply                
-                        ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
-                                                            ssap_msg_dict["space_id"],
-                                                            ssap_msg_dict["transaction_id"],
-                                                            s.result,
-                                                            subreq_instance.virtual_subscription_id)                        
+
+                        print ssap_msg_dict.keys()
+                        
+                        # build ssap reply                                        
+                        ssap_reply = reply_to_sparql_subscribe(ssap_msg_dict["node_id"], 
+                                                               ssap_msg_dict["space_id"], 
+                                                               ssap_msg_dict["transaction_id"], 
+                                                               ssap_msg_dict["subscription_id"],
+                                                               s.result)
                         subreq_instance.conn.send(ssap_reply)
 
         # if the current message represent a failure...
@@ -593,7 +635,76 @@ def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, init
                 if s.node_id == info["node_id"] and s.request_transaction_id == ["transaction_id"]:
                     s.conn.send(err_msg)
                     logger.error("SUBSCRIBE CONFIRM forwarding failed")
-                    
+
+
+# RDF SUBSCRIBE CONFIRM
+def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions):
+    """This method is used to manage rdf SUBSCRIBE CONFIRM received. """
+
+    # debug info
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_confirm"
+    logger.info("RDF SUBSCRIBE CONFIRM handled by handle_rdf_subscribe_confirm")
+    
+    # check if we already received a failure
+    if not confirms[info["node_id"]] == None:
+
+        # check if the current message represent a successful insertion
+        if info["parameter_status"] == "m3:Success":
+
+            # decrement the number of waited confirms
+            confirms[info["node_id"]] -= 1
+
+            # store the corrispondence between the real sib and the real_subscription_id
+            for s in val_subscriptions:                              
+                
+                # we found the desired Subreq instance
+                if s.node_id == info["node_id"] and s.request_transaction_id == info["transaction_id"]:
+                    subreq_instance = s
+                
+                    # convert ssap_msg to dict
+                    ssap_msg_dict = {}
+                    parser = make_parser()
+                    ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+                    parser.setContentHandler(ssap_mh)
+                    parser.parse(StringIO(ssap_msg))
+        
+                    # extract triples from ssap reply and remove the duplicates
+                    triple_list = parse_M3RDF(ssap_msg_dict["results"])                      
+                    for triple in triple_list:
+                        if not triple in s.result:
+                            s.result.append(triple)
+                    initial_results[info["node_id"]] = s.result
+        
+                    # check if it's time to send the confirm
+                    if confirms[info["node_id"]] == 0:    
+
+                        # build ssap reply                
+                        ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
+                                                            ssap_msg_dict["space_id"],
+                                                            ssap_msg_dict["transaction_id"],
+                                                            s.result,
+                                                            subreq_instance.virtual_subscription_id)                        
+
+                        # send the ssap reply
+                        subreq_instance.conn.send(ssap_reply)
+                        
+        # if the current message represent a failure...
+        else:
+
+            # delete the subscription from the list of subscriptions and send an error message            
+
+            confirms[info["node_id"]] = None
+            err_msg = SSAP_MESSAGE_SUBSCRIBE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                               info["space_id"],
+                                                               "SUBSCRIBE",
+                                                               info["transaction_id"],
+                                                               info["parameter_subscription_id"],
+                                                               '<parameter name="status">m3:Error</parameter>')
+            for s in val_subscriptions:
+                if s.node_id == info["node_id"] and s.request_transaction_id == ["transaction_id"]:
+                    s.conn.send(err_msg)
+                    logger.error("SUBSCRIBE CONFIRM forwarding failed")                
+
 
 # RDF UNSUBSCRIBE CONFIRM
 def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions):
@@ -730,3 +841,36 @@ def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscript
     return reply
 
 
+# The following method is used to build a reply to the client sparql subscribe request
+def reply_to_sparql_subscribe(node_id, space_id, transaction_id, subscription_id, results):
+
+    # building HEAD part of the query results
+    variable_list = []
+    for triple in results:
+        for element in triple:    
+            if not SSAP_VARIABLE_TEMPLATE%(str(element[0])) in variable_list:
+                variable_list.append(SSAP_VARIABLE_TEMPLATE%(str(element[0])))
+    head = SSAP_HEAD_TEMPLATE%(''.join(variable_list))
+    
+    # building RESULTS part of the query results
+    result_string = ""
+    for triple in results:
+        binding_string = ""
+        for element in triple:    
+            if element[1] == "uri":
+                binding_string = binding_string + SSAP_BINDING_URI_TEMPLATE%(element[0], element[2])
+            elif element[1] == "literal":
+                binding_string = binding_string + SSAP_BINDING_LITERAL_TEMPLATE%(element[0], element[2])
+
+        result_string = result_string + SSAP_RESULT_TEMPLATE%(binding_string)
+    results_string = SSAP_RESULTS_TEMPLATE%(result_string)
+    body = SSAP_RESULTS_SPARQL_PARAM_TEMPLATE%(head + results_string)
+
+    # finalizing the reply
+    reply = SSAP_MESSAGE_SUBSCRIBE_CONFIRM_TEMPLATE%(node_id,
+                                                     space_id, 
+                                                     "SUBSCRIBE",
+                                                     transaction_id,
+                                                     subscription_id,
+                                                     body)
+    return reply

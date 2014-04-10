@@ -43,7 +43,11 @@ SSAP_RESULT_TEMPLATE = """<result>
 %s</result>
 """
 
-SSAP_BINDING_TEMPLATE = """<binding name="%s"><uri>%s</uri>
+SSAP_BINDING_URI_TEMPLATE = """<binding name="%s"><uri>%s</uri>
+</binding>
+"""
+
+SSAP_BINDING_LITERAL_TEMPLATE = """<binding name="%s"><literal>%s</literal>
 </binding>
 """
 
@@ -100,3 +104,13 @@ SSAP_INDICATION_TEMPLATE = """
 <parameter name="obsolete_results">%s</parameter>
 </SSAP_message>
 """
+
+SSAP_MESSAGE_SUBSCRIBE_CONFIRM_TEMPLATE = '''<SSAP_message>
+<node_id>%s</node_id>
+<space_id>%s</space_id>
+<transaction_type>%s</transaction_type>
+<message_type>CONFIRM</message_type>
+<transaction_id>%s</transaction_id>
+<parameter name="subscription_id">%s</parameter>
+%s
+</SSAP_message>'''

@@ -111,6 +111,17 @@ def handler(clientsock, addr):
                     kp_list[info["node_id"]] = clientsock
                     handle_sparql_query_request(logger, info, ssap_msg, sib_list, kp_list)
     
+                # SPARQL SUBSCRIBE REQUEST
+                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "sparql":
+                    confirms[info["node_id"]] = len(sib_list)
+                    initial_results[info["node_id"]] = []
+                    kp_list[info["node_id"]] = clientsock
+                    handle_sparql_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
+
+                # SPARQL UNSUBSCRIBE REQUEST
+                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE" and info["parameter_type"] == "sparql":
+                    handle_sparql_unsubscribe_request()                    
+
                 # RDF QUERY REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "RDF-M3":
                     confirms[info["node_id"]] = len(sib_list)
@@ -120,7 +131,6 @@ def handler(clientsock, addr):
     
                 # RDF SUBSCRIBE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
-    
                     confirms[info["node_id"]] = len(sib_list)
                     initial_results[info["node_id"]] = []
                     kp_list[info["node_id"]] = clientsock
@@ -131,6 +141,7 @@ def handler(clientsock, addr):
                     handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
         
     
+
                 ### CONFIRMS
     
                 # JOIN CONFIRM
@@ -152,13 +163,17 @@ def handler(clientsock, addr):
                 # SPARQL QUERY CONFIRM
                 elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
                     handle_sparql_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results)
+
+                # SPARQL SUBSCRIBE CONFIRM
+                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE" and "</sparql>" in ssap_msg:
+                    handle_sparql_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
     
                 # RDF QUERY CONFIRM
                 elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
                     handle_rdf_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results)
     
                 # RDF SUBSCRIBE CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg
+                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE" and not "</sparql>" in ssap_msg:
                     handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
     
                 # RDF UNSUBSCRIBE CONFIRM
@@ -173,11 +188,14 @@ def handler(clientsock, addr):
     
     
             except ET.ParseError:
-                print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
+         #       print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:
-            print colored("tserver> ", "red", attrs=["bold"]) + " socket.error: break!"
+            print "TODO: check this socket.error and the following break"
+            break
+
+        #print colored("tserver> ", "red", attrs=["bold"]) + " socket.error: break!"
 #            break
 
     
