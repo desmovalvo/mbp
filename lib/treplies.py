@@ -754,11 +754,11 @@ def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, in
 #
 ##############################################################
 
-def handle_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscriptions):
+def handle_rdf_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscriptions):
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_indication"
-    logger.info("SUBSCRIBE INDICATION handled by handle_subscribe_indication")
+    logger.info("RDF SUBSCRIBE INDICATION handled by handle_subscribe_indication")
 
     for s in val_subscriptions:
         if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
@@ -771,7 +771,25 @@ def handle_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscrip
                 print "inoltro indication fallito"
             
             break
-                
+
+
+def handle_sparql_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscriptions):
+
+    # debug info
+    print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_subscribe_indication"
+    logger.info("SPARQL SUBSCRIBE INDICATION handled by handle_subscribe_indication")
+
+    for s in val_subscriptions:
+        if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
+
+            # send the message to the kp
+            print "Inoltro la indication"
+            try:
+                s.conn.send(ssap_msg)
+            except socket.error:
+                print "inoltro indication fallito"
+            
+            break                
 
 ##############################################################
 #

@@ -91,7 +91,7 @@ SSAP_TRIPLE_LIST_TEMPLATE = """
 </triple_list>
 """
 
-SSAP_INDICATION_TEMPLATE = """
+SSAP_SPARQL_INDICATION_TEMPLATE = """
 <SSAP_message>
 <message_type>INDICATION</message_type>
 <transaction_type>SUBSCRIBE</transaction_type>
@@ -104,6 +104,21 @@ SSAP_INDICATION_TEMPLATE = """
 <parameter name="obsolete_results">%s</parameter>
 </SSAP_message>
 """
+
+SSAP_RDF_INDICATION_TEMPLATE = """
+<SSAP_message>
+<message_type>INDICATION</message_type>
+<transaction_type>SUBSCRIBE</transaction_type>
+<space_id>%s</space_id>
+<node_id>%s</node_id>
+<transaction_id>%s</transaction_id>
+<parameter name="ind_sequence">%s</parameter>
+<parameter name="subscription_id">%s</parameter>
+<parameter name="new_results">%s</parameter>
+<parameter name="obsolete_results">%s</parameter>
+</SSAP_message>
+"""
+
 
 SSAP_MESSAGE_SUBSCRIBE_CONFIRM_TEMPLATE = '''<SSAP_message>
 <node_id>%s</node_id>

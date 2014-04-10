@@ -122,6 +122,8 @@ def generic_handler(rs, vs):
 
 def rdf_subscription_handler(rs, vs, vsub_id):
 
+    print colored("rdf_subscription_handler> ", "blue", attrs=["bold"]) + "started!"
+
     # we open a socket for each subscription
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tvs.settimeout(2)
@@ -161,17 +163,18 @@ def rdf_subscription_handler(rs, vs, vsub_id):
                     tvs.send(ssap_msg)
 
                 elif "<message_type>INDICATION</message_type>" in ssap_msg and "<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg:
+
+                    print colored("Ricevuta una indication", "red", attrs=["bold"])
                     
                     # replace subscription id with virtual subscription id
-                    ssap_msg = SSAP_INDICATION_TEMPLATE%(ssap_msg_dict["space_id"],
-                                                                 ssap_msg_dict["node_id"],
-                                                                 ssap_msg_dict["transaction_id"],
-                                                                 ssap_msg_dict["ind_sequence"],
-                                                                 str(vsub_id),
-                                                                 ssap_msg_dict["new_results"],
-                                                                 ssap_msg_dict["obsolete_results"]
-                                                              )
-
+                    ssap_msg = SSAP_SPARQL_INDICATION_TEMPLATE%(ssap_msg_dict["space_id"],
+                                                                ssap_msg_dict["node_id"],
+                                                                ssap_msg_dict["transaction_id"],
+                                                                ssap_msg_dict["ind_sequence"],
+                                                                str(vsub_id),
+                                                                ssap_msg_dict["new_results"],
+                                                                ssap_msg_dict["obsolete_results"]
+                                                                )
                     tvs.send(ssap_msg)
 
 
@@ -200,6 +203,8 @@ def rdf_subscription_handler(rs, vs, vsub_id):
 
 
 def sparql_subscription_handler(rs, vs, vsub_id):
+
+    print colored("sparql_subscription_handler> ", "blue", attrs=["bold"]) + "started!"
 
     # we open a socket for each subscription
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -240,6 +245,7 @@ def sparql_subscription_handler(rs, vs, vsub_id):
                 subscriptions[vsub_id] = ssap_msg_dict["subscription_id"]
                             
                 if "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg:
+                    print 'SUBSCRIBE CONFIRM'
                     
                     # replace subscription id with virtual subscription id
                     pars = '<parameter name="status">' + ssap_msg_dict["status"] + '</parameter><parameter name="subscription_id">' + vsub_id + '</parameter><parameter name="results">' + ssap_msg_dict["results"] + '</parameter>'
@@ -253,11 +259,10 @@ def sparql_subscription_handler(rs, vs, vsub_id):
                     tvs.send(ssap_msg)
 
                 elif "<message_type>INDICATION</message_type>" in ssap_msg and "<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg:
+                    print 'INDICATION SUBSCRIBE (this will fail)'
                     
-                    sys.exit()
-
                     # replace subscription id with virtual subscription id
-                    ssap_msg = SSAP_INDICATION_TEMPLATE%(ssap_msg_dict["space_id"],
+                    ssap_msg = SSAP_RDF_INDICATION_TEMPLATE%(ssap_msg_dict["space_id"],
                                                                  ssap_msg_dict["node_id"],
                                                                  ssap_msg_dict["transaction_id"],
                                                                  ssap_msg_dict["ind_sequence"],

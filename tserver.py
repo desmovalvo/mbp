@@ -182,9 +182,13 @@ def handler(clientsock, addr):
     
                 ### INDICATIONS
                     
-                # SUBSCRIBE INDICATION
-                elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
-                    handle_subscribe_indication(logger, ssap_msg, info, clientsock, val_subscriptions)
+                # RDF SUBSCRIBE INDICATION
+                elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE" and "</sparql>" not in ssap_msg: 
+                    handle_rdf_subscribe_indication(logger, ssap_msg, info, clientsock, val_subscriptions)
+
+                # SPARQL SUBSCRIBE INDICATION
+                elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE" and "</sparql>" in ssap_msg: 
+                    handle_sparql_subscribe_indication(logger, ssap_msg, info, clientsock, val_subscriptions)
     
     
             except ET.ParseError:
