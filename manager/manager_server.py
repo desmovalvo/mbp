@@ -54,10 +54,23 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                             # decode 
                             print colored("Manager> ", "blue", attrs=["bold"]) + "calling the proper method"
-                            virtual_sib_id = globals()[data["command"]]()
-                    
-                            # send a reply
-                            self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_id':virtual_sib_id}))
+                            if data["command"] == "NewRemoteSIB":
+                                #TODO: passare al metodo NewRemoteSIB
+                                #l'owner della sib e fargli inserire
+                                #nell'ancillary sib anche questo dato
+                                virtual_sib_id = globals()[data["command"]]()
+                                # send a reply
+                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_id':virtual_sib_id}))
+
+                            elif data["command"] == "Discovery":
+                                virtual_sib_list = globals()[data["command"]]()
+                                # send a reply
+                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
+                                
+                            else:
+                                globals()[data["command"]]()
+                                # send a reply
+                                self.request.sendall(json.dumps({'return':'ok'}))
                             
                         else:
 

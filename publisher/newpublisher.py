@@ -9,6 +9,8 @@ from lib.SIBLib import SibLib
 from smart_m3.m3_kp import *
 from lib.publisher3 import *
 
+ns = "http://smartM3Lab/Ontology.owl#"
+
 ancillary_ip = '127.0.0.1'
 ancillary_port = '10088'
 manager_ip = '127.0.0.1'
@@ -85,7 +87,7 @@ if __name__ == "__main__":
             virtual_sib_id = confirm["virtual_sib_id"]
             
             # subscribe to the ancillary sib
-            t = Triple(URI(virtual_sib_id), URI("hasIpPort"), None)
+            t = Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), None)
             a = SibLib('127.0.0.1', 10088)
             a.join_sib()
             sub = a.CreateSubscribeTransaction(a.ss_handle)
@@ -94,7 +96,7 @@ if __name__ == "__main__":
                 for i in initial_results:
                     print i
                     print i[2]
-                    virtual_sib_ip = str(i[2]).split("-")[0]
+                    virtual_sib_ip = str(i[2]).split("-")[0].split("#")[1]
                     virtual_sib_port = int(str(i[2]).split("-")[1])
                     print virtual_sib_ip
                     print virtual_sib_port

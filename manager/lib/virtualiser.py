@@ -184,10 +184,11 @@ def handler(clientsock, addr):
 #            break
 
 
-def virtualiser(kp_host, kp_port, pub_host, pub_port):
-    
-    kp_addr = (kp_host, kp_port)
-    pub_addr = (pub_host, pub_port)
+def virtualiser(kp_port, pub_port):
+
+    host = "localhost"
+    kp_addr = (host, kp_port)
+    pub_addr = (host, pub_port)
     
     print "kp addr: " + str(kp_addr)
     print "pub addr: " + str(pub_addr)
