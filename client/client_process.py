@@ -71,17 +71,38 @@ if __name__ == "__main__":
                 break
 
         parsed_msg = json.loads(msg)
-        # if parsed_msg["return"] == "fail":
-        #     print colored("newpublisher> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
+        if parsed_msg["return"] == "fail":
+            print colored("client_process> ", "red", attrs=["bold"]) + 'Request failed!' + parsed_msg["cause"]
                 
-        # elif parsed_msg["return"] == "ok":
-        #     print colored("newpublisher> ", "red", attrs=["bold"]) + 'Ready to subscribe to the ancillary sib'
-        #     virtual_sib_id = confirm["virtual_sib_id"]
-            
+        elif parsed_msg["return"] == "ok":
+            virtual_sib_list = parsed_msg["virtual_sib_list"]
+          
+            print colored("client_process> ", "blue", attrs=["bold"]) + "Select a virtual sib to connect:" 
+
+            i = 1
+            vsib = []
+            for vs in virtual_sib_list:
+                print "[" + str(i) + "] sib_id: " + vs + " (ip: " + virtual_sib_list[vs]['ip'] + ", port: " + virtual_sib_list[vs]['port'] + ")" 
+                vsib.append(vs)
+                i += 1
+
+            print colored("client_process> ", "blue", attrs=["bold"]) + "or type [0] to create new virtual multi sib."
+
+            choice = raw_input("> ")
+            if choice == "0":
+                # create new virtual multi sib
+                pass
+            else:
+                sib_id = vsib[int(choice)-1]
+                sib_ip = virtual_sib_list[sib_id]["ip"]
+                sib_port = virtual_sib_list[sib_id]["port"]
+                
+                a = SibLib(sib_ip, int(sib_port))
+                
         #     # subscribe to the ancillary sib
         #     t = Triple(URI(virtual_sib_id), URI("hasPubIpPort"), None)
         #     a = SibLib('127.0.0.1', 10088)
-        #     a.join_sib()
+                a.join_sib()
         #     sub = a.CreateSubscribeTransaction(a.ss_handle)
         #     initial_results = sub.subscribe_rdf(t, AncillaryHandler(a))
         #     if initial_results != []:
