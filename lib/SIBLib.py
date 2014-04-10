@@ -45,8 +45,8 @@ class SibLib(KP):
         upd.update(triple_to_insert, "RDF-M3", triple_to_remove, "RDF-M3")
         self.CloseUpdateTransaction(upd)
 
-    # create_subscription: method to subscribe to a triple
-    def create_subscription(self, subject_field, predicate_field, object_field, HandlerClass):
+    # create_rdf_subscription: method to subscribe to a triple
+    def create_rdf_subscription(self, subject_field, predicate_field, object_field, HandlerClass):
         
         triple = [Triple(subject_field, predicate_field, object_field)]
         self.st = self.CreateSubscribeTransaction(self.ss_handle)

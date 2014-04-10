@@ -136,7 +136,7 @@ def handler(clientsock, addr):
                     kp_list[info["node_id"]] = clientsock
                     handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
     
-                # RDF UNSUBSCRIBE REQUEST
+                # RDF/SPARQL UNSUBSCRIBE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
                     handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
         
@@ -176,8 +176,8 @@ def handler(clientsock, addr):
                 elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE" and not "</sparql>" in ssap_msg:
                     handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
     
-                # RDF UNSUBSCRIBE CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
+                # RDF/SPARQL UNSUBSCRIBE CONFIRM
+                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE":
                     handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
     
                 ### INDICATIONS
