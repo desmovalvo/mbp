@@ -2,8 +2,8 @@
 
 # requirements
 from xml.etree import ElementTree as ET
-from lib.treplies import *
-from lib.Subreq import *
+from treplies import *
+from Subreq import *
 from termcolor import *
 import socket, select
 import threading
@@ -44,11 +44,13 @@ def handler(clientsock, addr):
     while 1:
         try:
             ssap_msg = clientsock.recv(BUFSIZ)
+
             # check whether we received a blank message
-            if not ssap_msg:
+            if not ssap_msg and not complete_ssap_msg:
                 break
 
-            complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+            if ssap_msg != None:
+                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
 
             if "</SSAP_message>" in complete_ssap_msg:
                 ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"

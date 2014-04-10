@@ -7,7 +7,7 @@ import sys
 import time
 
 # constants
-CONF_FILE = "../realsibs.xml"
+CONF_FILE = "lib/realsibs.xml"
 
 # find and kill existing sibs
 subprocess.call(["killall", "-9", "sib-tcp"])
@@ -35,7 +35,7 @@ for r in rsib.keys():
     subprocess.Popen(command)
 
     # a little pause...
-    time.sleep(25)
+    time.sleep(1)
 
     # starting sib-tcp
     print colored("realsib_starter> ", "green", attrs=["bold"]) + "Starting sib-tcp for sib " + r

@@ -7,7 +7,7 @@ from termcolor import *
 import socket, select, string, sys
 from lib.SIBLib import SibLib
 from smart_m3.m3_kp import *
-from publisher3 import *
+from lib.publisher3 import *
 
 ancillary_ip = '127.0.0.1'
 ancillary_port = '10088'
@@ -44,7 +44,6 @@ if __name__ == "__main__":
         
         # real sib information
         owner = sys.argv[1]
-        sib_id = str(uuid.uuid4())
 
         # socket to the manager process
         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -60,7 +59,7 @@ if __name__ == "__main__":
         print colored("newtpublisher> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending register request!'
 
         # build request message 
-        register_msg = {"command":"NewRemoteSIB", "sibID":sib_id, "owner":owner}
+        register_msg = {"command":"NewRemoteSIB", "owner":owner}
         # print register_msg
         # print type(register_msg)
         
@@ -82,7 +81,7 @@ if __name__ == "__main__":
             print colored("newpublisher> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
                 
         elif confirm["return"] == "ok":
-            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Sib is now reachable!'
+            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Ready to subscribe to the ancillary sib'
             virtual_sib_id = confirm["virtual_sib_id"]
             
             # subscribe to the ancillary sib
@@ -101,7 +100,7 @@ if __name__ == "__main__":
                     print virtual_sib_port
                     
                     # lancio publisher
-                    StartConnection(virtual_sib_ip, virtual_sib_port, sib_id, a, sub)
+                    StartConnection(virtual_sib_ip, virtual_sib_port, a, sub)
 
                 
                 # print "Subscription closed!"

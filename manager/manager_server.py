@@ -16,7 +16,7 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 # this is a dictionary in which the keys are the available commands,
 # while the values are lists of available parameters for that command
 COMMANDS = {
-    "NewRemoteSIB" : ["sibID", "owner"],
+    "NewRemoteSIB" : ["owner"],
     "NewVirtualMultiSIB": [],
     "Discovery" : []
     }
