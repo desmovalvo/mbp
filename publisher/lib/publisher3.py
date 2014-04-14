@@ -12,9 +12,14 @@ from termcolor import *
 from smart_m3.m3_kp import *
 from xml.sax import make_parser
 
-def StartConnection(vsib_host, vsib_port, realsib_id, a, sub): #realsib_host, realsib_port):
+
+
+def StartConnection(vsib_host, vsib_port, a, sub): #realsib_host, realsib_port):
+    subscriptions = {}
     subs = {}
-    node_id = realsib_id
+    #questo node_id serve solo per riempire il messaggio di register
+    #che il publisher sta per mandare alla virtual sib
+    node_id = uuid.uuid4()
     
     print "Subscription closed!"
     a.CloseSubscribeTransaction(sub)
@@ -58,10 +63,10 @@ def StartConnection(vsib_host, vsib_port, realsib_id, a, sub): #realsib_host, re
                     sys.exit()
                 else :
                     print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
-                    thread.start_new_thread(handler, (sock, ssap_msg, vs, vsib_host, vsib_port))
+                    thread.start_new_thread(handler, (sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions))
         
 
-def handler(sock, ssap_msg, vs, vsib_host, vsib_port):
+def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions):
     print colored("publisher> ", "blue", attrs=["bold"]) + "started a thread"
 
     # socket to the real SIB
@@ -99,7 +104,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port):
             rs.send(ssap_msg)
      
             # start a new thread to handle it
-            thread.start_new_thread(subscription_handler, (rs, vs, ssap_msg_dict["virtual_subscription_id"], vsib_host, vsib_port))
+            thread.start_new_thread(subscription_handler, (rs, vs, ssap_msg_dict["virtual_subscription_id"], vsib_host, vsib_port, subscriptions))
 
         elif ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
             # convert ssap_msg to dict
@@ -158,7 +163,7 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             break    
 
 
-def subscription_handler(rs, vs, vsub_id, vsib_host, vsib_port):
+def subscription_handler(rs, vs, vsub_id, vsib_host, vsib_port, subscriptions):
 
     # we open a socket for each subscription
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

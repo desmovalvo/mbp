@@ -16,8 +16,8 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 # this is a dictionary in which the keys are the available commands,
 # while the values are lists of available parameters for that command
 COMMANDS = {
-    "NewRemoteSIB" : ["sibID", "owner"],
-    "NewVirtualMultiSIB": [],
+    "NewRemoteSIB" : ["owner"],
+    "NewVirtualMultiSIB": ["sib_list"],
     "Discovery" : []
     }
 
@@ -54,10 +54,25 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                             # decode 
                             print colored("Manager> ", "blue", attrs=["bold"]) + "calling the proper method"
-                            virtual_sib_id = globals()[data["command"]]()
-                    
-                            # send a reply
-                            self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_id':virtual_sib_id}))
+                            if data["command"] == "NewRemoteSIB":
+                                #TODO: passare al metodo NewRemoteSIB
+                                #l'owner della sib e fargli inserire
+                                #nell'ancillary sib anche questo dato
+                                virtual_sib_id = globals()[data["command"]]()
+                                # send a reply
+                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_id':virtual_sib_id}))
+
+                            elif data["command"] == "Discovery":
+                                virtual_sib_list = globals()[data["command"]]()
+                                # send a reply
+                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
+                                
+                            elif data["command"] == "NewVirtualMultiSIB":
+                                sib_list = data['sib_list']
+                                virtual_multi_sib_id = globals()[data["command"]](sib_list)
+                                # send a reply
+                                print "ritornato dalla funzione"
+                                self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_id':virtual_multi_sib_id}))
                             
                         else:
 
@@ -92,9 +107,9 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':'no command supplied'}))
 
-        except Exception, e:
-            print colored("Manager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
-            self.server.logger.info(" Exception while receiving message: " + str(e))
+        except ZeroDivisionError:# Exception, e:
+            print colored("Manager> ", "red", attrs=["bold"]) + "Exception while receiving message: "# + str(e)
+            self.server.logger.info(" Exception while receiving message: ")# + str(e))
 
 
 ##############################################################
