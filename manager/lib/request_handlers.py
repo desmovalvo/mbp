@@ -19,15 +19,31 @@ def NewRemoteSIB():
     # virtual sib id
     virtual_sib_id = str(uuid.uuid4())
 
+    # create two sockets
+    s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # generating two random ports
+    while True:
+        kp_port = random.randint(10000, 11000)
+        if sock.connect_ex(kp_port) == 0:
+            print "estratta la porta %s"%(str(kp_port))
+            break
+
+    while True:
+        pub_port = random.randint(10000, 11000)
+        if sock.connect_ex(pub_port) == 0:
+            print "estratta la porta %s"%(str(pub_port))
+            break        
+
     # start a virtual sib
-    thread.start_new_thread(virtualiser, ("localhost", 10010, "localhost", 10011))
+    thread.start_new_thread(virtualiser, ("localhost", kp_port, "localhost", pub_port))
     
     # insert information in the ancillary SIB
     a = SibLib("127.0.0.1", 10088)
-    t = Triple(URI(virtual_sib_id), URI("hasIpPort"), URI("127.0.0.1-10011"))
+    t = Triple(URI(virtual_sib_id), URI("hasIpPort"), URI("127.0.0.1-" + str(pub_port)))
     a.insert(t)
     
-
     # return virtual sib id
     return virtual_sib_id
 
