@@ -411,27 +411,45 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, cl
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_unsubscribe_request"
     logger.info("RDF UNSUBSCRIBE REQUEST handled by handle_rdf_unsubscribe_request")
 
-    # find the Subreq instance
-    for s in val_subscriptions:
-        if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
+    # check the number of connected real sibs
+    if len(sib_list) > 0:
 
-            # forwarding message to the publishers
-            for sock in sib_list:
-                try:
-                    # send the message
-                    sock.send(ssap_msg)                
-                except socket.error:
-                    err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                     info["space_id"],
-                                                     "UNSUBSCRIBE",
-                                                     info["transaction_id"],
-                                                     '<parameter name="status">m3:Error</parameter>')
-                    s.conn.send(err_msg)
-                    
-                    logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
+        # find the Subreq instance
+        for s in val_subscriptions:
+            if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
+    
+                # forwarding message to the publishers
+                for sock in sib_list:
+                    try:
+                        # send the message
+                        sock.send(ssap_msg)                
+                    except socket.error:
+                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                         info["space_id"],
+                                                         "UNSUBSCRIBE",
+                                                         info["transaction_id"],
+                                                         '<parameter name="status">m3:Error</parameter>')
+                        s.conn.send(err_msg)
+                        
+                        logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
+    
+                break
+                        
+    else:
+        
+        # no sib connected, sending an error reply
+        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "UNSUBSCRIBE",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')
 
-            break
-            
+        # send a notification error to the KP
+        clientsock.send(err_msg)
+        clientsock.close()
+        del kp_list[info["node_id"]]
+        print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a UNSUBSCRIBE REQUEST. No real sib present."
+        logger.error("UNSUBSCRIBE REQUEST failed: no real sib connected")
         
 
 ##############################################################
