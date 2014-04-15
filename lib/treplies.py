@@ -95,7 +95,6 @@ def handle_leave_request(logger, info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_leave_request"
     logger.info("LEAVE REQUEST handled by handle_leave_request")
 
-
     # check the number of connected real sibs
     if len(sib_list) > 0:
             
@@ -133,18 +132,34 @@ def handle_insert_request(logger, info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_insert_request"
     logger.info("INSERT REQUEST handled by handle_insert_request")
 
-    # forwarding message to the publishers
-    for sock in sib_list:
-        try:
-            sock.send(ssap_msg)
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "INSERT",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-            kp_list[info["node_id"]].send(err_msg)
-            logger.error("INSERT REQUEST forwarding failed")
+    # check the number of connected real sibs
+    if len(sib_list) > 0:
+
+        # forwarding message to the publishers
+        for sock in sib_list:
+            try:
+                sock.send(ssap_msg)
+            except socket.error:
+                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "INSERT",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')
+                kp_list[info["node_id"]].send(err_msg)
+                logger.error("INSERT REQUEST forwarding failed")
+
+    # no real sib present
+    else:
+        # build and send an error message
+        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "INSERT",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')    
+        kp_list[info["node_id"]].send(err_msg)    
+        print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a INSERT REQUEST. No real sib present."
+        logger.error("INSERT REQUEST forwarding failed: no real sib present")    
+    
 
 
 # REMOVE REQUEST
