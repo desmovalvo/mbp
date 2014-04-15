@@ -39,8 +39,6 @@ logger = logging.getLogger("tserver")
 
 def handler(clientsock, addr):
 
-    print "New thread"
-
     complete_ssap_msg = ""
     while 1:
         try:
