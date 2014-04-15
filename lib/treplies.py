@@ -2,6 +2,7 @@
 
 # requirements
 import sys
+import struct
 from SSAPLib import *
 from termcolor import *
 from lib.Subreq import *
@@ -48,20 +49,41 @@ def handle_join_request(logger, info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
     logger.info("JOIN REQUEST handled by handle_join_request")
 
-    # forwarding message to the publishers
-    for sock in sib_list:
-        try:
-            sock.send(ssap_msg)
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "JOIN",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-            # send a notification error to the KP
-            kp_list[info["node_id"]].send(err_msg)
-            del kp_list[info["node_id"]]
-            logger.error("JOIN REQUEST forwarding failed")
+    # check the number of connected real sibs
+    if len(sib_list) > 0:
+        
+        # forwarding message to the publishers
+        for sock in sib_list:
+            try:
+                sock.send(ssap_msg)
+            except socket.error:
+                
+                # debug print
+                print colored('treplies> ', "red", attrs=["bold"]) + " socket error while forwarding a join request"
+
+                # send a notification error to the KP
+                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                         info["space_id"],
+                                                         "JOIN",
+                                                         info["transaction_id"],
+                                                         '<parameter name="status">m3:Error</parameter>')            
+                kp_list[info["node_id"]].send(err_msg)
+                del kp_list[info["node_id"]]
+                logger.error("JOIN REQUEST forwarding failed")
+
+    else:
+        
+        # no sib connected, sending an error reply
+        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "JOIN",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')
+
+        # send a notification error to the KP
+        kp_list[info["node_id"]].send(err_msg)
+        del kp_list[info["node_id"]]
+        logger.error("JOIN REQUEST failed: no real sib connected")
 
 
 # LEAVE REQUEST
@@ -760,11 +782,16 @@ def handle_rdf_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subs
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_indication"
     logger.info("RDF SUBSCRIBE INDICATION handled by handle_subscribe_indication")
 
+    # lock
+    print "Acquiring lock"
+    lock = threading.Lock()
+
     for s in val_subscriptions:
         if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
 
             # send the message to the kp
             print "Inoltro la indication"
+            print ssap_msg
             try:
                 s.conn.send(ssap_msg)
             except socket.error:
@@ -772,12 +799,19 @@ def handle_rdf_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subs
             
             break
 
+    print "Releasing the lock"
+    lock.release
+
 
 def handle_sparql_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscriptions):
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_subscribe_indication"
     logger.info("SPARQL SUBSCRIBE INDICATION handled by handle_subscribe_indication")
+
+    # lock
+    print "Acquiring lock"
+    lock = threading.Lock()
 
     for s in val_subscriptions:
         if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
@@ -790,6 +824,10 @@ def handle_sparql_subscribe_indication(logger, ssap_msg, info, fromsocket, val_s
                 print "inoltro indication fallito"
             
             break                
+
+    print "Releasing the lock"
+    lock.release
+
 
 ##############################################################
 #

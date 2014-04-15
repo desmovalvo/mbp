@@ -123,6 +123,7 @@ def generic_handler(rs, vs):
 def rdf_subscription_handler(rs, vs, vsub_id):
 
     print colored("rdf_subscription_handler> ", "blue", attrs=["bold"]) + "started!"
+    complete_ssap_msg = ""
 
     # we open a socket for each subscription
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -132,7 +133,21 @@ def rdf_subscription_handler(rs, vs, vsub_id):
     # wait for messages and examinate them!
     while 1:
         ssap_msg = rs.recv(4096)
-        if len(ssap_msg) > 1:
+
+        print "+++ INFO +++"
+        print str(type(ssap_msg))
+        print str(len(ssap_msg)) + " " + str(len(complete_ssap_msg))
+        print "+++ OFNI +++"
+
+        # concat the received message
+        if len(ssap_msg) > 0:
+            complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+
+        # check if we have a complete message
+        if "</SSAP_message>" in complete_ssap_msg:
+            ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
+            complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
+            
             # forwarding subscription-related message to the virtual sib
             print colored("tpublisher>", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
             
@@ -175,7 +190,11 @@ def rdf_subscription_handler(rs, vs, vsub_id):
                                                                 ssap_msg_dict["new_results"],
                                                                 ssap_msg_dict["obsolete_results"]
                                                                 )
-                    tvs.send(ssap_msg)
+                    try:
+                        tvs.send(ssap_msg)
+                    except:
+                        "errore nella send del publisher!!!"
+                    print colored("Indication forwardata", "red", attrs=["bold"])
 
 
                 elif "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg:

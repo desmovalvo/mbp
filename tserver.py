@@ -38,12 +38,16 @@ logger = logging.getLogger("tserver")
 ##############################################################
 
 def handler(clientsock, addr):
+
+    print "New thread"
+
     complete_ssap_msg = ""
     while 1:
         try:
             ssap_msg = clientsock.recv(BUFSIZ)
+
             # check whether we received a blank message
-            if not ssap_msg and not complete_ssap_msg:
+            if len(ssap_msg) == 0 and len(complete_ssap_msg) == 0:
                 break
 
             if ssap_msg != None:
@@ -67,7 +71,7 @@ def handler(clientsock, addr):
                     info[k] = child.text
     
                 # debug info
-                print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
+                print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"] + " from " + str(clientsock)
                 logger.info("Received the following  message from " + str(addr))
                 logger.info(str(complete_ssap_msg).replace("\n", ""))
                 logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
@@ -117,10 +121,6 @@ def handler(clientsock, addr):
                     initial_results[info["node_id"]] = []
                     kp_list[info["node_id"]] = clientsock
                     handle_sparql_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
-
-                # SPARQL UNSUBSCRIBE REQUEST
-                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE" and info["parameter_type"] == "sparql":
-                    handle_sparql_unsubscribe_request()                    
 
                 # RDF QUERY REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "RDF-M3":
@@ -192,7 +192,7 @@ def handler(clientsock, addr):
     
     
             except ET.ParseError:
-         #       print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
+                print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:
