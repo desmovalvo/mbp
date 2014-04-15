@@ -82,8 +82,9 @@ def handle_join_request(logger, info, ssap_msg, sib_list, kp_list):
 
         # send a notification error to the KP
         kp_list[info["node_id"]].send(err_msg)
+        kp_list[info["node_id"]].close()
         del kp_list[info["node_id"]]
-        print colored("treplies> ", "red", attrs=["bold"]), + "error while forwarding a JOIN REQUEST. No real sib present."
+        print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a JOIN REQUEST. No real sib present."
         logger.error("JOIN REQUEST failed: no real sib connected")
 
 
@@ -120,6 +121,7 @@ def handle_leave_request(logger, info, ssap_msg, sib_list, kp_list):
                                                  info["transaction_id"],    
                                                  '<parameter name="status">m3:Error</parameter>')    
         kp_list[info["node_id"]].send(err_msg)    
+        kp_list[info["node_id"]].close()
         print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a LEAVE REQUEST. No real sib present."
         logger.error("LEAVE REQUEST forwarding failed: no real sib present")    
     
@@ -157,6 +159,7 @@ def handle_insert_request(logger, info, ssap_msg, sib_list, kp_list):
                                                  info["transaction_id"],
                                                  '<parameter name="status">m3:Error</parameter>')    
         kp_list[info["node_id"]].send(err_msg)    
+        kp_list[info["node_id"]].close()
         print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a INSERT REQUEST. No real sib present."
         logger.error("INSERT REQUEST forwarding failed: no real sib present")    
     
@@ -195,6 +198,7 @@ def handle_remove_request(logger, info, ssap_msg, sib_list, kp_list):
                                                  info["transaction_id"],    
                                                  '<parameter name="status">m3:Error</parameter>')    
         kp_list[info["node_id"]].send(err_msg)    
+        kp_list[info["node_id"]].close()
         print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a REMOVE REQUEST. No real sib present."
         logger.error("REMOVE REQUEST forwarding failed: no real sib present")    
     
@@ -232,6 +236,7 @@ def handle_sparql_query_request(logger, info, ssap_msg, sib_list, kp_list):
                                                  info["transaction_id"],    
                                                  '<parameter name="status">m3:Error</parameter>')    
         kp_list[info["node_id"]].send(err_msg)    
+        kp_list[info["node_id"]].close()
         print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a QUERY REQUEST. No real sib present."
         logger.error("LEAVE REQUEST forwarding failed: no real sib present")    
 
@@ -269,6 +274,7 @@ def handle_rdf_query_request(logger, info, ssap_msg, sib_list, kp_list):
                                                  info["transaction_id"],    
                                                  '<parameter name="status">m3:Error</parameter>')    
         kp_list[info["node_id"]].send(err_msg)    
+        kp_list[info["node_id"]].close()
         print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a QUERY REQUEST. No real sib present."
         logger.error("QUERY REQUEST forwarding failed: no real sib present")    
 
@@ -281,40 +287,57 @@ def handle_sparql_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, c
     print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_subscribe_request"
     logger.info("SPARQL SUBSCRIBE REQUEST handled by handle_sparql_subscribe_request")
 
-    # generating a Subreq instance
-    newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
-    val_subscriptions.append(newsub)
+    # check the number of connected real sibs
+    if len(sib_list) > 0:
+        
+        # generating a Subreq instance
+        newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
+        val_subscriptions.append(newsub)
+    
+        # convert ssap_msg to dict
+        ssap_msg_dict = {}
+        parser = make_parser()
+        ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+        parser.setContentHandler(ssap_mh)
+        parser.parse(StringIO(ssap_msg))        
+    
+        # forwarding message to the publishers
+        for sock in sib_list:
+            try:
+                
+                pars = '<parameter name = "type">sparql</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter><virtual_subscription_id>' + str(newsub.virtual_subscription_id) + '</virtual_subscription_id>'
+    
+                ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(info["node_id"],
+                                                          info["space_id"],
+                                                          "SUBSCRIBE",
+                                                          info["transaction_id"],
+                                                          pars)
+                sock.send(ssap_msg)
+    
+            except socket.error:
+                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                         info["space_id"],
+                                                         "SUBSCRIBE",
+                                                         info["transaction_id"],
+                                                         '<parameter name="status">m3:Error</parameter>')
+                newsub.conn.send(err_msg)
+                #TODO delete Subreq class instance!                
+                logger.error("SPARQL SUBSCRIBE REQUEST forwarding failed")
+    
+    # no real sib present
+    else:
+        # build and send an error message
+        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],    
+                                                 info["space_id"],    
+                                                 "SUBSCRIBE",    
+                                                 info["transaction_id"],    
+                                                 '<parameter name="status">m3:Error</parameter>')    
+        clientsock.send(err_msg)    
+        clientsock.close()
+        # TODO: delete Subreq class instance!
 
-    # convert ssap_msg to dict
-    ssap_msg_dict = {}
-    parser = make_parser()
-    ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-    parser.setContentHandler(ssap_mh)
-    parser.parse(StringIO(ssap_msg))        
-
-    # forwarding message to the publishers
-    for sock in sib_list:
-        try:
-            
-            pars = '<parameter name = "type">sparql</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter><virtual_subscription_id>' + str(newsub.virtual_subscription_id) + '</virtual_subscription_id>'
-
-            ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
-                                                      "SUBSCRIBE",
-                                                      info["transaction_id"],
-                                                      pars)
-            sock.send(ssap_msg)
-
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                     info["space_id"],
-                                                     "SUBSCRIBE",
-                                                     info["transaction_id"],
-                                                     '<parameter name="status">m3:Error</parameter>')
-            newsub.conn.send(err_msg)
-            #TODO delete class!
-            
-            logger.error("SPARQL SUBSCRIBE REQUEST forwarding failed")
+        print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a SPARQL SUBSCRIBE REQUEST. No real sib present."
+        logger.error("SPARQL SUBSCRIBE REQUEST forwarding failed: no real sib present")    
 
 
 # RDF SUBSCRIBE REQUEST
@@ -325,42 +348,60 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clie
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_request"
     logger.info("RDF SUBSCRIBE REQUEST handled by handle_rdf_subscribe_request")
 
-    # generating a Subreq instance
-    newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
-    val_subscriptions.append(newsub)
+    # check the number of connected real sibs
+    if len(sib_list) > 0:
 
-    # convert ssap_msg to dict
-    ssap_msg_dict = {}
-    parser = make_parser()
-    ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-    parser.setContentHandler(ssap_mh)
-    parser.parse(StringIO(ssap_msg))        
+        # generating a Subreq instance
+        newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
+        val_subscriptions.append(newsub)
+    
+        # convert ssap_msg to dict
+        ssap_msg_dict = {}
+        parser = make_parser()
+        ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+        parser.setContentHandler(ssap_mh)
+        parser.parse(StringIO(ssap_msg))        
+    
+        # forwarding message to the publishers
+        for sock in sib_list:
+            try:
+                
+                pars = '<parameter name = "type">RDF-M3</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter><virtual_subscription_id>' + str(newsub.virtual_subscription_id) + '</virtual_subscription_id>'
+    
+                ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(info["node_id"],
+                                                          info["space_id"],
+                                                          "SUBSCRIBE",
+                                                          info["transaction_id"],
+                                                          pars
+                                                          )
+    
+                sock.send(ssap_msg)
+    
+            except socket.error:
+                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "SUBSCRIBE",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')
+                newsub.conn.send(err_msg)
+                newsub.conn.close()
+                #TODO delete class!
+                
+                logger.error("RDF SUBSCRIBE REQUEST forwarding failed")
 
-    # forwarding message to the publishers
-    for sock in sib_list:
-        try:
-            
-            pars = '<parameter name = "type">RDF-M3</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter><virtual_subscription_id>' + str(newsub.virtual_subscription_id) + '</virtual_subscription_id>'
-
-            ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
-                                                      "SUBSCRIBE",
-                                                      info["transaction_id"],
-                                                      pars
-                                                      )
-
-            sock.send(ssap_msg)
-
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "SUBSCRIBE",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-            newsub.conn.send(err_msg)
-            #TODO delete class!
-            
-            logger.error("RDF SUBSCRIBE REQUEST forwarding failed")
+    else:
+        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "SUBSCRIBE",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')
+        clientsock.send(err_msg)
+        clientsock.close()
+        #TODO delete class!
+        
+        print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a RDF SUBSCRIBE REQUEST. No real sib present."
+        logger.error("RDF SUBSCRIBE REQUEST forwarding failed: no real sib present")    
+        
 
 # RDF UNSUBSCRIBE REQUEST
 def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions):

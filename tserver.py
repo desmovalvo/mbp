@@ -194,11 +194,8 @@ def handler(clientsock, addr):
                 pass
 
         except socket.error:
-            print "TODO: check this socket.error and the following break"
+            print colored("tserver> ", "red", attrs=["bold"]) + "Socket error, closing connection"
             break
-
-        #print colored("tserver> ", "red", attrs=["bold"]) + " socket.error: break!"
-#            break
 
     
 ##############################################################
