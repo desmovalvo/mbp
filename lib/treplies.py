@@ -169,20 +169,36 @@ def handle_remove_request(logger, info, ssap_msg, sib_list, kp_list):
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_remove_request"
     logger.info("REMOVE REQUEST handled by handle_remove_request")
+    
+    # check the number of connected real sibs
+    if len(sib_list) > 0:
 
-    # forwarding message to the publishers
-    for sock in sib_list:
-        try:
-            sock.send(ssap_msg)
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "REMOVE",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-            kp_list[info["node_id"]].send(err_msg)
-            logger.error("REMOVE REQUEST forwarding failed")
+        # forwarding message to the publishers
+        for sock in sib_list:
+            try:
+                sock.send(ssap_msg)
+            except socket.error:
+                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "REMOVE",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')
+                kp_list[info["node_id"]].send(err_msg)
+                logger.error("REMOVE REQUEST forwarding failed")
 
+    # no real sib present
+    else:
+        # build and send an error message
+        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],    
+                                                 info["space_id"],    
+                                                 "REMOVE",    
+                                                 info["transaction_id"],    
+                                                 '<parameter name="status">m3:Error</parameter>')    
+        kp_list[info["node_id"]].send(err_msg)    
+        print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a REMOVE REQUEST. No real sib present."
+        logger.error("REMOVE REQUEST forwarding failed: no real sib present")    
+    
+    
 # SPARQL QUERY REQUEST
 def handle_sparql_query_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the sparql query request received from a KP."""
