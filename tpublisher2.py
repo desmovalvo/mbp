@@ -18,78 +18,83 @@ subscriptions = {}
 def handler(sock, ssap_msg):
     print colored("tpublisher> ", "blue", attrs=["bold"]) + "started a thread"
 
-    # socket to the real SIB
-    rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    rs.connect((realsib_host, realsib_port))
-
-    # forward the message to the real SIB
-    if not "<transaction_type>REGISTER</transaction_type>" in ssap_msg:
-
-
-        if ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
-     
-            # convert ssap_msg to dict
-            ssap_msg_dict = {}
-            parser = make_parser()
-            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-            parser.setContentHandler(ssap_mh)
-            parser.parse(StringIO(ssap_msg))        
-
-            # store the virtual subscription id
-            subscriptions[ssap_msg_dict["virtual_subscription_id"]] = None
-            
-            # build subscribe request message       
-            if ssap_msg_dict["type"] == "sparql":
-                pars = '<parameter name = "type">sparql</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter>'
-            elif ssap_msg_dict["type"] == "RDF-M3":
-                pars = '<parameter name = "type">RDF-M3</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter>'
-
-            ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(ssap_msg_dict["node_id"],
-                                                      ssap_msg_dict["space_id"],
-                                                      "SUBSCRIBE",
-                                                      ssap_msg_dict["transaction_id"],
-                                                      pars
-                                                      )
-
-            # send to the real sib
-            rs.send(ssap_msg)
-     
-            # start a new thread to handle it
-            if ssap_msg_dict["type"] == "RDF-M3":
-                thread.start_new_thread(rdf_subscription_handler, (rs, vs, ssap_msg_dict["virtual_subscription_id"]))
-            elif ssap_msg_dict["type"] == "sparql":
-                thread.start_new_thread(sparql_subscription_handler, (rs, vs, ssap_msg_dict["virtual_subscription_id"]))
-
-        elif ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
-            # convert ssap_msg to dict
-            ssap_msg_dict = {}
-            parser = make_parser()
-            ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-            parser.setContentHandler(ssap_mh)
-            parser.parse(StringIO(ssap_msg))        
-
-            # get real subscription id from subscriptions structure
-            subscription_id = subscriptions[ssap_msg_dict["subscription_id"]]
-            
-            pars = '<parameter name = "subscription_id">' + subscription_id + '</parameter>'
-
-            # build unsubscribe request with real subscription id
-            ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(ssap_msg_dict["node_id"],
-                                                      ssap_msg_dict["space_id"],
-                                                      "UNSUBSCRIBE",
-                                                      ssap_msg_dict["transaction_id"],
-                                                      pars)
-
-            # send to the real sib
-            rs.send(ssap_msg)
-            
-        else:
-            # send to the real sib
-            rs.send(ssap_msg)
-            
-            # start a generic handler
-            thread.start_new_thread(generic_handler, (rs, vs))
-            
+    if len(ssap_msg) == 1:
+        if sock == vs:
+            print "It's only a check but I like it!"
+            vs.send(" ")
+    else:
+        # socket to the real SIB
+        rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        rs.connect((realsib_host, realsib_port))
+    
+        # forward the message to the real SIB
+        if not "<transaction_type>REGISTER</transaction_type>" in ssap_msg:
+    
+    
+            if ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
+         
+                # convert ssap_msg to dict
+                ssap_msg_dict = {}
+                parser = make_parser()
+                ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+                parser.setContentHandler(ssap_mh)
+                parser.parse(StringIO(ssap_msg))        
+    
+                # store the virtual subscription id
+                subscriptions[ssap_msg_dict["virtual_subscription_id"]] = None
+                
+                # build subscribe request message       
+                if ssap_msg_dict["type"] == "sparql":
+                    pars = '<parameter name = "type">sparql</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter>'
+                elif ssap_msg_dict["type"] == "RDF-M3":
+                    pars = '<parameter name = "type">RDF-M3</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter>'
+    
+                ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                          ssap_msg_dict["space_id"],
+                                                          "SUBSCRIBE",
+                                                          ssap_msg_dict["transaction_id"],
+                                                          pars
+                                                          )
+    
+                # send to the real sib
+                rs.send(ssap_msg)
+         
+                # start a new thread to handle it
+                if ssap_msg_dict["type"] == "RDF-M3":
+                    thread.start_new_thread(rdf_subscription_handler, (rs, vs, ssap_msg_dict["virtual_subscription_id"]))
+                elif ssap_msg_dict["type"] == "sparql":
+                    thread.start_new_thread(sparql_subscription_handler, (rs, vs, ssap_msg_dict["virtual_subscription_id"]))
+    
+            elif ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
+                # convert ssap_msg to dict
+                ssap_msg_dict = {}
+                parser = make_parser()
+                ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+                parser.setContentHandler(ssap_mh)
+                parser.parse(StringIO(ssap_msg))        
+    
+                # get real subscription id from subscriptions structure
+                subscription_id = subscriptions[ssap_msg_dict["subscription_id"]]
+                
+                pars = '<parameter name = "subscription_id">' + subscription_id + '</parameter>'
+    
+                # build unsubscribe request with real subscription id
+                ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                          ssap_msg_dict["space_id"],
+                                                          "UNSUBSCRIBE",
+                                                          ssap_msg_dict["transaction_id"],
+                                                          pars)
+    
+                # send to the real sib
+                rs.send(ssap_msg)
+                
+            else:
+                # send to the real sib
+                rs.send(ssap_msg)
+                
+                # start a generic handler
+                thread.start_new_thread(generic_handler, (rs, vs))
+                
             
 
 

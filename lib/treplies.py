@@ -2,8 +2,13 @@
 
 # requirements
 import sys
+import time
 import struct
+import thread
+import datetime
+import threading
 from SSAPLib import *
+from threading import *
 from termcolor import *
 from lib.Subreq import *
 from smart_m3.m3_kp import *
@@ -17,13 +22,19 @@ from xml.sax import make_parser
 ##############################################################
 
 # REGISTER REQUEST
-def handle_register_request(logger, conn, info):
+def handle_register_request(logger, conn, info, sib_list, sib_list_timers):
     """This method is used to forge and send a reply to the REGISTER
     REQUEST sent by a publisher entity."""
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_register_request"
     logger.info("REGISTER REQUEST handled by handle_register_request")
+
+    # setting the timestamp
+    sib_list_timers[str(conn)] = datetime.datetime.now()
+
+    thread.start_new_thread(socket_observer, (conn, sib_list, sib_list_timers))
+    print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(conn)
 
     # build a reply message
     reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
@@ -1068,3 +1079,27 @@ def reply_to_sparql_subscribe(node_id, space_id, transaction_id, subscription_id
                                                      subscription_id,
                                                      body)
     return reply
+
+
+
+# SOCKET OBSERVER THREAD
+def socket_observer(socket, sib_list, sib_list_timers):
+
+    key = str(socket)
+
+    while 1:
+        try:            
+            if (datetime.datetime.now() - sib_list_timers[str(socket)]).total_seconds() > 15:
+                print colored("treplies> ", "red", attrs=["bold"]) + " socket " + key + " dead"
+                del sib_list[sib_list.index(socket)]
+                break
+            else:
+                time.sleep(5)
+                print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + key + " is alive"
+                socket.send(" ")
+
+        except IOError:
+            pass
+
+        except KeyError:
+            pass
