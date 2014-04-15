@@ -207,18 +207,33 @@ def handle_sparql_query_request(logger, info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_query_request"
     logger.info("SPARQL QUERY REQUEST handled by handle_sparql_query_request")
 
-    # forwarding message to the publishers
-    for sock in sib_list:
-        try:
-            sock.send(ssap_msg)
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "QUERY",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-            kp_list[info["node_id"]].send(err_msg)
-            logger.error("SPARQL QUERY REQUEST forwarding failed")
+    # check the number of connected real sibs
+    if len(sib_list) > 0:
+
+        # forwarding message to the publishers
+        for sock in sib_list:
+            try:
+                sock.send(ssap_msg)
+            except socket.error:
+                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "QUERY",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')
+                kp_list[info["node_id"]].send(err_msg)
+                logger.error("SPARQL QUERY REQUEST forwarding failed")
+    
+    # no real sib present
+    else:
+        # build and send an error message
+        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],    
+                                                 info["space_id"],    
+                                                 "QUERY",    
+                                                 info["transaction_id"],    
+                                                 '<parameter name="status">m3:Error</parameter>')    
+        kp_list[info["node_id"]].send(err_msg)    
+        print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a QUERY REQUEST. No real sib present."
+        logger.error("LEAVE REQUEST forwarding failed: no real sib present")    
 
 
 # RDF QUERY REQUEST
@@ -229,18 +244,34 @@ def handle_rdf_query_request(logger, info, ssap_msg, sib_list, kp_list):
     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_query_request"
     logger.info("RDF QUERY REQUEST handled by handle_rdf_query_request")
 
-    # forwarding message to the publishers
-    for sock in sib_list:
-        try:
-            sock.send(ssap_msg)
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "QUERY",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-            kp_list[info["node_id"]].send(err_msg)
-            logger.error("RDF QUERY REQUEST forwarding failed")
+    # check the number of connected real sibs
+    if len(sib_list) > 0:
+
+        # forwarding message to the publishers
+        for sock in sib_list:
+            try:
+                sock.send(ssap_msg)
+            except socket.error:
+                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                 info["space_id"],
+                                                 "QUERY",
+                                                 info["transaction_id"],
+                                                 '<parameter name="status">m3:Error</parameter>')
+                kp_list[info["node_id"]].send(err_msg)
+                logger.error("RDF QUERY REQUEST forwarding failed")
+        
+    # no real sib present
+    else:
+        # build and send an error message
+        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],    
+                                                 info["space_id"],    
+                                                 "LEAVE",    
+                                                 info["transaction_id"],    
+                                                 '<parameter name="status">m3:Error</parameter>')    
+        kp_list[info["node_id"]].send(err_msg)    
+        print colored("treplies> ", "red", attrs=["bold"]) + "error while forwarding a QUERY REQUEST. No real sib present."
+        logger.error("QUERY REQUEST forwarding failed: no real sib present")    
+
 
 # RDF SUBSCRIBE REQUEST
 def handle_sparql_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions):
