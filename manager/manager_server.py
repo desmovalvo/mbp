@@ -38,7 +38,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
             
             # Decode the request
             if data.has_key("command"):
-                
+
                 if data["command"] in COMMANDS.keys():
                     # debug print
                     print colored("Manager> ", "blue", attrs=["bold"]) + "received the command " + colored(data["command"], "cyan", attrs=['bold'])
@@ -98,6 +98,13 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                     # send a reply
                     self.request.sendall(json.dumps({'return':'fail', 'cause':'invalid command'}))
+
+                # debug print
+                print colored("Manager> ", "blue", attrs=["bold"]) + "received the command " + colored(data["command"], "cyan", attrs=['bold'])
+                self.server.logger.info(" Received the command " + str(data))
+
+                # send a reply
+                self.request.sendall(json.dumps({'return':'ok'}))
                 
             else:
                 # debug print
@@ -110,6 +117,11 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
         except ZeroDivisionError:# Exception, e:
             print colored("Manager> ", "red", attrs=["bold"]) + "Exception while receiving message: "# + str(e)
             self.server.logger.info(" Exception while receiving message: ")# + str(e))
+                self.request.sendall(json.dumps({'return':'fail'}))
+
+        except Exception, e:
+            print colored("Manager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
+            self.server.logger.info(" Exception while receiving message: " + str(e))
 
 
 ##############################################################
