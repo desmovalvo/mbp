@@ -65,12 +65,14 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                             # decode 
                             print colored("Virtualiser> ", "blue", attrs=["bold"]) + "calling the proper method"
                             if data["command"] == "NewRemoteSIB":
-                                #TODO: passare al metodo NewRemoteSIB
-                                #l'owner della sib e fargli inserire
-                                #nell'ancillary sib anche questo dato
-                                virtual_sib_id = globals()[data["command"]]()
+                                #Passiamo al metodo NewRemoteSIB
+                                #l'owner della sib in modo che
+                                #inserisca nell'ancillary sib anche
+                                #questo dato
+                                virtual_sib_info = globals()[data["command"]](data["owner"], virtualiser_ip)
                                 # send a reply
-                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_id':virtual_sib_id}))
+                                #TODO: aggiungere il virtualiser_ip nella risposta
+                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
 
                             elif data["command"] == "Discovery":
                                 virtual_sib_list = globals()[data["command"]]()

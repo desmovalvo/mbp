@@ -8,12 +8,13 @@ from smart_m3.m3_kp import *
 from virtualiser import *
 import threading
 import thread
+import random
 
 ns = "http://smartM3Lab/Ontology.owl#"
 
 #functions
 
-def NewRemoteSIB():
+def NewRemoteSIB(owner, virtualiser_ip):
     # debug print
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -27,31 +28,36 @@ def NewRemoteSIB():
     # generating two random ports
     while True:
         kp_port = random.randint(10000, 11000)
-        if sock.connect_ex(kp_port) == 0:
+        if s1.connect_ex(("localhost", kp_port)) != 0:
             print "estratta la porta %s"%(str(kp_port))
             break
 
     while True:
         pub_port = random.randint(10000, 11000)
-        if sock.connect_ex(pub_port) == 0:
-            print "estratta la porta %s"%(str(pub_port))
-            break        
+        if pub_port != kp_port:
+            if s2.connect_ex(("localhost", pub_port)) != 0:
+                print "estratta la porta %s"%(str(pub_port))
+                break        
 
     # start a virtual sib
-    thread.start_new_thread(virtualiser, ("localhost", kp_port, "localhost", pub_port))
+    thread.start_new_thread(virtualiser, (kp_port, pub_port))
+    
     
     # insert information in the ancillary SIB
     a = SibLib("127.0.0.1", 10088)
-    t = Triple(URI(virtual_sib_id), URI("hasIpPort"), URI("127.0.0.1-" + str(pub_port)))
-    
-    # insert information in the ancillary SIB
-    a = SibLib("127.0.0.1", 10088)
-    t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + "127.0.0.1-10011"))]
-    t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + "127.0.0.1-10010")))
+    t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port)))]
+    t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
+    t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
     a.insert(t)
     
+    virtual_sib_info = {}
+    virtual_sib_info["virtual_sib_id"] = str(virtual_sib_id)
+    virtual_sib_info["virtual_sib_ip"] = str(virtualiser_ip)
+    virtual_sib_info["virtual_sib_pub_port"] = pub_port
+    virtual_sib_info["virtual_sib_kp_port"] = kp_port
+
     # return virtual sib id
-    return virtual_sib_id
+    return virtual_sib_info
 
 def NewVirtualMultiSIB(sib_list):
     print colored("request_handlers> ", "blue", attrs=["bold"]) + str(sib_list)

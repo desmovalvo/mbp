@@ -58,12 +58,14 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                                 #TODO: passare al metodo NewRemoteSIB
                                 #l'owner della sib e fargli inserire
                                 #nell'ancillary sib anche questo dato
-                                virtual_sib = globals()[data["command"]]()
+                                confirm = globals()[data["command"]](data["owner"])
                                 # send a reply
-                                if virtual_sib != None:
-                                    self.request.sendall(json.dumps({'return':'ok', 'virtual_sib':virtual_sib}))
-                                else:
-                                    self.request.sendall(json.dumps({'return':'fail', 'cause':'virtual sib not created!'}))
+                                # if confirm["return"] == "ok":
+                                #     print "Here"
+                                #     self.request.sendall(json.dumps(confirm))
+                                # else:
+                                #     self.request.sendall(json.dumps({'return':'fail', 'cause':'virtual sib not created!'}))
+                                self.request.sendall(json.dumps(confirm))
 
                             elif data["command"] == "Discovery":
                                 virtual_sib_list = globals()[data["command"]]()
@@ -117,10 +119,10 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':'no command supplied'}))
 
-        except ZeroDivisionError:# Exception, e:
+        except ZeroDivisionError:#Exception, e:
             print colored("Manager> ", "red", attrs=["bold"]) + "Exception while receiving message: "# + str(e)
             self.server.logger.info(" Exception while receiving message: ")# + str(e))
-                self.request.sendall(json.dumps({'return':'fail'}))
+            self.request.sendall(json.dumps({'return':'fail'}))
 
         except Exception, e:
             print colored("Manager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)

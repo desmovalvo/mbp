@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+import json
 from termcolor import *
 import uuid
 from SIBLib import SibLib
@@ -8,13 +9,14 @@ from smart_m3.m3_kp import *
 from virtualiser import *
 import threading
 import thread
+from random import *
 
 ns = "http://smartM3Lab/Ontology.owl#"
-ancillary_ip = "10.143.250.58"
+ancillary_ip = "127.0.0.1"
 ancillary_port = 10088
 #functions
 
-def NewRemoteSIB():
+def NewRemoteSIB(owner):
     # debug print
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
     
@@ -27,7 +29,7 @@ def NewRemoteSIB():
     
     # query to the ancillary SIB 
     a = SibLib(ancillary_ip, ancillary_port)
-    
+    print "query..."
     # questa query restituisce il server meno carico. Potrebbero
     # esserci piu' server con lo stesso carico restituiti: ne
     # scegliamo uno a caso
@@ -44,6 +46,8 @@ WHERE { ?s rdf:type ns:virtualiser .
 LIMIT 1"""
     
     result = a.execute_sparql_query(query)
+
+    print "query fatta"
     if result != None:
         virtualiser_id = result[0][0][2].split("#")[1]
         virtualiser_ip = result[0][1][2].split("#")[1]
@@ -54,31 +58,35 @@ LIMIT 1"""
         print str(virtualiser_port)
         
 
-    # virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # virtualiser.settimeout(2)
-         
-    # # connect to the virtualiser
-    # try :
-    #     virtualiser.connect((virtualiser_ip, virtualiser_port))
-    # except :
-    #     print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the virtualiser'
-    #     sys.exit()        
+    virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    virtualiser.settimeout(2)
+    
+    # connect to the virtualiser
+    try :
+        virtualiser.connect((virtualiser_ip, virtualiser_port))
+    except :
+        print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the virtualiser'
+        sys.exit()        
 
-    # print colored("request_handlers> ", "blue", attrs=['bold']) + 'Connected to the virtualiser. Sending NewRemoteSib request!'
+    print colored("request_handlers> ", "blue", attrs=['bold']) + 'Connected to the virtualiser. Sending NewRemoteSib request!'
 
-    # # build request message 
-    # request_msg = {"command":"NewRemoteSIB", "owner":owner}
-    # request = json.dumps(request_msg)
-    # virtualiser.send(request)
+    # build request message 
+    request_msg = {"command":"NewRemoteSIB", "owner":owner}
+    request = json.dumps(request_msg)
+    virtualiser.send(request)
         
-    # while 1:
-    #     confirm_msg = virtualiser.recv(4096)
-    #     if confirm_msg:
-    #         print colored("request_handlers> ", "red", attrs=["bold"]) + 'Received the following message:'
-    #         print confirm_msg
-    #         break
-
-    # create two sockets
+    while 1:
+        confirm_msg = virtualiser.recv(4096)
+        if confirm_msg:
+            print colored("request_handlers> ", "red", attrs=["bold"]) + 'Received the following message:'
+            print confirm_msg
+            break
+###################################################################
+#######
+#######Questo pezzo ora sta in virtualiser/lib/request_handlers.py
+#######
+###################################################################
+    # # create two sockets
     # s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -95,10 +103,10 @@ LIMIT 1"""
     #         print "estratta la porta %s"%(str(pub_port))
     #         break        
 
-    # # start a virtual sib
-    # thread.start_new_thread(virtualiser, ("localhost", kp_port, "localhost", pub_port))
+    ## start a virtual sib
+    #thread.start_new_thread(virtualiser, ("localhost", kp_port, "localhost", pub_port))
     
-    # # insert information in the ancillary SIB
+    ## insert information in the ancillary SIB
     # a = SibLib("127.0.0.1", 10088)
     # t = Triple(URI(virtual_sib_id), URI("hasIpPort"), URI("127.0.0.1-" + str(pub_port)))
     
@@ -108,25 +116,30 @@ LIMIT 1"""
     # t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + "127.0.0.1-10010")))
     # a.insert(t)
 
-    # confirm = json.loads(confirm_msg)
-    # if confirm["return"] == "fail":
-    #     print colored("request_handlers> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
+###################################################################
+###################################################################
+
+
+    confirm = json.loads(confirm_msg)
+    if confirm["return"] == "fail":
+        print "heeeereeeeee"
+    
+        print colored("request_handlers> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
         
-    #     return None
+#        return None
         
-    # elif confirm["return"] == "ok":
-    #     virtual_sib_id = confirm["virtual_sib_id"]
-    #     virtual_sib_ip = confirm["virtual_sib_ip"]
-    #     virtual_sib_port = confirm["virtual_sib_port"]
+    elif confirm["return"] == "ok":
+        virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
+        virtual_sib_ip = confirm["virtual_sib_info"]["virtual_sib_ip"]
+        virtual_sib_pub_port = confirm["virtual_sib_info"]["virtual_sib_pub_port"]
         
-    #     print colored("request_handlers> ", "red", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + 'starded!' 
-    #     print "IP: " + virtual_sib_ip
-    #     print "PORT: " + virtual_sib_port        
+        print colored("request_handlers> ", "red", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' starded!' 
+        print "IP: " + virtual_sib_ip
+        print "PORT: " + str(virtual_sib_pub_port)        
         
-    #     virtual_sib = virtual_sib_id + '#' + virtual_sib_ip + '#' + virtual_sib_port
-        
-#        return virtual_sib
-        return 0       
+ #       return confirm["virtual_sib_info"]
+    
+    return confirm
 
     # Il server scelto oltre a far partire il thread (cioe' una
     # virtual sib) inserira' anche le informazioni nell'ancillary sib

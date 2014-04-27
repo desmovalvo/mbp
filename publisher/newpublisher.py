@@ -84,14 +84,24 @@ if __name__ == "__main__":
 
         elif confirm["return"] == "ok":
             print colored("newpublisher> ", "red", attrs=["bold"]) + 'Virtual Sib Created!'
-            virtual_sib = confirm["virtual_sib"]
-            print virtual_sib
-            virtual_sib_id = virtual_sib.split("#")[0]
-            virtual_sib_ip = virtual_sib.split("#")[1]
-            virtual_sib_port = virtual_sib.split("#")[2]
+    
+            virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
+            virtual_sib_ip = confirm["virtual_sib_info"]["virtual_sib_ip"]
+            virtual_sib_pub_port = confirm["virtual_sib_info"]["virtual_sib_pub_port"]
+            print virtual_sib_ip
+            print virtual_sib_pub_port
             
             # lancio publisher
-            StartConnection(virtual_sib_ip, virtual_sib_port)
+            StartConnection(virtual_sib_ip, virtual_sib_pub_port)
+
+############################################################
+###
+### Il seguente pezzo serve se dobbiamo fare la 
+### sottoscrizione all'ancillary sib per 
+### conoscere le info relative alla virtual sib 
+### creata. Per ora Le riceviamo direttamente dal manager!
+###
+############################################################
                 
         # elif confirm["return"] == "ok":
         #     print colored("newpublisher> ", "red", attrs=["bold"]) + 'Ready to subscribe to the ancillary sib'
@@ -118,6 +128,10 @@ if __name__ == "__main__":
                 
         #         # print "Subscription closed!"
         #         # a.CloseSubscribeTransaction(sub)
+
+############################################################################################
+############################################################################################
+
                                 
     except KeyboardInterrupt:
         print colored("Publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
