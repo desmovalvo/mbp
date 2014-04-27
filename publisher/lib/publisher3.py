@@ -14,15 +14,15 @@ from xml.sax import make_parser
 
 
 
-def StartConnection(vsib_host, vsib_port, a, sub): #realsib_host, realsib_port):
+def StartConnection(vsib_host, vsib_port):
     subscriptions = {}
     subs = {}
     #questo node_id serve solo per riempire il messaggio di register
     #che il publisher sta per mandare alla virtual sib
     node_id = uuid.uuid4()
     
-    print "Subscription closed!"
-    a.CloseSubscribeTransaction(sub)
+    # print "Subscription closed!"
+    # a.CloseSubscribeTransaction(sub)
 
     # socket to the virtual sib
     vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -58,9 +58,12 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                                 #TODO: passare al metodo NewRemoteSIB
                                 #l'owner della sib e fargli inserire
                                 #nell'ancillary sib anche questo dato
-                                virtual_sib_id = globals()[data["command"]]()
+                                virtual_sib = globals()[data["command"]]()
                                 # send a reply
-                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_id':virtual_sib_id}))
+                                if virtual_sib != None:
+                                    self.request.sendall(json.dumps({'return':'ok', 'virtual_sib':virtual_sib}))
+                                else:
+                                    self.request.sendall(json.dumps({'return':'fail', 'cause':'virtual sib not created!'}))
 
                             elif data["command"] == "Discovery":
                                 virtual_sib_list = globals()[data["command"]]()
