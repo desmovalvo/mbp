@@ -81,32 +81,43 @@ if __name__ == "__main__":
         confirm = json.loads(confirm_msg)
         if confirm["return"] == "fail":
             print colored("newpublisher> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
-                
+
         elif confirm["return"] == "ok":
-            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Ready to subscribe to the ancillary sib'
-            virtual_sib_id = confirm["virtual_sib_id"]
+            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Virtual Sib Created!'
+            virtual_sib = confirm["virtual_sib"]
+            print virtual_sib
+            virtual_sib_id = virtual_sib.split("#")[0]
+            virtual_sib_ip = virtual_sib.split("#")[1]
+            virtual_sib_port = virtual_sib.split("#")[2]
             
-            # subscribe to the ancillary sib
-            t = Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), None)
-            a = SibLib('127.0.0.1', 10088)
-            a.join_sib()
-            sub = a.CreateSubscribeTransaction(a.ss_handle)
-            initial_results = sub.subscribe_rdf(t, AncillaryHandler(a))
-            if initial_results != []:
-                for i in initial_results:
-                    print i
-                    print i[2]
-                    virtual_sib_ip = str(i[2]).split("-")[0].split("#")[1]
-                    virtual_sib_port = int(str(i[2]).split("-")[1])
-                    print virtual_sib_ip
-                    print virtual_sib_port
+            # lancio publisher
+            StartConnection(virtual_sib_ip, virtual_sib_port)
+                
+        # elif confirm["return"] == "ok":
+        #     print colored("newpublisher> ", "red", attrs=["bold"]) + 'Ready to subscribe to the ancillary sib'
+        #     virtual_sib_id = confirm["virtual_sib_id"]
+            
+        #     # subscribe to the ancillary sib
+        #     t = Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), None)
+        #     a = SibLib('127.0.0.1', 10088)
+        #     a.join_sib()
+        #     sub = a.CreateSubscribeTransaction(a.ss_handle)
+        #     initial_results = sub.subscribe_rdf(t, AncillaryHandler(a))
+        #     if initial_results != []:
+        #         for i in initial_results:
+        #             print i
+        #             print i[2]
+        #             virtual_sib_ip = str(i[2]).split("-")[0].split("#")[1]
+        #             virtual_sib_port = int(str(i[2]).split("-")[1])
+        #             print virtual_sib_ip
+        #             print virtual_sib_port
                     
-                    # lancio publisher
-                    StartConnection(virtual_sib_ip, virtual_sib_port, a, sub)
+        #             # lancio publisher
+        #             StartConnection(virtual_sib_ip, virtual_sib_port, a, sub)
 
                 
-                # print "Subscription closed!"
-                # a.CloseSubscribeTransaction(sub)
+        #         # print "Subscription closed!"
+        #         # a.CloseSubscribeTransaction(sub)
                                 
     except KeyboardInterrupt:
         print colored("Publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
