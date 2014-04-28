@@ -87,31 +87,31 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions):
         if not "<transaction_type>REGISTER</transaction_type>" in ssap_msg:
             if ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
          
-                # convert ssap_msg to dict
-                ssap_msg_dict = {}
-                parser = make_parser()
-                ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                parser.setContentHandler(ssap_mh)
-                parser.parse(StringIO(ssap_msg))        
+                # # convert ssap_msg to dict
+                # ssap_msg_dict = {}
+                # parser = make_parser()
+                # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+                # parser.setContentHandler(ssap_mh)
+                # parser.parse(StringIO(ssap_msg))        
     
-                # store the virtual subscription id
-                subscriptions[ssap_msg_dict["virtual_subscription_id"]] = None
+                # # store the virtual subscription id
+                # subscriptions[ssap_msg_dict["virtual_subscription_id"]] = None
                 
-                # build subscribe request message       
-                pars = '<parameter name = "type">RDF-M3</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter>'
+                # # build subscribe request message       
+                # pars = '<parameter name = "type">RDF-M3</parameter><parameter name = "query">' + ssap_msg_dict["query"] + '</parameter>'
     
-                ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(ssap_msg_dict["node_id"],
-                                                          ssap_msg_dict["space_id"],
-                                                          "SUBSCRIBE",
-                                                          ssap_msg_dict["transaction_id"],
-                                                          pars
-                                                          )
+                # ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(ssap_msg_dict["node_id"],
+                #                                           ssap_msg_dict["space_id"],
+                #                                           "SUBSCRIBE",
+                #                                           ssap_msg_dict["transaction_id"],
+                #                                           pars
+                #                                           )
     
                 # send to the real sib
                 rs.send(ssap_msg)
          
                 # start a new thread to handle it
-                thread.start_new_thread(subscription_handler, (rs, vs, ssap_msg_dict["virtual_subscription_id"], vsib_host, vsib_port, subscriptions))
+                thread.start_new_thread(subscription_handler, (rs, vs, vsib_host, vsib_port, subscriptions))
     
             elif ("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
                 # convert ssap_msg to dict
@@ -170,7 +170,7 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             break    
 
 
-def subscription_handler(rs, vs, vsub_id, vsib_host, vsib_port, subscriptions):
+def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
 
     # we open a socket for each subscription
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -187,55 +187,55 @@ def subscription_handler(rs, vs, vsub_id, vsib_host, vsib_port, subscriptions):
             # connect to remote host
             try :
 
-                # convert ssap_msg to dict
-                ssap_msg_dict = {}
-                parser = make_parser()
-                ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                parser.setContentHandler(ssap_mh)
-                parser.parse(StringIO(ssap_msg))        
+                # # convert ssap_msg to dict
+                # ssap_msg_dict = {}
+                # parser = make_parser()
+                # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+                # parser.setContentHandler(ssap_mh)
+                # parser.parse(StringIO(ssap_msg))        
                   
-                subscriptions[vsub_id] = ssap_msg_dict["subscription_id"]
+                # subscriptions[vsub_id] = ssap_msg_dict["subscription_id"]
                             
                 if "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg:
                     
-                    # replace subscription id with virtual subscription id
-                    pars = '<parameter name="status">' + ssap_msg_dict["status"] + '</parameter><parameter name="subscription_id">' + vsub_id + '</parameter><parameter name="results">' + ssap_msg_dict["results"] + '</parameter>'
+                    # # replace subscription id with virtual subscription id
+                    # pars = '<parameter name="status">' + ssap_msg_dict["status"] + '</parameter><parameter name="subscription_id">' + vsub_id + '</parameter><parameter name="results">' + ssap_msg_dict["results"] + '</parameter>'
 
-                    ssap_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
-                                                              ssap_msg_dict["space_id"],
-                                                              ssap_msg_dict["transaction_type"],
-                                                              ssap_msg_dict["transaction_id"],
-                                                              pars
-                                                              )
-
+#                     ssap_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+#                                                               ssap_msg_dict["space_id"],
+#                                                               ssap_msg_dict["transaction_type"],
+#                                                               ssap_msg_dict["transaction_id"],
+#                                                               pars
+#                                                               )
+# 
                     tvs.send(ssap_msg)
 
                 elif "<message_type>INDICATION</message_type>" in ssap_msg and "<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg:
                     
-                    # replace subscription id with virtual subscription id
-                    ssap_msg = SSAP_INDICATION_TEMPLATE%(ssap_msg_dict["space_id"],
-                                                                 ssap_msg_dict["node_id"],
-                                                                 ssap_msg_dict["transaction_id"],
-                                                                 ssap_msg_dict["ind_sequence"],
-                                                                 str(vsub_id),
-                                                                 ssap_msg_dict["new_results"],
-                                                                 ssap_msg_dict["obsolete_results"]
-                                                              )
+                    # # replace subscription id with virtual subscription id
+                    # ssap_msg = SSAP_INDICATION_TEMPLATE%(ssap_msg_dict["space_id"],
+                    #                                              ssap_msg_dict["node_id"],
+                    #                                              ssap_msg_dict["transaction_id"],
+                    #                                              ssap_msg_dict["ind_sequence"],
+                    #                                              str(vsub_id),
+                    #                                              ssap_msg_dict["new_results"],
+                    #                                              ssap_msg_dict["obsolete_results"]
+                    #                                           )
 
                     tvs.send(ssap_msg)
 
 
                 elif "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg:
                     
-                    # replace real subscription id with virtual subscription id
-                    pars = '<parameter name="status">' + ssap_msg_dict["status"] + '</parameter><parameter name="subscription_id">' + vsub_id + '</parameter>'
+                    # # replace real subscription id with virtual subscription id
+                    # pars = '<parameter name="status">' + ssap_msg_dict["status"] + '</parameter><parameter name="subscription_id">' + vsub_id + '</parameter>'
 
-                    ssap_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
-                                                              ssap_msg_dict["space_id"],
-                                                              ssap_msg_dict["transaction_type"],
-                                                              ssap_msg_dict["transaction_id"],
-                                                              pars
-                                                              )
+                    # ssap_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                    #                                           ssap_msg_dict["space_id"],
+                    #                                           ssap_msg_dict["transaction_type"],
+                    #                                           ssap_msg_dict["transaction_id"],
+                    #                                           pars
+                    #                                           )
 
 
                     tvs.send(ssap_msg)

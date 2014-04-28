@@ -741,20 +741,18 @@ def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscript
 
 
 # SOCKET OBSERVER THREAD
-def socket_observer(socket, sib_list, sib_list_timers):
-
-    key = str(socket)
+def socket_observer(sib):
 
     while 1:
         try:            
-            if (datetime.datetime.now() - sib_list_timers[str(socket)]).total_seconds() > 15:
-                print colored("treplies> ", "red", attrs=["bold"]) + " socket " + key + " dead"
-                del sib_list[sib_list.index(socket)]
+            if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
+                print colored("treplies> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
+                sib["socket"] = None
                 break
             else:
                 time.sleep(5)
-                print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + key + " is alive"
-                socket.send(" ")
+                print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
+                sib["socket"].send(" ")
 
         except IOError:
             pass

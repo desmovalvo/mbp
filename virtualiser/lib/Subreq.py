@@ -11,7 +11,7 @@ class Subreq:
         self.conn = connection # this is the connection to the kp
         self.node_id = node_id
         self.request_transaction_id = request_transaction_id
-        self.virtual_subscription_id = uuid.uuid4()
+        self.subscription_id = uuid.uuid4()
         self.real_sib_id = {}
         self.result = []
 
