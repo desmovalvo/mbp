@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+from SIBLib import *
 from SSAPLib import *
 from termcolor import *
 from lib.Subreq import *
@@ -751,9 +752,9 @@ def socket_observer(sib):
                 # TODO: scrivere nell'ancillary sib che la sib non e' piu' attiva
                 a = SibLib("127.0.0.1", 10088)
                 t = []
-                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
+                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
                 t = []
-                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
+                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
                 a.insert(t)
                 
                 break

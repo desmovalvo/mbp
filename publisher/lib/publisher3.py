@@ -27,14 +27,13 @@ def StartConnection(vsib_host, vsib_port):
     vs.settimeout(2)
      
     # connect to remote host
-    print colored("publisher> ", "blue", attrs=['bold']) + vsib_host
-    print colored("publisher> ", "blue", attrs=['bold']) + str(vsib_port)
+    print colored("publisher> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host)
+    print colored("publisher> ", "blue", attrs=['bold']) + " Virtual sib has port " + str(vsib_port)
     try :
         vs.connect((vsib_host, vsib_port))
-    except ZeroDivisionError:
+    except socket.error:
         print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the virtual SIB'
         sys.exit()    
-
     print colored("publisher> ", "blue", attrs=['bold']) + 'Connected to virtual SIB. Sending register request!'
 
     # building and sending the register request
@@ -57,7 +56,7 @@ def StartConnection(vsib_host, vsib_port):
             if sock == vs:
                 ssap_msg = sock.recv(4096)
                 if not ssap_msg :
-                    print colored("ppublisher> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB'
+                    print colored("publisher> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB'
                     sys.exit()
                 else :
                     print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
@@ -65,7 +64,6 @@ def StartConnection(vsib_host, vsib_port):
         
 
 def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions):
-    print colored("publisher> ", "blue", attrs=["bold"]) + "started a thread"
 
     if len(ssap_msg) == 1:
         if sock == vs:
@@ -73,13 +71,12 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions):
             vs.send(" ")
     
     else:
+        print colored("publisher> ", "blue", attrs=["bold"]) + "started a thread"
 
         # socket to the real SIB
         rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #rs.connect((realsib_host, realsib_port))
         rs.connect(('127.0.0.1', 10020))
-        
-        print ssap_msg
         
         # forward the message to the real SIB
         if not "<transaction_type>REGISTER</transaction_type>" in ssap_msg:
