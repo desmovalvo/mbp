@@ -68,9 +68,12 @@ if __name__ == "__main__":
         request = json.dumps(register_msg)
         # print request
         # print type(request)
-        
-        manager.send(request)
-        
+
+        try:
+             manager.send(request)
+        except:
+             print colored("newpublisher> ", "red", attrs=["bold"]) + 'Registration failed! Try again!'  
+
         while 1:
             confirm_msg = manager.recv(4096)
             if confirm_msg:
