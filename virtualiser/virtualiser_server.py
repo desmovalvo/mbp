@@ -70,20 +70,37 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                 #inserisca nell'ancillary sib anche
                                 #questo dato
                                 virtual_sib_info = globals()[data["command"]](data["owner"], virtualiser_ip)
-                                # send a reply
-                                try:
-                                    self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
-                                except socket.error:
-                                    # remove virtual sib info from the ancillary sib
-                                    a = SibLib("127.0.0.1", 10088)
-                                    t = [Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasPubIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_pub_port"]) ))]
-                                    t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasKpIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_kp_port"]))))
-                                    t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasOwner"), URI(ns + virtual_sib_info["owner"])))
-                                    t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasStatus"), URI(ns + "online")))
-                                    a.remove(t)
-                                    
-                                    #TODO: killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
-                                    
+                                if virtual_sib_info["return"] == "fail":
+                                    # send a reply
+                                    try:
+                                        self.request.sendall(json.dumps({'return':'fail', 'cause':virtual_sib_id["cause"]}))
+                                        # Il thread virtualiser in
+                                        # questo caso non e' stato
+                                        # neppure creato, quindi non
+                                        # va killato
+                                    except socket.error:
+                                        print colored("Virtualiser> ", "red", attrs=["bold"]) + "Error message forwarding failed!"
+                                        pass
+
+                                
+                                else:
+                                    # send a reply
+                                    try:
+                                        self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
+                                    except socket.error:
+                                        # remove virtual sib info from the ancillary sib
+                                        a = SibLib("127.0.0.1", 10088)
+                                        t = [Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasPubIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_pub_port"]) ))]
+                                        t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasKpIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_kp_port"]))))
+                                        t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasOwner"), URI(ns + virtual_sib_info["owner"])))
+                                        t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasStatus"), URI(ns + "online")))
+                                        a.remove(t)
+                                        
+                                        #TODO: killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
+                                        
+                                        print colored("Virtualiser> ", "red", attrs=["bold"]) + "Confirm message forwarding failed!"
+                                                                                
+                                        
                             elif data["command"] == "Discovery":
                                 virtual_sib_list = globals()[data["command"]]()
                                 # send a reply

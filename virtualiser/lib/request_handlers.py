@@ -39,27 +39,43 @@ def NewRemoteSIB(owner, virtualiser_ip):
                 print "estratta la porta %s"%(str(pub_port))
                 break        
 
-    # start a virtual sib
-    thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
     
     
     # insert information in the ancillary SIB
-    a = SibLib("127.0.0.1", 10088)
-    t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port)))]
-    t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
-    t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
-    t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
-    a.insert(t)
-    
-    virtual_sib_info = {}
-    virtual_sib_info["virtual_sib_id"] = str(virtual_sib_id)
-    virtual_sib_info["virtual_sib_ip"] = str(virtualiser_ip)
-    virtual_sib_info["virtual_sib_pub_port"] = pub_port
-    virtual_sib_info["virtual_sib_kp_port"] = kp_port
-    virtual_sib_info["virtual_sib_owner"] = str(owner)
+    try:
+        a = SibLib("127.0.0.1", 10088)
+        t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port)))]
+        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
+        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
+        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
+        a.insert(t)
+        
+        virtual_sib_info = {}
+        virtual_sib_info["return"] = "ok"
+        virtual_sib_info["virtual_sib_id"] = str(virtual_sib_id)
+        virtual_sib_info["virtual_sib_ip"] = str(virtualiser_ip)
+        virtual_sib_info["virtual_sib_pub_port"] = pub_port
+        virtual_sib_info["virtual_sib_kp_port"] = kp_port
+        virtual_sib_info["virtual_sib_owner"] = str(owner)
 
-    # return virtual sib id
-    return virtual_sib_info
+        # start a virtual sib (nel try, in quanto va fatto solo se
+        # l'inserimento delle informazioni e' andato a buon fine)
+        thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
+
+        # return virtual sib id
+        return virtual_sib_info
+
+    except socket.error:
+        virtual_sib_info = {}
+        virtual_sib_info["return"] = "fail"
+        virtual_sib_info["cause"] = "Connection to Ancillary Sib failed"
+        return virtual_sib_info
+    except: #TODO catturare qui i sibError
+        virtual_sib_info = {}
+        virtual_sib_info["return"] = "fail"
+        virtual_sib_info["cause"] = "Sib Error"
+        return virtual_sib_info
+    
 
 def NewVirtualMultiSIB(sib_list):
     print colored("request_handlers> ", "blue", attrs=["bold"]) + str(sib_list)
