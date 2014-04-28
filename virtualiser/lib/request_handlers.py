@@ -56,6 +56,7 @@ def NewRemoteSIB(owner, virtualiser_ip):
     virtual_sib_info["virtual_sib_ip"] = str(virtualiser_ip)
     virtual_sib_info["virtual_sib_pub_port"] = pub_port
     virtual_sib_info["virtual_sib_kp_port"] = kp_port
+    virtual_sib_info["virtual_sib_owner"] = str(owner)
 
     # return virtual sib id
     return virtual_sib_info

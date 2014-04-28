@@ -71,9 +71,19 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                 #questo dato
                                 virtual_sib_info = globals()[data["command"]](data["owner"], virtualiser_ip)
                                 # send a reply
-                                #TODO: aggiungere il virtualiser_ip nella risposta
-                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
-
+                                try:
+                                    self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
+                                except socket.error:
+                                    # remove virtual sib info from the ancillary sib
+                                    a = SibLib("127.0.0.1", 10088)
+                                    t = [Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasPubIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_pub_port"]) ))]
+                                    t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasKpIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_kp_port"]))))
+                                    t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasOwner"), URI(ns + virtual_sib_info["owner"])))
+                                    t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasStatus"), URI(ns + "online")))
+                                    a.remove(t)
+                                    
+                                    #TODO: killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
+                                    
                             elif data["command"] == "Discovery":
                                 virtual_sib_list = globals()[data["command"]]()
                                 # send a reply
@@ -133,10 +143,9 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
 if __name__=='__main__':
 
     try:
-        print sys.argv[1]
+        virtualiser_id = str(uuid.uuid4())
         virtualiser_ip = sys.argv[1]
         virtualiser_port = int(sys.argv[2])
-        virtualiser_id = str(uuid.uuid4())
         ancillary_ip = sys.argv[3]
         ancillary_port = int(sys.argv[4])
 
