@@ -21,7 +21,7 @@ def NewRemoteSIB(owner):
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
     
     # TODO: mandare messaggio json al server meno carico:
-    # # query all'ancillary sib per sapere qual e' il serer meno carico
+    # # query all'ancillary sib per sapere qual e' il server meno carico
     # # virtualiser: server scelto
     # # virtualiser_ip e vitualiser_port: ip e porta del server scelto
     # # invio richiesta json di creazione della virtual sib
@@ -81,52 +81,10 @@ LIMIT 1"""
             print colored("request_handlers> ", "red", attrs=["bold"]) + 'Received the following message:'
             print confirm_msg
             break
-###################################################################
-#######
-#######Questo pezzo ora sta in virtualiser/lib/request_handlers.py
-#######
-###################################################################
-    # # create two sockets
-    # s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # # generating two random ports
-    # while True:
-    #     kp_port = random.randint(10000, 11000)
-    #     if sock.connect_ex(kp_port) == 0:
-    #         print "estratta la porta %s"%(str(kp_port))
-    #         break
-
-    # while True:
-    #     pub_port = random.randint(10000, 11000)
-    #     if sock.connect_ex(pub_port) == 0:
-    #         print "estratta la porta %s"%(str(pub_port))
-    #         break        
-
-    ## start a virtual sib
-    #thread.start_new_thread(virtualiser, ("localhost", kp_port, "localhost", pub_port))
-    
-    ## insert information in the ancillary SIB
-    # a = SibLib("127.0.0.1", 10088)
-    # t = Triple(URI(virtual_sib_id), URI("hasIpPort"), URI("127.0.0.1-" + str(pub_port)))
-    
-    # # insert information in the ancillary SIB
-    # a = SibLib("127.0.0.1", 10088)
-    # t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + "127.0.0.1-10011"))]
-    # t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + "127.0.0.1-10010")))
-    # a.insert(t)
-
-###################################################################
-###################################################################
-
 
     confirm = json.loads(confirm_msg)
     if confirm["return"] == "fail":
-        print "heeeereeeeee"
-    
         print colored("request_handlers> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
-        
-#        return None
         
     elif confirm["return"] == "ok":
         virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
@@ -136,8 +94,6 @@ LIMIT 1"""
         print colored("request_handlers> ", "red", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' starded!' 
         print "IP: " + virtual_sib_ip
         print "PORT: " + str(virtual_sib_pub_port)        
-        
- #       return confirm["virtual_sib_info"]
     
     return confirm
 

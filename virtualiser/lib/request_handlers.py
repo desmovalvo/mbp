@@ -40,7 +40,7 @@ def NewRemoteSIB(owner, virtualiser_ip):
                 break        
 
     # start a virtual sib
-    thread.start_new_thread(virtualiser, (kp_port, pub_port))
+    thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
     
     
     # insert information in the ancillary SIB
@@ -48,6 +48,7 @@ def NewRemoteSIB(owner, virtualiser_ip):
     t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port)))]
     t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
     t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
+    t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
     a.insert(t)
     
     virtual_sib_info = {}

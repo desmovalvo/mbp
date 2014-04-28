@@ -11,22 +11,16 @@ import logging
 import thread
 import time
 
-# KP_PORT = 10010
-# PUB_PORT = 10011
-# HOST = 'localhost'
 BUFSIZ = 1024
-#KP_ADDR = (HOST, KP_PORT)
-#PUB_ADDR = (HOST, PUB_PORT)
+
 sib = {}
+
+# TODO: Cancellare
 sib_list = []
 sib_socket = None
 sib_list_timers = {}
-sib_timer = []
-sib_timer.append(None)
+
 kp_list = {}
-confirms = {}
-query_results = {}
-initial_results = {}
 active_subscriptions = {}
 val_subscriptions = []
 
@@ -122,24 +116,21 @@ def handler(clientsock, addr):
                     
 
 
-                    # RDF SUBSCRIBE REQUEST
-                    elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
-        
-                        initial_results[info["node_id"]] = []
+                    # RDF/SPARQL SUBSCRIBE REQUEST
+                    elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE":
                         kp_list[info["node_id"]] = clientsock
-                        # handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
                         
                         # debug info
                         print colored("treplies>", "green", attrs=["bold"]) + " request handled"
-                        logger.info("RDF SUBSCRIBE REQUEST handled")
+                        logger.info("SUBSCRIBE REQUEST handled")
 
                         # generating a Subreq instance
                         newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
-                        val_subscriptions.append(newsub)
-
+ 
                         # forwarding message to the publisher
                         try:
                             sib["socket"].send(ssap_msg)
+                            val_subscriptions.append(newsub)
 
                         except socket.error:
                             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
@@ -148,17 +139,16 @@ def handler(clientsock, addr):
                                                              info["transaction_id"],
                                                              '<parameter name="status">m3:Error</parameter>')
                             newsub.conn.send(err_msg)
-                            #TODO delete class!
+                            del nuwsub
                             
-                            logger.error("RDF SUBSCRIBE REQUEST forwarding failed")
+                            logger.error("SUBSCRIBE REQUEST forwarding failed")
 
-
-                    # RDF SUBSCRIBE CONFIRM
-                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg
-                        # handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
+ 
+                    # RDF/SPARQL SUBSCRIBE CONFIRM
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": 
                         # debug info
                         print colored("treplies>", "green", attrs=["bold"]) + " confirm handled"
-                        logger.info("RDF SUBSCRIBE CONFIRM handled")
+                        logger.info("SUBSCRIBE CONFIRM handled")
                         
                         # store the corrispondence between the real sib and the real_subscription_id
                         for s in val_subscriptions:                              
@@ -168,12 +158,56 @@ def handler(clientsock, addr):
                                 break
 
 
+                    # RDF/SPARQL UNSUBSCRIBE REQUEST
+                    elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
+                        # debug info
+                        print colored("treplies>", "green", attrs=["bold"]) + " request handled"
+                        logger.info("UNSUBSCRIBE REQUEST handled")
+
+                        # find the Subreq instance
+                        for s in val_subscriptions:
+                            if str(s.subscription_id) == str(info["parameter_subscription_id"]):
+
+                                # forwarding message to the publishers
+                                
+                                try:
+                                    # send the message
+                                    sib["socket"].send(ssap_msg)                
+                                except socket.error:
+                                    err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                                             info["space_id"],
+                                                                             "UNSUBSCRIBE",
+                                                                             info["transaction_id"],
+                                                                             '<parameter name="status">m3:Error</parameter>')
+                                    s.conn.send(err_msg)
+                                        
+                                    logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
+
+                                break
+                                
+
+ 
+
+
+                    # RDF/SPARQL UNSUBSCRIBE CONFIRM
+                    elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
+                        # debug info
+                        print colored("treplies>", "green", attrs=["bold"]) + " confirm handled"
+                        logger.info("UNSUBSCRIBE CONFIRM handled")
+
+
+                        for s in val_subscriptions:
+                            if str(s.subscription_id) == str(info["parameter_subscription_id"]):
+                                s.conn.send(ssap_msg)
+                                                                        
+                                # destroy the class instance
+                                del s
+
 
                     # INDICATIONS
                         
-                    # SUBSCRIBE INDICATION
+                    # RDF/SPARQL SUBSCRIBE INDICATION
                     elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
-                        # handle_subscribe_indication(logger, ssap_msg, info, clientsock, val_subscriptions)
                         # debug info
                         print colored("treplies>", "green", attrs=["bold"]) + " indication handled"
                         logger.info("SUBSCRIBE INDICATION handled")
@@ -190,19 +224,16 @@ def handler(clientsock, addr):
                                 
                                 break
                 
-
-
                             
-                    # REQUEST
-                    elif info["message_type"] == "REQUEST":# and info["transaction_type"] == "JOIN":
-                        #confirms[info["node_id"]] = len(sib_list)
+                    ### OTHER REQUESTS
+                    elif info["message_type"] == "REQUEST":
                         kp_list[info["node_id"]] = clientsock
 
                         # debug message
                         print colored("treplies>", "green", attrs=["bold"]) + " request handled"
                         logger.info(info["transaction_type"] + " REQUEST handled")
 
-                        # forwarding message to the publishers
+                        # forwarding message to the publisher
                         try:
                             sib["socket"].send(ssap_msg)
                         except socket.error:
@@ -211,120 +242,25 @@ def handler(clientsock, addr):
                                                                      info["transaction_type"],
                                                                      info["transaction_id"],
                                                                      '<parameter name="status">m3:Error</parameter>')
+
                             # send a notification error to the KP
                             kp_list[info["node_id"]].send(err_msg)
                             del kp_list[info["node_id"]]
                             logger.error(info["transaction_type"] + " REQUEST forwarding failed")
 
-                    ### CONFIRMS
+
+                    ### OTHER CONFIRMS
         
-                    elif info["message_type"] == "CONFIRM":# and info["transaction_type"] == "JOIN":
-                        # handle_join_confirm(logger, clientsock, info, ssap_msg, confirms, kp_list)
+                    elif info["message_type"] == "CONFIRM":
 
                         # debug info
                         print colored("treplies>", "green", attrs=["bold"]) + " confirm handled"
                         logger.info(info["transaction_type"] + " CONFIRM handled")
                     
+                        # forward message to the kp
                         kp_list[info["node_id"]].send(ssap_msg)
-                        kp_list[info["node_id"]].close()
-                             
+                        kp_list[info["node_id"]].close()                        
 
-
-
-                    #     # handle_join_request(logger, info, ssap_msg, sib_list, kp_list)
-        
-                    # # LEAVE REQUEST
-                    # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
-                    #     confirms[info["node_id"]] = len(sib_list)
-                    #     kp_list[info["node_id"]] = clientsock
-                    #     handle_leave_request(logger, info, ssap_msg, sib_list, kp_list)
-        
-                    # # INSERT REQUEST
-                    # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
-                    #     confirms[info["node_id"]] = len(sib_list)
-                    #     kp_list[info["node_id"]] = clientsock
-                    #     handle_insert_request(logger, info, ssap_msg, sib_list, kp_list)
-        
-                    # # REMOVE REQUEST
-                    # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
-                    #     confirms[info["node_id"]] = len(sib_list)
-                    #     kp_list[info["node_id"]] = clientsock
-                    #     handle_remove_request(logger, info, ssap_msg, sib_list, kp_list)
-        
-                    # # SPARQL QUERY REQUEST
-                    # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "sparql":
-                    #     confirms[info["node_id"]] = len(sib_list)
-                    #     query_results[info["node_id"]] = []
-                    #     kp_list[info["node_id"]] = clientsock
-                    #     handle_sparql_query_request(logger, info, ssap_msg, sib_list, kp_list)
-        
-                    # # RDF QUERY REQUEST
-                    # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "RDF-M3":
-                    #     confirms[info["node_id"]] = len(sib_list)
-                    #     query_results[info["node_id"]] = []
-                    #     kp_list[info["node_id"]] = clientsock
-                    #     handle_rdf_query_request(logger, info, ssap_msg, sib_list, kp_list)
-        
-                    # # RDF SUBSCRIBE REQUEST
-                    # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
-        
-                    #     confirms[info["node_id"]] = len(sib_list)
-                    #     initial_results[info["node_id"]] = []
-                    #     kp_list[info["node_id"]] = clientsock
-                    #     handle_rdf_subscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
-        
-                    # # RDF UNSUBSCRIBE REQUEST
-                    # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
-                    #     handle_rdf_unsubscribe_request(logger, info, ssap_msg, sib_list, kp_list, clientsock, val_subscriptions)
-            
-        
-                    # ### CONFIRMS
-        
-                    # # JOIN CONFIRM
-                    # elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "JOIN":
-                    #     # handle_join_confirm(logger, clientsock, info, ssap_msg, confirms, kp_list)
-
-                    #     # debug info
-                    #     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_confirm"
-                    #     logger.info("JOIN CONFIRM handled by handle_join_confirm")
-                    
-                    #     kp_list[info["node_id"]].send(ssap_msg)
-                    #     kp_list[info["node_id"]].close()
-                             
-        
-                    # # LEAVE CONFIRM
-                    # elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "LEAVE":
-                    #     handle_leave_confirm(logger, info, ssap_msg, confirms, kp_list)
-        
-                    # # INSERT CONFIRM
-                    # elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
-                    #     handle_insert_confirm(logger, info, ssap_msg, confirms, kp_list)
-        
-                    # # REMOVE CONFIRM
-                    # elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
-                    #     handle_remove_confirm(logger, info, ssap_msg, confirms, kp_list)
-        
-                    # # SPARQL QUERY CONFIRM
-                    # elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
-                    #     handle_sparql_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results)
-        
-                    # # RDF QUERY CONFIRM
-                    # elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
-                    #     handle_rdf_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results)
-        
-                    # # RDF SUBSCRIBE CONFIRM
-                    # elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg
-                    #     handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
-        
-                    # # RDF UNSUBSCRIBE CONFIRM
-                    # elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
-                    #     handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
-        
-                    # ### INDICATIONS
-                        
-                    # # SUBSCRIBE INDICATION
-                    # elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
-                    #     handle_subscribe_indication(logger, ssap_msg, info, clientsock, val_subscriptions)
         
         
                 except ET.ParseError:
@@ -333,10 +269,10 @@ def handler(clientsock, addr):
     
         except socket.error:
             print colored("tserver> ", "red", attrs=["bold"]) + " socket.error: break!"
-#            break
+            break
 
 
-def virtualiser(kp_port, pub_port):
+def virtualiser(kp_port, pub_port, virtual_sib_id):
 
     host = "localhost"
     kp_addr = (host, kp_port)
@@ -344,6 +280,8 @@ def virtualiser(kp_port, pub_port):
     
     print "kp addr: " + str(kp_addr)
     print "pub addr: " + str(pub_addr)
+
+    sib["virtual_sib_id"] = virtual_sib_id
 
     # creating and activating the socket for the KPs
     kp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
