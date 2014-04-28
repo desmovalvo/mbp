@@ -15,7 +15,7 @@ ns = "http://smartM3Lab/Ontology.owl#"
 
 #functions
 
-def NewRemoteSIB(owner, virtualiser_ip):
+def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
     # debug print
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -63,9 +63,12 @@ def NewRemoteSIB(owner, virtualiser_ip):
         # l'inserimento delle informazioni e' andato a buon fine)
         
         ### thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
-        p = Process(target=virtualiser, args=(kp_port, pub_port, virtual_sib_id))
+        threads[thread_id] = True
+        p = Process(target=virtualiser, args=(kp_port, pub_port, virtual_sib_id, threads[thread_id]))
         p.start()
 
+        # t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))
+        
         # return virtual sib id
         return virtual_sib_info
 
@@ -75,7 +78,7 @@ def NewRemoteSIB(owner, virtualiser_ip):
         virtual_sib_info["cause"] = "Connection to Ancillary Sib failed"
         return virtual_sib_info
     except Exception, e: #TODO catturare qui i sibError
-        print 'ECCEZIONE DEL CAZZO: ' + str(e)
+        print 'ECCEZIONE: ' + str(e)
         virtual_sib_info = {}
         virtual_sib_info["return"] = "fail"
         virtual_sib_info["cause"] = "Sib Error"

@@ -309,7 +309,7 @@ def socket_observer(sib, port):
             pass
 
 
-def virtualiser(kp_port, pub_port, virtual_sib_id):
+def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
 
     print 'STARTED VIRTUALISER WITH ' + str(kp_port) + " " + str(pub_port) + " " + str(virtual_sib_id)
 
@@ -348,7 +348,7 @@ def virtualiser(kp_port, pub_port, virtual_sib_id):
     sockets = [kp_socket, pub_socket]
 
     # loop
-    while 1:
+    while check_var:#while 1:
 
         print colored("tserver> ", "blue", attrs=["bold"]) + ' waiting for connections...'
         
