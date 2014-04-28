@@ -77,7 +77,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                 if virtual_sib_info["return"] == "fail":
                                     # send a reply
                                     try:
-                                        self.request.sendall(json.dumps({'return':'fail', 'cause':virtual_sib_id["cause"]}))
+                                        self.request.sendall(json.dumps({'return':'fail', 'cause':virtual_sib_info["cause"]}))
                                         # Il thread virtualiser in
                                         # questo caso non e' stato
                                         # neppure creato, quindi non
