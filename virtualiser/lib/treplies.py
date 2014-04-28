@@ -741,30 +741,3 @@ def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscript
     return reply
 
 
-# SOCKET OBSERVER THREAD
-def socket_observer(sib):
-
-    while 1:
-        try:            
-            if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
-                print colored("treplies> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
-                sib["socket"] = None
-                # TODO: scrivere nell'ancillary sib che la sib non e' piu' attiva
-                a = SibLib("127.0.0.1", 10088)
-                t = []
-                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
-                t = []
-                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-                a.insert(t)
-                
-                break
-            else:
-                time.sleep(5)
-                print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
-                sib["socket"].send(" ")
-
-        except IOError:
-            pass
-
-        except KeyError:
-            pass
