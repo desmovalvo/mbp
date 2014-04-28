@@ -30,11 +30,10 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         try:
             # Output the received message
-            print colored("Manager> ", "blue", attrs=["bold"]) + "incoming connection, received the following message:"
-            self.server.logger.info(" Incoming connection, received the following message:")
+            print colored("Manager> ", "blue", attrs=["bold"]) + "incoming connection"
+            self.server.logger.info(" Incoming connection")
             data = json.loads(self.request.recv(1024).strip())
             print data
-            self.server.logger.info(" " + str(data))
             
             # Decode the request
             if data.has_key("command"):
@@ -65,6 +64,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                                 #     self.request.sendall(json.dumps(confirm))
                                 # else:
                                 #     self.request.sendall(json.dumps({'return':'fail', 'cause':'virtual sib not created!'}))
+                                print "RITORNO IL MESSAGGIO " + str(confirm)
                                 self.request.sendall(json.dumps(confirm))
 
                             elif data["command"] == "Discovery":
@@ -103,13 +103,6 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                     # send a reply
                     self.request.sendall(json.dumps({'return':'fail', 'cause':'invalid command'}))
-
-                # debug print
-                print colored("Manager> ", "blue", attrs=["bold"]) + "received the command " + colored(data["command"], "cyan", attrs=['bold'])
-                self.server.logger.info(" Received the command " + str(data))
-
-                # send a reply
-                self.request.sendall(json.dumps({'return':'ok'}))
                 
             else:
                 # debug print

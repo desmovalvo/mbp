@@ -22,7 +22,9 @@ def NewRemoteSIB(owner):
     
     # query to the ancillary SIB 
     a = SibLib(ancillary_ip, ancillary_port)
-    query = """SELECT DISTINCT ?s ?ip ?port
+
+    try:
+        query = """SELECT DISTINCT ?s ?ip ?port
 WHERE { ?s rdf:type ns:virtualiser .
         ?s ns:load ?o .
         ?s ns:hasIP ?ip .
@@ -34,7 +36,13 @@ WHERE { ?s rdf:type ns:virtualiser .
 }
 LIMIT 1"""
     
-    result = a.execute_sparql_query(query)
+        result = a.execute_sparql_query(query)
+
+    except socket.error:
+        print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
+        confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
+        return confirm
+
 
     if len(result) > 0: # != None:
         virtualiser_id = result[0][0][2].split("#")[1]
