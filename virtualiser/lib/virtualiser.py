@@ -8,6 +8,7 @@ from termcolor import *
 import socket, select
 import threading
 import logging
+import random
 import thread
 import time
 
@@ -30,15 +31,17 @@ LOG_FILE = LOG_DIRECTORY + str(time.strftime("%Y%m%d-%H%M-")) + "tserver.log"
 logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 logger = logging.getLogger("tserver")
 
-
-
 ##############################################################
 #
 # handler
 #
 ##############################################################
 
-def handler(clientsock, addr):
+def handler(clientsock, addr, port):
+
+    # storing received parameters in thread-local variables
+    kp_port = port
+
     complete_ssap_msg = ""
     while 1:
         try:
@@ -108,7 +111,7 @@ def handler(clientsock, addr):
                             # setting the timestamp
                             sib["timer"] = datetime.datetime.now()
                         
-                            thread.start_new_thread(socket_observer, (sib,))                            
+                            thread.start_new_thread(socket_observer, (sib, kp_port))                            
                             print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
                 
                         except socket.error:
@@ -272,12 +275,54 @@ def handler(clientsock, addr):
             break
 
 
+# SOCKET OBSERVER THREAD
+def socket_observer(sib, port):
+
+    kp_port = port
+    sib = sib
+    prova = random.randint(1, 14351)
+
+    while 1:
+        print "SOCKET OBSERVER: " + str(kp_port) + " " + str(prova)
+        try:            
+            if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
+                print colored("treplies> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
+                sib["socket"] = None
+                # TODO: scrivere nell'ancillary sib che la sib non e' piu' attiva
+                a = SibLib("127.0.0.1", 10088)
+                t = []
+                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
+                t = []
+                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
+                a.insert(t)
+                
+                break
+            else:
+                time.sleep(5)
+                print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
+                sib["socket"].send(" ")
+
+        except IOError:
+            pass
+
+        except KeyError:
+            pass
+
+
 def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
+
+    print 'STARTED VIRTUALISER WITH ' + str(kp_port) + " " + str(pub_port) + " " + str(virtual_sib_id)
+
+    # # local copy of the received parameters
+    # sib_tl.kp_port = kp_port
+    # sib_tl.pub_port = pub_port
+    # sib_tl.virtual_sib_id = virtual_sib_id
 
     host = "localhost"
     kp_addr = (host, kp_port)
     pub_addr = (host, pub_port)
-    
+    sib = {}
+
     print "kp addr: " + str(kp_addr)
     print "pub addr: " + str(pub_addr)
 
@@ -289,7 +334,7 @@ def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
     kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     kp_socket.bind(kp_addr)
     kp_socket.listen(2)
-    logger.info('Server waiting for KPs on port ' + str(kp_port))
+#    logger.info('Server waiting for KPs on port ' + str(kp_port))
     
     # creating and activating the socket for the Publishers
     pub_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -297,7 +342,7 @@ def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
     pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     pub_socket.bind(pub_addr)
     pub_socket.listen(2)
-    logger.info('Server waiting for publishers on port ' + str(pub_port))
+    # logger.info('Server waiting for publishers on port ' + str(pub_port))
 
     # sockets
     sockets = [kp_socket, pub_socket]
@@ -318,7 +363,7 @@ def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
                 clientsock, addr = sock.accept()
                 print colored("tserver> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
                 logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr))
+                thread.start_new_thread(handler, (clientsock, addr, kp_port))
 
             # incoming data
             else:

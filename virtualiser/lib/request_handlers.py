@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+from multiprocessing import Process
 from termcolor import *
 import uuid
 from SIBLib import SibLib
@@ -60,8 +61,13 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
 
         # start a virtual sib (nel try, in quanto va fatto solo se
         # l'inserimento delle informazioni e' andato a buon fine)
+        
+        ### thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
         threads[thread_id] = True
-        t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))
+        p = Process(target=virtualiser, args=(kp_port, pub_port, virtual_sib_id, threads[thread_id]))
+        p.start()
+
+        # t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))
         
         # return virtual sib id
         return virtual_sib_info
@@ -71,7 +77,8 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
         virtual_sib_info["return"] = "fail"
         virtual_sib_info["cause"] = "Connection to Ancillary Sib failed"
         return virtual_sib_info
-    except: #TODO catturare qui i sibError
+    except Exception, e: #TODO catturare qui i sibError
+        print 'ECCEZIONE: ' + str(e)
         virtual_sib_info = {}
         virtual_sib_info["return"] = "fail"
         virtual_sib_info["cause"] = "Sib Error"
