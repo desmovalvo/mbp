@@ -19,6 +19,9 @@ xsd = "http://www.w3.org/2001/XMLSchema#"
 rdfs = "http://www.w3.org/2000/01/rdf-schema#"
 ns = "http://smartM3Lab/Ontology.owl#"
 
+
+threads = {}
+
 # logging configuration
 LOG_DIRECTORY = "log/"
 LOG_FILE = LOG_DIRECTORY + str(time.strftime("%Y%m%d-%H%M-")) + "virtualiser_server.log"
@@ -69,7 +72,8 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                 #l'owner della sib in modo che
                                 #inserisca nell'ancillary sib anche
                                 #questo dato
-                                virtual_sib_info = globals()[data["command"]](data["owner"], virtualiser_ip)
+                                thread_id = str(uuid.uuid4())
+                                virtual_sib_info = globals()[data["command"]](data["owner"], virtualiser_ip, threads, thread_id)
                                 if virtual_sib_info["return"] == "fail":
                                     # send a reply
                                     try:
@@ -96,7 +100,8 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                         t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasStatus"), URI(ns + "online")))
                                         a.remove(t)
                                         
-                                        #TODO: killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
+                                        #killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
+                                        threads[thread_id] = False
                                         
                                         print colored("Virtualiser> ", "red", attrs=["bold"]) + "Confirm message forwarding failed!"
                                                                                 

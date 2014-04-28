@@ -14,7 +14,7 @@ ns = "http://smartM3Lab/Ontology.owl#"
 
 #functions
 
-def NewRemoteSIB(owner, virtualiser_ip):
+def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
     # debug print
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -60,8 +60,9 @@ def NewRemoteSIB(owner, virtualiser_ip):
 
         # start a virtual sib (nel try, in quanto va fatto solo se
         # l'inserimento delle informazioni e' andato a buon fine)
-        thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
-
+        threads[thread_id] = True
+        t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))
+        
         # return virtual sib id
         return virtual_sib_info
 

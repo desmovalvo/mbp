@@ -272,7 +272,7 @@ def handler(clientsock, addr):
             break
 
 
-def virtualiser(kp_port, pub_port, virtual_sib_id):
+def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
 
     host = "localhost"
     kp_addr = (host, kp_port)
@@ -303,7 +303,7 @@ def virtualiser(kp_port, pub_port, virtual_sib_id):
     sockets = [kp_socket, pub_socket]
 
     # loop
-    while 1:
+    while check_var:#while 1:
 
         print colored("tserver> ", "blue", attrs=["bold"]) + ' waiting for connections...'
         
