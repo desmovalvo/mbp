@@ -58,38 +58,31 @@ if __name__ == "__main__":
             print colored("newpublisher> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
             sys.exit()        
 
-        print colored("newtpublisher> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending register request!'
+        print colored("newpublisher> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending register request!'
 
-        # build request message 
+        # build and send the request message 
         register_msg = {"command":"NewRemoteSIB", "owner":owner}
-        # print register_msg
-        # print type(register_msg)
-        
         request = json.dumps(register_msg)
-        # print request
-        # print type(request)
-        
         manager.send(request)
         
         while 1:
             confirm_msg = manager.recv(4096)
             if confirm_msg:
-                print colored("newpublisher> ", "red", attrs=["bold"]) + 'Received the following message:'
+                print colored("newpublisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
                 print confirm_msg
                 break
 
         confirm = json.loads(confirm_msg)
         if confirm["return"] == "fail":
             print colored("newpublisher> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
+            sys.exit(0)
 
         elif confirm["return"] == "ok":
-            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Virtual Sib Created!'
+            print colored("newpublisher> ", "blue", attrs=["bold"]) + 'Virtual Sib Created!'
     
             virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
             virtual_sib_ip = confirm["virtual_sib_info"]["virtual_sib_ip"]
             virtual_sib_pub_port = confirm["virtual_sib_info"]["virtual_sib_pub_port"]
-            print virtual_sib_ip
-            print virtual_sib_pub_port
             
             # lancio publisher
             StartConnection(virtual_sib_ip, virtual_sib_pub_port)
