@@ -86,7 +86,44 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                         pass
 
                                 
-                                else:
+                                else: #virtual_sib_info["return"] = "ok"
+                                    print colored("Virtualiser_server> ", "blue", attrs=["bold"]) + "Updating the load of virtualiser  " + virtualiser_id
+                                    
+                                    #############################################
+                                    ##                                         ##
+                                    ## Update the load of selected virtualiser ##
+                                    ##                                         ##
+                                    #############################################
+                                    # get old load
+                                    try:
+                                        a = SibLib("127.0.0.1", 10088)
+                                        query = """SELECT ?load
+WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
+
+                                        result = a.execute_sparql_query(query)
+                                        load = int(result[0][0][2])
+                                        print "Old Load " + str(load)
+                                        
+                                        # remove triple
+                                        t = []
+                                        t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
+                                        a.remove(t)
+                                        # insert new triple
+                                        #new_load = int(load) + 1
+                                        load += 1
+                                        print "New Load " + str(load)
+                                        t = []
+                                        t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
+                                        a.insert(t)
+                                    except socket.error:
+                                        print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
+                                        confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
+                                        return confirm
+
+                                    #############################################
+                                    #############################################
+
+
                                     # send a reply
                                     try:
                                         self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
@@ -179,7 +216,7 @@ if __name__=='__main__':
             ancillary_sib.join_sib()
             triples = []
             triples.append(Triple(URI(ns + virtualiser_id), URI(rdf + "type"), URI(ns + "virtualiser")))
-            triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(random.randint(0, 100)))))
+            triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(0))))
             triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasIP"), URI(ns + virtualiser_ip)))
             triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasPort"), URI(ns + str(virtualiser_port))))
             ancillary_sib.insert(triples)
