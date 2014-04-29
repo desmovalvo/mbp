@@ -278,12 +278,9 @@ def handler(clientsock, addr, port):
 # SOCKET OBSERVER THREAD
 def socket_observer(sib, port):
 
-    kp_port = port
-    sib = sib
-    prova = random.randint(1, 14351)
+    key = sib["socket"]
 
     while 1:
-        print "SOCKET OBSERVER: " + str(kp_port) + " " + str(prova)
         try:            
             if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
                 print colored("treplies> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
@@ -306,7 +303,9 @@ def socket_observer(sib, port):
             pass
 
         except KeyError:
-            pass
+            break
+        
+    print colored("socket_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(key)
 
 
 def remoteSIB(kp_port, pub_port, virtual_sib_id, check_var):
