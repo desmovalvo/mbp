@@ -8,6 +8,8 @@ import socket, select, string, sys
 from lib.SIBLib import SibLib
 from smart_m3.m3_kp import *
 from lib.publisher3 import *
+import time
+import datetime
 
 ns = "http://smartM3Lab/Ontology.owl#"
 
@@ -65,16 +67,21 @@ if __name__ == "__main__":
         request = json.dumps(register_msg)
         try:
              manager.send(request)
+             timer = datetime.datetime.now()
         except:
              print colored("newpublisher> ", "red", attrs=["bold"]) + 'Registration failed! Try again!'  
 
         
         while 1:
-            confirm_msg = manager.recv(4096)
-            if confirm_msg:
-                print colored("newpublisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
-                print confirm_msg
-                break
+             if (datetime.datetime.now() - timer).total_seconds() > 15:
+                  print colored("newpublisher> ", "red", attrs=["bold"]) + 'No reply received. Try again!'
+                  sys.exit(0)
+
+             confirm_msg = manager.recv(4096)
+             if confirm_msg:
+                  print colored("newpublisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
+                  print confirm_msg
+                  break
 
         confirm = json.loads(confirm_msg)
         if confirm["return"] == "fail":
