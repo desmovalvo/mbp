@@ -1,19 +1,22 @@
 #!/usr/bin/python
 
 # requirements
-import json
-from termcolor import *
 import uuid
+import json
+import thread
+import threading
+from random import *
+from termcolor import *
 from SIBLib import SibLib
 from smart_m3.m3_kp import *
-from virtualiser import *
-import threading
-import thread
-from random import *
 
+
+# constants
 ns = "http://smartM3Lab/Ontology.owl#"
 ancillary_ip = "127.0.0.1"
 ancillary_port = 10088
+
+
 #functions
 
 def NewRemoteSIB(owner):
