@@ -1,11 +1,12 @@
 # requirements
-from lib.request_handlers import *
+from lib.requests_handler import *
 from collections import Counter
 from termcolor import *
 import SocketServer
 import logging
 import json
 import time
+import sys
 
 # logging configuration
 LOG_DIRECTORY = "log/"
@@ -23,24 +24,26 @@ COMMANDS = {
 
 # classes
 class ManagerServer(SocketServer.ThreadingTCPServer):
-    print colored("Manager> ", "blue", attrs=["bold"]) + "sib manager started!"
+    print colored("SIBmanager> ", "blue", attrs=["bold"]) + "sib manager started!"
     allow_reuse_address = True
 
 class ManagerServerHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         try:
             # Output the received message
-            print colored("Manager> ", "blue", attrs=["bold"]) + "incoming connection"
+            print colored("SIBmanager> ", "blue", attrs=["bold"]) + "incoming connection"
             self.server.logger.info(" Incoming connection")
-            data = json.loads(self.request.recv(1024).strip())
+            data = json.loads(self.request.recv(1024).strip())            
+            print colored("SIBmanager> ", "blue", attrs=["bold"]) + "received the following message:"
             print data
             
             # Decode the request
             if data.has_key("command"):
 
                 if data["command"] in COMMANDS.keys():
+
                     # debug print
-                    print colored("Manager> ", "blue", attrs=["bold"]) + "received the command " + colored(data["command"], "cyan", attrs=['bold'])
+                    print colored("SIBmanager> ", "blue", attrs=["bold"]) + "received the command " + colored(data["command"], "cyan", attrs=['bold'])
                     self.server.logger.info(" Received the command " + str(data))
 
                     # check the number of arguments
@@ -49,77 +52,76 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                         # check the arguments
                         cd = data.keys()
                         cd.remove("command")
+
+                        # if we received a command with the right arguments...
                         if Counter(cd) == Counter(COMMANDS[data["command"]]):
 
-                            # decode 
-                            print colored("Manager> ", "blue", attrs=["bold"]) + "calling the proper method"
+                            print colored("SIBmanager> ", "blue", attrs=["bold"]) + "calling the proper method"
+
+                            # NewRemoteSIB request
                             if data["command"] == "NewRemoteSIB":
-                                #TODO: passare al metodo NewRemoteSIB
-                                #l'owner della sib e fargli inserire
-                                #nell'ancillary sib anche questo dato
                                 confirm = globals()[data["command"]](data["owner"])
+                                
                                 # send a reply
-                                # if confirm["return"] == "ok":
-                                #     print "Here"
-                                #     self.request.sendall(json.dumps(confirm))
-                                # else:
-                                #     self.request.sendall(json.dumps({'return':'fail', 'cause':'virtual sib not created!'}))
-                                print "RITORNO IL MESSAGGIO " + str(confirm)
                                 self.request.sendall(json.dumps(confirm))
 
+                            # Discovery request
                             elif data["command"] == "Discovery":
                                 virtual_sib_list = globals()[data["command"]]()
+
                                 # send a reply
                                 self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
                                 
+                            # NewVirtualMultiSIB request
                             elif data["command"] == "NewVirtualMultiSIB":
                                 sib_list = data['sib_list']
                                 virtual_multi_sib_id = globals()[data["command"]](sib_list)
+
                                 # send a reply
                                 print "ritornato dalla funzione"
                                 self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_id':virtual_multi_sib_id}))
                             
+                        # if the received command has wrong arguments...
                         else:
 
                             # debug print
-                            print colored("Manager> ", "red", attrs=["bold"]) + "wrong arguments"
+                            print colored("SIBmanager> ", "red", attrs=["bold"]) + "wrong arguments"
                             self.server.logger.info(" Wrong arguments, skipping message...")
 
                             # send a reply
                             self.request.sendall(json.dumps({'return':'fail', 'cause':'wrong arguments'}))                                                
 
+                    # if the received command has a wrong number of arguments...
                     else:
                         # debug print
-                        print colored("Manager> ", "red", attrs=["bold"]) + "wrong number of arguments"
+                        print colored("SIBmanager> ", "red", attrs=["bold"]) + "wrong number of arguments"
                         self.server.logger.info(" Wrong number of arguments, skipping message...")
 
                         # send a reply
                         self.request.sendall(json.dumps({'return':'fail', 'cause':'wrong number of arguments'}))                    
 
+                # if we received an invalid command
                 else:
                     # debug print
-                    print colored("Manager> ", "red", attrs=["bold"]) + "invalid command! Skipping message..."
+                    print colored("SIBmanager> ", "red", attrs=["bold"]) + "invalid command! Skipping message..."
                     self.server.logger.info(" Invalid command, skipping message...")
 
                     # send a reply
                     self.request.sendall(json.dumps({'return':'fail', 'cause':'invalid command'}))
-                
+
+            # if the received message does not contain a command
             else:
                 # debug print
-                print colored("Manager> ", "red", attrs=["bold"]) + "no command supplied, skipping message"
+                print colored("SIBmanager> ", "red", attrs=["bold"]) + "no command supplied, skipping message"
                 self.server.logger.info(" No command supplied, skipping message")
 
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':'no command supplied'}))
 
-        except ZeroDivisionError:#Exception, e:
-            print colored("Manager> ", "red", attrs=["bold"]) + "Exception while receiving message: "# + str(e)
-            self.server.logger.info(" Exception while receiving message: ")# + str(e))
-            self.request.sendall(json.dumps({'return':'fail'}))
-
         except Exception, e:
-            print colored("Manager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
+            print colored("SIBmanager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
             self.server.logger.info(" Exception while receiving message: " + str(e))
+            self.request.sendall(json.dumps({'return':'fail', 'cause':str(e)}))
 
 
 ##############################################################
@@ -130,15 +132,22 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
 if __name__=='__main__':
 
+    if len(sys.argv) == 3:
+        sib_manager_ip = sys.argv[1]
+        sib_manager_port = int(sys.argv[2])
+    else:
+        sib_manager_port = 17714
+        sib_manager_ip = "localhost"
+
     try:
         # Create a logger object
         logger = logging.getLogger("manager_server")
         
         # Start the manager server
-        server = ManagerServer(('127.0.0.1', 17714), ManagerServerHandler)
+        server = ManagerServer((sib_manager_ip, sib_manager_port), ManagerServerHandler)
         server.logger = logger
-        server.logger.info(" Starting server on IP 127.0.0.1, Port 17714")
+        server.logger.info(" Starting server on " + sib_manager_ip + ", Port " + str(sib_manager_port))
         server.serve_forever()
         
     except KeyboardInterrupt:
-        print colored("Manager> ", "blue", attrs=["bold"]) + "Goodbye!"
+        print colored("SIBmanager> ", "blue", attrs=["bold"]) + "Goodbye!"
