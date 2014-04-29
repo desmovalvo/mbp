@@ -1,24 +1,27 @@
 #!/usr/bin/python
 
 # requirements
-import json
-from termcolor import *
 import uuid
+import json
+import thread
+import threading
+from random import *
+from termcolor import *
 from SIBLib import SibLib
 from smart_m3.m3_kp import *
-from virtualiser import *
-import threading
-import thread
-from random import *
 
+
+# constants
 ns = "http://smartM3Lab/Ontology.owl#"
 ancillary_ip = "127.0.0.1"
 ancillary_port = 10088
+
+
 #functions
 
 def NewRemoteSIB(owner):
     # debug print
-    print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
     
     # query to the ancillary SIB 
     a = SibLib(ancillary_ip, ancillary_port)
@@ -39,7 +42,7 @@ LIMIT 1"""
         result = a.execute_sparql_query(query)
 
     except socket.error:
-        print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
+        print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
         confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
         return confirm
 
@@ -56,10 +59,10 @@ LIMIT 1"""
         try :
             virtualiser.connect((virtualiser_ip, virtualiser_port))
         except :
-            print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the virtualiser'
+            print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the virtualiser'
             sys.exit()        
     
-        print colored("request_handlers> ", "blue", attrs=['bold']) + 'Connected to the virtualiser. Sending NewRemoteSib request!'
+        print colored("requests_handler> ", "blue", attrs=['bold']) + 'Connected to the virtualiser. Sending ' + colored("NewRemoteSib", "cyan", attrs=["bold"]) + " request!"
     
         # build request message 
         request_msg = {"command":"NewRemoteSIB", "owner":owner}
@@ -69,20 +72,20 @@ LIMIT 1"""
         while 1:
             confirm_msg = virtualiser.recv(4096)
             if confirm_msg:
-                print colored("request_handlers> ", "blue", attrs=["bold"]) + 'Received the following message:'
+                print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
                 print confirm_msg
                 break
     
         confirm = json.loads(confirm_msg)
         if confirm["return"] == "fail":
-            print colored("request_handlers> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
+            print colored("requests_handler> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
             
         elif confirm["return"] == "ok":
             virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
             virtual_sib_ip = confirm["virtual_sib_info"]["virtual_sib_ip"]
             virtual_sib_pub_port = confirm["virtual_sib_info"]["virtual_sib_pub_port"]
             
-            print colored("request_handlers> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' starded on ' + str(virtual_sib_ip) + ":" + str(virtual_sib_pub_port)
+            print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' started on ' + str(virtual_sib_ip) + ":" + str(virtual_sib_pub_port)
         
         return confirm
 
@@ -93,8 +96,8 @@ LIMIT 1"""
 
 
 def NewVirtualMultiSIB(sib_list):
-    print colored("request_handlers> ", "blue", attrs=["bold"]) + str(sib_list)
-    print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + str(sib_list)
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
     # virtual multi sib id
     virtual_multi_sib_id = str(uuid.uuid4())
 
@@ -116,7 +119,7 @@ def NewVirtualMultiSIB(sib_list):
 
 def Discovery():
     # debug print
-    print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
     # query to the ancillary sib to get all the existing virtual sib 
     query = """
         SELECT ?s ?o
