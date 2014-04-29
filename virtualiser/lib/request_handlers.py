@@ -6,7 +6,7 @@ from termcolor import *
 import uuid
 from SIBLib import SibLib
 from smart_m3.m3_kp import *
-from virtualiser import *
+from remoteSIB import *
 import threading
 import thread
 import random
@@ -64,7 +64,7 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
         
         ### thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
         threads[thread_id] = True
-        p = Process(target=virtualiser, args=(kp_port, pub_port, virtual_sib_id, threads[thread_id]))
+        p = Process(target=remoteSIB, args=(kp_port, pub_port, virtual_sib_id, threads[thread_id]))
         p.start()
 
         # t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))

@@ -309,14 +309,9 @@ def socket_observer(sib, port):
             pass
 
 
-def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
+def remoteSIB(kp_port, pub_port, virtual_sib_id, check_var):
 
-    print 'STARTED VIRTUALISER WITH ' + str(kp_port) + " " + str(pub_port) + " " + str(virtual_sib_id)
-
-    # # local copy of the received parameters
-    # sib_tl.kp_port = kp_port
-    # sib_tl.pub_port = pub_port
-    # sib_tl.virtual_sib_id = virtual_sib_id
+    print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' started a nev remote SIB with ip ' + str(kp_port) + ", port " + str(pub_port) + " and id " + str(virtual_sib_id)
 
     host = "localhost"
     kp_addr = (host, kp_port)
@@ -334,7 +329,7 @@ def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
     kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     kp_socket.bind(kp_addr)
     kp_socket.listen(2)
-#    logger.info('Server waiting for KPs on port ' + str(kp_port))
+    logger.info('Remote SIB waiting for KPs on port ' + str(kp_port))
     
     # creating and activating the socket for the Publishers
     pub_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -342,15 +337,15 @@ def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
     pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     pub_socket.bind(pub_addr)
     pub_socket.listen(2)
-    # logger.info('Server waiting for publishers on port ' + str(pub_port))
+    logger.info('Remote SIB waiting for publishers on port ' + str(pub_port))
 
     # sockets
     sockets = [kp_socket, pub_socket]
 
     # loop
-    while check_var:#while 1:
+    while check_var:
 
-        print colored("tserver> ", "blue", attrs=["bold"]) + ' waiting for connections...'
+        print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' waiting for connections...'
         
         # select the read_sockets
         read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
@@ -361,7 +356,7 @@ def virtualiser(kp_port, pub_port, virtual_sib_id, check_var):
             # new connection
             if sock in sockets:
                 clientsock, addr = sock.accept()
-                print colored("tserver> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
+                print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
                 logger.info('Incoming connection from ' + str(addr))
                 thread.start_new_thread(handler, (clientsock, addr, kp_port))
 
