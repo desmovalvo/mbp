@@ -9,7 +9,7 @@ from random import *
 from termcolor import *
 from SIBLib import SibLib
 from smart_m3.m3_kp import *
-
+import sys
 
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"

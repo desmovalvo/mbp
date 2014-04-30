@@ -137,7 +137,7 @@ if __name__=='__main__':
         sib_manager_port = int(sys.argv[2])
     else:
         sib_manager_port = 17714
-        sib_manager_ip = "localhost"
+        sib_manager_ip = "0.0.0.0"
 
     try:
         # Create a logger object

@@ -49,7 +49,7 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "type"), URI(ns + "remoteSib")))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
-        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
+        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
         a.insert(t)
         
         virtual_sib_info = {}

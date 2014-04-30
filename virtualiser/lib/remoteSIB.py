@@ -91,7 +91,15 @@ def handler(clientsock, addr, port):
                     # REGISTER REQUEST
                     if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
                         
-                        # TODO: Quando arriva qui una richiesta di register, ci sono sicuramente gia' le 5 triple relative alla remote sib nell'ancillary sib: dobbiamo solo controllare che la tripla relativa allo stato sia online: se e' offline vuol dire che e' una richiesta di register da parte di un publisher la cui connessione e' caduta e sta ritentando di connettersi, e in tal caso dobbiamo rimettere lo stato online 
+                        # set the status online
+                        a = SibLib("192.168.1.105", 10088)
+                        t = []
+                        t.append(Triple(URI(ns + str(info["node_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
+                        a.remove(t)
+                        t = []
+                        t.append(Triple(URI(ns + str(info["node_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
+                        a.insert(t)       
+
 
                         # build a reply message
                         reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
@@ -99,27 +107,31 @@ def handler(clientsock, addr, port):
                                                                "REGISTER",
                                                                info["transaction_id"],
                                                                '<parameter name="status">m3:Success</parameter>')
-    
+
                         # try to send, then return
                         try:
                             clientsock.send(reply)
 
                             # add the sib to the list
                             sib["socket"] = clientsock
+                            print "ACTUAL SIB: " + str(sib)
                             
                             print colored("treplies>", "green", attrs=["bold"]) + " handle_register_request"
                             logger.info("REGISTER REQUEST handled by handle_register_request")
                             
                             # setting the timestamp
                             sib["timer"] = datetime.datetime.now()
-                        
-                            thread.start_new_thread(socket_observer, (sib, kp_port))                            
+
+                            check_var = False
+                            time.sleep(1)
+                            check_var = True
+                            thread.start_new_thread(socket_observer, (sib, kp_port, check_var))                            
                             print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
                 
                         except socket.error:
                             logger.error("REGISTER CONFIRM not sent!")
                     
-
+          
 
                     # RDF/SPARQL SUBSCRIBE REQUEST
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE":
@@ -278,36 +290,42 @@ def handler(clientsock, addr, port):
 
 
 # SOCKET OBSERVER THREAD
-def socket_observer(sib, port):
-
+def socket_observer(sib, port, check_var):
+    
+    print "obs id: " + str(uuid.uuid4())
     key = sib["socket"]
 
-    while 1:
+    while check_var:
         try:            
             if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
                 print colored("treplies> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
-                sib["socket"] = None
                 
                 # set the status offline
-                a = SibLib("127.0.0.1", 10088)
+                a = SibLib("192.168.1.105", 10088)
                 t = []
                 t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
                 a.remove(t)
                 t = []
                 t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-                a.insert(t)
-                
+                a.insert(t)       
+
+                sib["socket"] = None                
                 break
             else:
                 time.sleep(5)
                 print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
                 sib["socket"].send(" ")
-
+                
         except IOError:
+            print 'ioerror'
             pass
 
-        except KeyError:
-            break
+        # except KeyError:
+        #     print 'keyerror'
+        #     break
+
+        # except:
+        #     print 'boh'
         
     print colored("socket_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(key)
 
@@ -316,10 +334,9 @@ def remoteSIB(kp_port, pub_port, virtual_sib_id, check_var):
 
     print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' started a nev remote SIB with ip ' + str(kp_port) + ", port " + str(pub_port) + " and id " + str(virtual_sib_id)
 
-    host = "localhost"
+    host = "192.168.1.105"
     kp_addr = (host, kp_port)
     pub_addr = (host, pub_port)
-    sib = {}
 
     print "kp addr: " + str(kp_addr)
     print "pub addr: " + str(pub_addr)

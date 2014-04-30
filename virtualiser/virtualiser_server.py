@@ -227,7 +227,7 @@ if __name__=='__main__':
 
         try:
             # Start the manager server
-            server = VirtualiserServer(('127.0.0.1', int(virtualiser_port)), VirtualiserServerHandler)
+            server = VirtualiserServer((virtualiser_ip, int(virtualiser_port)), VirtualiserServerHandler)
             server.logger = logger
             server.logger.info(" Starting server on IP 127.0.0.1, Port " + str(virtualiser_port))
             print colored("Virtualiser> ", "blue", attrs=["bold"]) + "sib virtualiser started on port " + str(virtualiser_port) + " with ID " + virtualiser_id
