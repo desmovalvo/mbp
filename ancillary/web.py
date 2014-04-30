@@ -3,6 +3,7 @@
 # requirements
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from lib import SIBLib
+import sys
 
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"
@@ -98,7 +99,7 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         """Respond to a GET request."""
 
         # connection to the Ancillary SIB
-        a = SIBLib.SibLib("127.0.0.1", 10088)
+        a = SIBLib.SibLib(sys.argv[1], int(sys.argv[2]))
         a.join_sib()
         
         # get the informations from the Ancillary SIB  
@@ -146,7 +147,7 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
 def run():
     print('http server is starting...')
 
-    server_address = ('127.0.0.1', 8000)
+    server_address = ('0.0.0.0', 8000)
     httpd = HTTPServer(server_address, AncillaryRequestHandler)
     print('http server is running...')
     httpd.serve_forever()
