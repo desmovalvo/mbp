@@ -13,9 +13,9 @@ import datetime
 
 ns = "http://smartM3Lab/Ontology.owl#"
 
-ancillary_ip = '127.0.0.1'
+ancillary_ip = '192.168.1.105'
 ancillary_port = '10088'
-manager_ip = '127.0.0.1'
+manager_ip = '192.168.1.105'
 manager_port = 17714
 
 class AncillaryHandler:
@@ -54,11 +54,13 @@ if __name__ == "__main__":
         manager.settimeout(2)
          
         # connect to the manager
-        try :
-            manager.connect((manager_ip, manager_port))
+        try:
+             print manager_ip
+             print manager_port
+             manager.connect((manager_ip, manager_port))
         except :
-            print colored("newpublisher> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
-            sys.exit()        
+             print colored("newpublisher> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
+             sys.exit()        
 
         print colored("newpublisher> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending register request!'
 

@@ -25,7 +25,6 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer):
 
     # socket to the virtual sib
     vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    vs.settimeout(2)
      
     # connect to remote host
     print colored("publisher> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host)
@@ -52,44 +51,57 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer):
         
     while 1:
         # Get the list sockets which are readable
-        read_sockets, write_sockets, error_sockets = select.select(socket_list , [], [])
-         
+        read_sockets, write_sockets, error_sockets = select.select(socket_list , [], [], 15)
+      
+        if not(read_sockets or write_sockets or error_sockets):
+            
+            print colored("publisher> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB. Trying reconnection...'
+            
+            # reconnect to remote host
+            connected = False
+
+            while not connected:
+                time.sleep(5)
+
+                # closing connection to the virtualiser
+                vs.close()
+
+                # re-opening connection
+                try:
+                    print colored("publisher> ", "blue", attrs=["bold"]) + "New attempt to connect to the virtualiser"
+                    vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    vs.connect((vsib_host, vsib_port))
+                    socket_list = [vs]
+
+                    try:
+                        #vs.connect((vsib_host, vsib_port))                            
+                        print colored("publisher> ", "blue", attrs=['bold']) + 'Connected to virtual SIB. Sending register request!'
+
+                        # building and sending the register request
+                        transaction_id = random.randint(0, 1000)
+                        register_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(node_id,
+                                                                      space_id,
+                                                                      "REGISTER",
+                                                                      transaction_id, "")
+
+                        vs.send(register_msg)                            
+                        connected = True
+                        break
+                    except:
+                        print colored("publisher> ", "red", attrs=["bold"]) + "Error while sending register message"
+
+                except:
+                    print colored("publisher> ", "red", attrs=["bold"]) + "Connection failed"
+                                    
+   
         for sock in read_sockets:
+
             #incoming message from remote server
             if sock == vs:
                 ssap_msg = sock.recv(4096)
-                if not ssap_msg and (datetime.datetime.now() - timer).total_seconds() > 5:
-                    # print colored("publisher> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB.'
-                    # sys.exit()
-                
-                    print colored("publisher> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB. Trying to reconnect to it..'
-                    # resend register request
-
-                    # reconnect to remote host
-                    connected = False
-                    while not connected:
-                        try :
-                            vs.connect((vsib_host, vsib_port))                            
-                            print colored("publisher> ", "blue", attrs=['bold']) + 'Connected to virtual SIB. Sending register request!'
-                            # building and sending the register request
-                            transaction_id = random.randint(0, 1000)
-                    
-                            register_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(node_id,
-                                                                          space_id,
-                                                                          "REGISTER",
-                                                                          transaction_id, "")
-                    
-                            try:
-                                vs.send(register_msg)                            
-                                connected = True
-                                time.sleep(10)
-                                break
-                            except:
-                                print "internal try error"
-                        except socket.error:
-                            print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the virtual SIB. Trying again...'
-                            time.sleep(10)
-
+                if not ssap_msg:
+                    print colored("publisher> ", "red", attrs=["bold"]) + "Connection closed by foreign host"
+                    sys.exit()
                 else:
                     timer = datetime.datetime.now()
                     print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
