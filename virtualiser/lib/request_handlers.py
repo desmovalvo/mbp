@@ -46,6 +46,7 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
     try:
         a = SibLib("127.0.0.1", 10088)
         t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port)))]
+        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "type"), URI(ns + "remoteSib")))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))

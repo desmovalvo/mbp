@@ -90,6 +90,8 @@ def handler(clientsock, addr, port):
         
                     # REGISTER REQUEST
                     if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
+                        
+                        # TODO: Quando arriva qui una richiesta di register, ci sono sicuramente gia' le 5 triple relative alla remote sib nell'ancillary sib: dobbiamo solo controllare che la tripla relativa allo stato sia online: se e' offline vuol dire che e' una richiesta di register da parte di un publisher la cui connessione e' caduta e sta ritentando di connettersi, e in tal caso dobbiamo rimettere lo stato online 
 
                         # build a reply message
                         reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
@@ -98,7 +100,7 @@ def handler(clientsock, addr, port):
                                                                info["transaction_id"],
                                                                '<parameter name="status">m3:Success</parameter>')
     
-                        # try to receive, then return
+                        # try to send, then return
                         try:
                             clientsock.send(reply)
 
@@ -285,10 +287,12 @@ def socket_observer(sib, port):
             if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
                 print colored("treplies> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
                 sib["socket"] = None
-                # TODO: scrivere nell'ancillary sib che la sib non e' piu' attiva
+                
+                # set the status offline
                 a = SibLib("127.0.0.1", 10088)
                 t = []
                 t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
+                a.remove(t)
                 t = []
                 t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
                 a.insert(t)

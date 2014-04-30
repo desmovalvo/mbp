@@ -96,7 +96,8 @@ if __name__ == "__main__":
             virtual_sib_pub_port = confirm["virtual_sib_info"]["virtual_sib_pub_port"]
             
             # lancio publisher
-            StartConnection(virtual_sib_ip, virtual_sib_pub_port)
+            timer = datetime.datetime.now()
+            StartConnection(virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer)
 
 ############################################################
 ###
