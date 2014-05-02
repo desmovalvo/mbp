@@ -15,7 +15,7 @@ ns = "http://smartM3Lab/Ontology.owl#"
 
 #functions
 
-def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
+def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id):
     # debug print
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -50,6 +50,7 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
+        t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_sib_id))))
         a.insert(t)
         
         virtual_sib_info = {}
@@ -84,6 +85,96 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id):
         virtual_sib_info["return"] = "fail"
         virtual_sib_info["cause"] = "Sib Error"
         return virtual_sib_info
+
+
+def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id):
+    try:
+        # remove virtual sib info from the ancillary sib
+        a = SibLib("127.0.0.1", 10088)        
+
+        # query = """SELECT ?p ?o WHERE {ns:""" + str(virtual_sib_id) + """ ?p ?o}"""
+        # result = a.execute_sparql_query(query)  
+        # # for i in result:
+        # #     p = str((result[0][0][2]).split("#")[1])
+        # #     o = str((result[0][1][2]).split("#")[1])
+        # print result
+
+        t = Triple(URI(ns + virtual_sib_id), None, None)
+        result = a.execute_rdf_query(t)  
+        print result
+        a.remove(result)
+
+        # query = """SELECT ?o WHERE {ns:""" + str(virtual_sib_id) + """ ns:hasPubIpPort ?o}"""
+        # result = a.execute_sparql_query(query)  
+        # pubIpPort = str((result[0][0][2]).split("#")[1])
+        
+        # query = """SELECT ?o WHERE {ns:""" + str(virtual_sib_id) + """ ns:hasKpIpPort ?o}"""
+        # result = a.execute_sparql_query(query)  
+        # kpIpPort = str((result[0][0][2]).split("#")[1])
+        
+        # query = """SELECT ?o WHERE {ns:""" + str(virtual_sib_id) + """ ns:hasOwner ?o}"""
+        # result = a.execute_sparql_query(query)  
+        # owner = str((result[0][0][2]).split("#")[1])
+        
+        # query = """SELECT ?o WHERE {ns:""" + str(virtual_sib_id) + """ ns:hasStatus ?o}"""
+        # result = a.execute_sparql_query(query)  
+        # status = str((result[0][0][2]).split("#")[1])
+        
+        # t.append(Triple(URI(ns + virtual_sib_id), URI(ns + "hasKpIpPort"), URI(ns + kpIpPort)))
+        # t.append(Triple(URI(ns + virtual_sib_id), URI(ns + "hasOwner"), URI(ns + owner)))
+        # t.append(Triple(URI(ns + virtual_sib_id), URI(ns + "hasStatus"), URI(ns + status)))
+        t = [Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + virtual_sib_id))]
+        a.remove(t)
+        print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Triples deleted!'
+
+        #killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
+        threads[t_id[virtual_sib_id]] = False
+        print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' killed ' 
+
+
+
+        #############################################
+        ##                                         ##
+        ## Update the load of selected virtualiser ##
+        ##                                         ##
+        #############################################
+        # get old load
+        try:
+            query = """SELECT ?load
+WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
+
+            result = a.execute_sparql_query(query)
+            load = int(result[0][0][2])
+            print "Old Load " + str(load)
+            
+            # remove triple
+            t = []
+            t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
+            a.remove(t)
+            # insert new triple
+            load -= 1
+            print "New Load " + str(load)
+            t = []
+            t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
+            a.insert(t)
+        except socket.error:
+            print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
+            confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
+            return confirm
+
+        #############################################
+        #############################################
+
+
+        confirm = {'return':'ok'}
+        
+    except socket.error:
+        print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
+        confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
+
+    return confirm
+                                        
+
     
 
 def NewVirtualMultiSIB(sib_list):
