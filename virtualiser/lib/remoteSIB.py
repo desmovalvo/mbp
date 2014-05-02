@@ -42,7 +42,7 @@ logger = logging.getLogger("remoteSIB")
 #
 ##############################################################
 
-def handler(clientsock, addr, port):
+def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 
     # storing received parameters in thread-local variables
     kp_port = port
@@ -97,7 +97,7 @@ def handler(clientsock, addr, port):
                     if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
                         
                         # set the status online
-                        a = SibLib("127.0.0.1", 10088)
+                        a = SibLib(ancillary_ip, ancillary_port)
                         t = []
                         t.append(Triple(URI(ns + str(info["node_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
                         a.remove(t)
@@ -131,8 +131,10 @@ def handler(clientsock, addr, port):
                             check_var = False
                             time.sleep(1)
                             check_var = True
-                            thread.start_new_thread(socket_observer, (sib, kp_port, check_var))                            
-                            print colored("remoteSIB> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
+
+                            thread.start_new_thread(socket_observer, (sib, kp_port, check_var, ancillary_ip, ancillary_port))                            
+                            print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
+
                 
                         except socket.error:
                             logger.error("REGISTER CONFIRM not sent!")
@@ -296,7 +298,7 @@ def handler(clientsock, addr, port):
 
 
 # SOCKET OBSERVER THREAD
-def socket_observer(sib, port, check_var):
+def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
     
     print "obs id: " + str(uuid.uuid4())
     key = sib["socket"]
@@ -307,7 +309,7 @@ def socket_observer(sib, port, check_var):
                 print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
                 
                 # set the status offline
-                a = SibLib("127.0.0.1", 10088)
+                a = SibLib(ancillary_ip, ancillary_port)
 
                 t = []
                 t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
@@ -350,11 +352,11 @@ def socket_observer(sib, port, check_var):
     print colored("socket_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(key)
 
 
-def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var):
+def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, ancillary_ip, ancillary_port):
 
     print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' started a new remote SIB with ip ' + str(virtualiser_ip) + ", kpPort " + str(kp_port) + ", pubPort " + str(pub_port) + " and id " + str(virtual_sib_id)
 
-    host = "192.168.1.105"
+    host = virtualiser_ip
     kp_addr = (host, kp_port)
     pub_addr = (host, pub_port)
 
@@ -398,7 +400,7 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var):
                 clientsock, addr = sock.accept()
                 print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
                 logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr, kp_port))
+                thread.start_new_thread(handler, (clientsock, addr, kp_port, ancillary_ip, ancillary_port))
 
             # incoming data
             else:

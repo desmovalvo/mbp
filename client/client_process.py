@@ -60,7 +60,7 @@ if __name__ == "__main__":
         while 1:
             msg = manager.recv(4096)
             if msg:
-                print colored("client_process> ", "red", attrs=["bold"]) + 'Received the following message:'
+                print colored("client_process> ", "blue", attrs=["bold"]) + 'Received the following message:'
                 print msg
                 manager.close()
                 break

@@ -17,7 +17,7 @@ ns = "http://smartM3Lab/Ontology.owl#"
 
 #functions
 
-def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id):
+def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port):
     # debug print
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -41,12 +41,10 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id):
             if s2.connect_ex(("localhost", pub_port)) != 0:
                 print "estratta la porta %s"%(str(pub_port))
                 break        
-
-    
     
     # insert information in the ancillary SIB
     try:
-        a = SibLib("127.0.0.1", 10088)
+        a = SibLib(ancillary_ip, ancillary_port)
         t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port)))]
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "remoteSib")))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
@@ -68,7 +66,7 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id):
         
         ### thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
         threads[thread_id] = True
-        p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id]))
+        p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], ancillary_ip, ancillary_port))
         p.start()
 
         # t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))
@@ -89,10 +87,10 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id):
         return virtual_sib_info
 
 
-def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id):
+def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip, ancillary_port):
     try:
         # remove virtual sib info from the ancillary sib
-        a = SibLib("127.0.0.1", 10088)        
+        a = SibLib(ancillary_ip, ancillary_port)
 
         t = Triple(URI(ns + virtual_sib_id), None, None)
         result = a.execute_rdf_query(t)  
@@ -152,7 +150,7 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
                                         
 
     
-def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id):
+def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id, ancillary_ip, ancillary_port):
     print colored("request_handlers> ", "blue", attrs=["bold"]) + str(sib_list)
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
     # virtual multi sib id
@@ -180,7 +178,7 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
     
     # insert information in the ancillary SIB
     try:
-        a = SibLib("127.0.0.1", 10088)
+        a = SibLib(ancillary_ip, ancillary_port)
         t = []
         for i in sib_list:
             t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i))))
@@ -202,7 +200,7 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
         # l'inserimento delle informazioni e' andato a buon fine)
         
         threads[thread_id] = True
-        p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_multi_sib_id, threads[thread_id], sib_list))
+        p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_multi_sib_id, threads[thread_id], sib_list, ancillary_ip, ancillary_port))
         p.start()
 
         # return virtual multi sib id
@@ -220,7 +218,7 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
         virtual_multi_sib_info["cause"] = "Sib Error"
         return virtual_multi_sib_info
 
-def Discovery():
+def Discovery(ancillary_ip, ancillary_port):
     # debug print
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
     # query to the ancillary sib to get all the existing virtual sib 
@@ -228,7 +226,7 @@ def Discovery():
         SELECT ?s ?o
         WHERE {?s ns:hasKpIpPort ?o}
         """
-    a = SibLib("127.0.0.1", 10088)
+    a = SibLib(ancillary_ip, ancillary_port)
     result = a.execute_sparql_query(query)
     
     virtual_sib_list = {}

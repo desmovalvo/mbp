@@ -34,9 +34,6 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 logger = logging.getLogger("virtualMultiSIB")
 ns = "http://smartM3Lab/Ontology.owl#"
 
-ancillary_ip = "192.168.1.105"
-ancillary_port = 10088
-
 ##############################################################
 #
 # handler
@@ -187,12 +184,11 @@ def handler(clientsock, addr, port, sibs_info):
 #            break
 
 
-def virtualMultiSIB(virtualiser_ip, kp_port, pub_port, virtual_multi_sib_id, check_var, sib_list):
+def virtualMultiSIB(virtualiser_ip, kp_port, pub_port, virtual_multi_sib_id, check_var, sib_list, ancillary_ip, ancillary_port):
 
     print colored("virtualMultiSIB> ", "blue", attrs=["bold"]) + ' started a new virtual multi SIB with ip ' + str(virtualiser_ip) + ", kpPort " + str(kp_port) + ", pubPort " + str(pub_port) + " and id " + str(virtual_multi_sib_id)
 
-
-    host = "192.168.1.105"
+    host = virtualiser_ip
     kp_addr = (host, kp_port)
     pub_addr = (host, pub_port)
     

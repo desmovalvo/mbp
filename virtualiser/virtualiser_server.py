@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # requirements
 from lib.request_handlers import *
 from collections import Counter
@@ -12,11 +14,7 @@ import uuid
 import sys
 
 # namespaces
-# TODO - define a proper namespace
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-owl = "http://www.w3.org/2002/07/owl#"
-xsd = "http://www.w3.org/2001/XMLSchema#"
-rdfs = "http://www.w3.org/2000/01/rdf-schema#"
 ns = "http://smartM3Lab/Ontology.owl#"
 
 threads = {}
@@ -69,10 +67,8 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                             # decode 
                             print colored("Virtualiser> ", "blue", attrs=["bold"]) + "calling the proper method"
                             
-
-
                             if data["command"] == "DeleteRemoteSIB":
-                                confirm = globals()[data["command"]](data["virtual_sib_id"], threads, t_id, virtualiser_id)
+                                confirm = globals()[data["command"]](data["virtual_sib_id"], threads, t_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port)
 
                                 if confirm["return"] == "fail":
                                     print colored("virtualiser_server> ", "red", attrs=["bold"]) + 'Deletion failed!' + confirm["cause"]
@@ -83,17 +79,13 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                         print colored("Virtualiser> ", "red", attrs=["bold"]) + "Error message forwarding failed!"
                                         pass
 
-            
                                 elif confirm["return"] == "ok":
                                         
                                     # send a reply
                                     try:
                                         self.request.sendall(json.dumps({'return':'ok'}))
                                     except socket.error:
-                                        print colored("Virtualiser> ", "red", attrs=["bold"]) + "Confirm message forwarding failed!"
-        
-                                
-
+                                        print colored("Virtualiser> ", "red", attrs=["bold"]) + "Confirm message forwarding failed!"                          
 
                             elif data["command"] == "NewRemoteSIB":
                                 #Passiamo al metodo NewRemoteSIB
@@ -101,7 +93,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                 #inserisca nell'ancillary sib anche
                                 #questo dato
                                 thread_id = str(uuid.uuid4())
-                                virtual_sib_info = globals()[data["command"]](data["owner"], virtualiser_ip, threads, thread_id, virtualiser_id)
+                                virtual_sib_info = globals()[data["command"]](data["owner"], self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port)
                                 
                                 if virtual_sib_info["return"] == "fail":
                                     # send a reply
@@ -129,7 +121,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                     #############################################
                                     # get old load
                                     try:
-                                        a = SibLib("127.0.0.1", 10088)
+                                        a = SibLib(self.server.ancillary_ip, self.server.ancillary_port)
                                         query = """SELECT ?load
 WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
 
@@ -162,7 +154,7 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
                                         self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
                                     except socket.error:
                                         # remove virtual sib info from the ancillary sib
-                                        a = SibLib("127.0.0.1", 10088)
+                                        a = SibLib(self.server.ancillary_ip, self.server.ancillary_port)
                                         t = [Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasPubIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_pub_port"]) ))]
                                         t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasKpIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_kp_port"]))))
                                         t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasOwner"), URI(ns + virtual_sib_info["owner"])))
@@ -184,7 +176,7 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
                             elif data["command"] == "NewVirtualMultiSIB":
                                 sib_list = data['sib_list']
                                 thread_id = str(uuid.uuid4())
-                                virtual_multi_sib_info = globals()[data["command"]](sib_list, virtualiser_ip, virtualiser_id, threads, thread_id)
+                                virtual_multi_sib_info = globals()[data["command"]](sib_list, self.server.virtualiser_ip, self.server.virtualiser_id, threads, thread_id, self.server.ancillary_ip, self.server.ancillary_port)
                                 # send a reply
                                 print "ritornato dalla funzione"
                                 self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_info':virtual_multi_sib_info}))
@@ -235,45 +227,53 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
 
 if __name__=='__main__':
 
-    try:
+    if len(sys.argv) < 5:    
+        print colored("Virtualiser> ", "red", attrs=["bold"]) + """You must specify:
+* virtualiser ip
+* virtualiser port
+* ancillary ip
+* ancillary port"""
+        sys.exit()
+    else:
         virtualiser_id = str(uuid.uuid4())
         virtualiser_ip = sys.argv[1]
         virtualiser_port = int(sys.argv[2])
         ancillary_ip = sys.argv[3]
         ancillary_port = int(sys.argv[4])
 
-        try:
-            # Create a logger object
-            logger = logging.getLogger("virtualiser_server")
-            
-            # Insert the virtualiser informations into the Ancillary SIB
-            ancillary_sib = SibLib(ancillary_ip, ancillary_port)
-            ancillary_sib.join_sib()
-            triples = []
-            triples.append(Triple(URI(ns + virtualiser_id), URI(rdf + "type"), URI(ns + "virtualiser")))
-            triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(0))))
-            triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasIP"), URI(ns + virtualiser_ip)))
-            triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasPort"), URI(ns + str(virtualiser_port))))
-            ancillary_sib.insert(triples)
-            
-        except socket.error:
-            print colored("Virtualiser> ", "red", attrs=["bold"]) + "Unable to connect to the ancillary SIB!"
-            sys.exit()
-
-        try:
-            # Start the manager server
-            server = VirtualiserServer((virtualiser_ip, int(virtualiser_port)), VirtualiserServerHandler)
-            server.logger = logger
-            server.logger.info(" Starting server on IP 127.0.0.1, Port " + str(virtualiser_port))
-            print colored("Virtualiser> ", "blue", attrs=["bold"]) + "sib virtualiser started on port " + str(virtualiser_port) + " with ID " + virtualiser_id
-            server.serve_forever()
+    try:
+        # Create a logger object
+        logger = logging.getLogger("virtualiser_server")
         
-        except KeyboardInterrupt:
-            # cleaning the ancillary SIB
-            ancillary_sib.remove(triples)
-
-            print colored("Virtualiser> ", "blue", attrs=["bold"]) + "Goodbye!"
-
-    except IndexError:
-        print colored("Virtualiser> ", "red", attrs=["bold"]) + "You must specify ip and port number for the virtualiser, and ip and port for the ancillary SIB"
+        # Insert the virtualiser informations into the Ancillary SIB
+        ancillary_sib = SibLib(ancillary_ip, ancillary_port)
+        ancillary_sib.join_sib()
+        triples = []
+        triples.append(Triple(URI(ns + virtualiser_id), URI(rdf + "type"), URI(ns + "virtualiser")))
+        triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(0))))
+        triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasIP"), URI(ns + virtualiser_ip)))
+        triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasPort"), URI(ns + str(virtualiser_port))))
+        ancillary_sib.insert(triples)
+        
+    except socket.error:
+        print colored("Virtualiser> ", "red", attrs=["bold"]) + "Unable to connect to the ancillary SIB!"
         sys.exit()
+
+    try:
+        # Start the manager server
+        server = VirtualiserServer((virtualiser_ip, int(virtualiser_port)), VirtualiserServerHandler)
+        server.virtualiser_id = virtualiser_id
+        server.virtualiser_ip =  virtualiser_ip
+        server.virtualiser_port = virtualiser_port 
+        server.ancillary_ip = ancillary_ip
+        server.ancillary_port = ancillary_port
+        server.logger = logger
+        server.logger.info(" Starting server on IP " + virtualiser_ip + " Port " + str(virtualiser_port))
+        print colored("Virtualiser> ", "blue", attrs=["bold"]) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
+        server.serve_forever()
+    
+    except KeyboardInterrupt:
+        # cleaning the ancillary SIB
+        ancillary_sib.remove(triples)
+        print colored("Virtualiser> ", "blue", attrs=["bold"]) + "Goodbye!"
+
