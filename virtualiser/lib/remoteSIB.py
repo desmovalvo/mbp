@@ -2,7 +2,7 @@
 
 # requirements
 from xml.etree import ElementTree as ET
-from treplies import *
+from remoteSIB import *
 from Subreq import *
 from termcolor import *
 import socket, select
@@ -14,6 +14,8 @@ import time
 from SIBLib import *
 import time
 import datetime
+from SSAPLib import *
+
 
 BUFSIZ = 1024
 
@@ -120,7 +122,7 @@ def handler(clientsock, addr, port):
                             sib["socket"] = clientsock
                             print "ACTUAL SIB: " + str(sib)
                             
-                            print colored("treplies>", "green", attrs=["bold"]) + " handle_register_request"
+                            print colored("remoteSIB>", "green", attrs=["bold"]) + " handle_register_request"
                             logger.info("REGISTER REQUEST handled by handle_register_request")
                             
                             # setting the timestamp
@@ -130,7 +132,7 @@ def handler(clientsock, addr, port):
                             time.sleep(1)
                             check_var = True
                             thread.start_new_thread(socket_observer, (sib, kp_port, check_var))                            
-                            print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
+                            print colored("remoteSIB> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
                 
                         except socket.error:
                             logger.error("REGISTER CONFIRM not sent!")
@@ -142,7 +144,7 @@ def handler(clientsock, addr, port):
                         kp_list[info["node_id"]] = clientsock
                         
                         # debug info
-                        print colored("treplies>", "green", attrs=["bold"]) + " request handled"
+                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
                         logger.info("SUBSCRIBE REQUEST handled")
 
                         # generating a Subreq instance
@@ -168,7 +170,7 @@ def handler(clientsock, addr, port):
                     # RDF/SPARQL SUBSCRIBE CONFIRM
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": 
                         # debug info
-                        print colored("treplies>", "green", attrs=["bold"]) + " confirm handled"
+                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
                         logger.info("SUBSCRIBE CONFIRM handled")
                         
                         # store the corrispondence between the real sib and the real_subscription_id
@@ -182,7 +184,7 @@ def handler(clientsock, addr, port):
                     # RDF/SPARQL UNSUBSCRIBE REQUEST
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
                         # debug info
-                        print colored("treplies>", "green", attrs=["bold"]) + " request handled"
+                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
                         logger.info("UNSUBSCRIBE REQUEST handled")
 
                         # find the Subreq instance
@@ -213,7 +215,7 @@ def handler(clientsock, addr, port):
                     # RDF/SPARQL UNSUBSCRIBE CONFIRM
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
                         # debug info
-                        print colored("treplies>", "green", attrs=["bold"]) + " confirm handled"
+                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
                         logger.info("UNSUBSCRIBE CONFIRM handled")
 
 
@@ -230,7 +232,7 @@ def handler(clientsock, addr, port):
                     # RDF/SPARQL SUBSCRIBE INDICATION
                     elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
                         # debug info
-                        print colored("treplies>", "green", attrs=["bold"]) + " indication handled"
+                        print colored("remoteSIB>", "green", attrs=["bold"]) + " indication handled"
                         logger.info("SUBSCRIBE INDICATION handled")
 
                         for s in val_subscriptions:
@@ -251,7 +253,7 @@ def handler(clientsock, addr, port):
                         kp_list[info["node_id"]] = clientsock
 
                         # debug message
-                        print colored("treplies>", "green", attrs=["bold"]) + " request handled"
+                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
                         logger.info(info["transaction_type"] + " REQUEST handled")
 
                         # forwarding message to the publisher
@@ -275,7 +277,7 @@ def handler(clientsock, addr, port):
                     elif info["message_type"] == "CONFIRM":
 
                         # debug info
-                        print colored("treplies>", "green", attrs=["bold"]) + " confirm handled"
+                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
                         logger.info(info["transaction_type"] + " CONFIRM handled")
                     
                         # forward message to the kp
@@ -302,7 +304,7 @@ def socket_observer(sib, port, check_var):
     while check_var:
         try:            
             if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
-                print colored("treplies> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
+                print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
                 
                 # set the status offline
                 a = SibLib("127.0.0.1", 10088)

@@ -6,6 +6,19 @@ from termcolor import *
 from lib.Subreq import *
 from smart_m3.m3_kp import *
 from xml.sax import make_parser
+import thread
+import threading
+from xml.etree import ElementTree as ET
+from termcolor import colored
+from threading import Thread, Lock
+import uuid
+
+
+BUFSIZ = 1024
+
+mutex = Lock()    
+num_confirms = 0
+
 
 
 ##############################################################
@@ -14,10 +27,72 @@ from xml.sax import make_parser
 #
 ##############################################################
 
-# JOIN REQUEST
-def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list):
-    """The present method is used to manage the join request received from a KP."""
+def confirm_handler(sib_sock, sibs_info, kp_list, n):
 
+    global mutex
+    global num_confirms
+    
+    complete_ssap_msg = ""
+    while 1:
+        try:
+            ssap_msg = sib_sock.recv(BUFSIZ)
+
+            # check whether we received a blank message
+            if not ssap_msg and not complete_ssap_msg:
+                break
+
+            if ssap_msg != None:
+                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+
+            if "</SSAP_message>" in complete_ssap_msg:
+                ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
+                complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
+                
+            # try to decode the message
+            try:
+                    
+                # parse the ssap message
+                root = ET.fromstring(ssap_msg)           
+                info = {}
+                for child in root:
+                    if child.attrib.has_key("name"):
+                        k = child.tag + "_" + str(child.attrib["name"])
+                    else:
+                        k = child.tag
+                    info[k] = child.text
+
+                
+                mutex.acquire()
+                num_confirms -= 1
+                print n + "-----------" + str(num_confirms)
+                if num_confirms == 0:
+                    print "Inoltro ai kp"
+                    kp_list[info["node_id"]].send(ssap_msg)
+                mutex.release()
+            
+            except ET.ParseError:
+                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                pass
+            
+            
+        except socket.error:
+            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+
+
+    
+# JOIN REQUEST
+def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num):
+    """The present method is used to manage the join request received from a KP."""
+    t = {}
+    global num_confirms 
+    num_confirms = num
+    sib_list_conn = {}
+
+
+    #################
+    # MAIN FUNCTION #
+    ################# 
+    
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
     logger.info("JOIN REQUEST handled by handle_join_request")
@@ -29,8 +104,8 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list):
         kp_port = sibs_info[s]["kp_port"]
         # socket to the sib
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(15)
-        #sib_list_conn.append(sib_sock)
+        #sock.settimeout(15)
+        sib_list_conn[s] = sock
         
         # connect to the 
         try:
@@ -53,7 +128,13 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list):
              del kp_list[info["node_id"]]
              logger.error("JOIN REQUEST forwarding failed")
 
-             
+    
+        print "***************   " + str(num_confirms)
+        
+        n = str(uuid.uuid4())
+        t[n] = n
+        thread.start_new_thread(confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n]))
+    
 # LEAVE REQUEST
 def handle_leave_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the leave request received from a KP."""
