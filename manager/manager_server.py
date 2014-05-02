@@ -75,10 +75,10 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                                 
                 # NewVirtualMultiSIB request
                 elif data["command"] == "NewVirtualMultiSIB":
-                    virtual_multi_sib_id = globals()[cmd.command](cmd.sib_list)
-
-                    # send a reply
-                    self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_id':virtual_multi_sib_id}))
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_list)
+                
+                    # send a reply                    
+                    self.request.sendall(json.dumps(confirm))
 
             else:
                 # debug print
@@ -103,18 +103,22 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
 if __name__=='__main__':
 
-   if len(sys.argv) == 3:
+   if len(sys.argv) == 5:
        sib_manager_ip = sys.argv[1]
        sib_manager_port = int(sys.argv[2])
+       ancillary_ip = sys.argv[3]
+       ancillary_port = int(sys.argv[4])
    else:
-        sib_manager_port = 17714
-        sib_manager_ip = "0.0.0.0"
+       sib_manager_port = 17714
+       sib_manager_ip = "0.0.0.0"
+       ancillary_port = "localhost"
+       ancillary_ip = 10088
 
    try:
        # Create a logger object
        logger = logging.getLogger("manager_server")
        
-        # Start the manager server
+       # Start the manager server
        server = ManagerServer((sib_manager_ip, sib_manager_port), ManagerServerHandler)
        server.logger = logger
        server.logger.info(" Starting server on " + sib_manager_ip + ", Port " + str(sib_manager_port))
