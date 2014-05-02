@@ -15,13 +15,10 @@ import socket, select, string, sys
 
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"
-ancillary_ip = "127.0.0.1"
-ancillary_port = 10088
 
 
 #functions
-
-def NewRemoteSIB(owner):
+def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
     # debug print
     print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
     
@@ -97,7 +94,7 @@ def NewRemoteSIB(owner):
         virtualiser.close()
         return confirm
 
-def DeleteRemoteSIB(virtual_sib_id):
+def DeleteRemoteSIB(ancillary_ip, ancillary_port, virtual_sib_id):
     # debug print
     print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"])
     
@@ -253,8 +250,10 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
 
 
 
-def Discovery():
+def Discovery(ancillary_ip, ancillary_port):
     # debug print
+    print ancillary_ip
+    print ancillary_port
     print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
     # query to the ancillary sib to get all the existing virtual sib 
     query = """

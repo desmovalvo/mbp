@@ -46,7 +46,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # NewRemoteSIB request
                 if cmd.command == "NewRemoteSIB":
-                    confirm = globals()[cmd.command](cmd.owner)
+                    confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.owner)
                     
                     # send a reply
                     try:
@@ -61,14 +61,14 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # DeleteRemoteSIB request
                 elif data["command"] == "DeleteRemoteSIB":
-                    confirm = globals()[cmd.command](cmd.virtual_sib_id)
+                    confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.virtual_sib_id)
                                 
                     # send a reply
                     self.request.sendall(json.dumps(confirm))
 
                 # Discovery request
                 elif data["command"] == "Discovery":
-                    virtual_sib_list = globals()[cmd.command]()
+                    virtual_sib_list = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port)
                     
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
@@ -88,8 +88,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':cmd.invalid_cause}))                                                
                 
-
-        except ZeroDivisionError:#Exception, e:
+        except Exception, e:
             print colored("SIBmanager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
             self.server.logger.info(" Exception while receiving message: " + str(e))
             self.request.sendall(json.dumps({'return':'fail', 'cause':str(e)}))
@@ -103,26 +102,35 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
 if __name__=='__main__':
 
-   if len(sys.argv) == 5:
-       sib_manager_ip = sys.argv[1]
-       sib_manager_port = int(sys.argv[2])
-       ancillary_ip = sys.argv[3]
-       ancillary_port = int(sys.argv[4])
-   else:
-       sib_manager_port = 17714
-       sib_manager_ip = "0.0.0.0"
-       ancillary_ip = "localhost"
-       ancillary_port = 10088
-
-   try:
-       # Create a logger object
-       logger = logging.getLogger("manager_server")
-       
-       # Start the manager server
-       server = ManagerServer((sib_manager_ip, sib_manager_port), ManagerServerHandler)
-       server.logger = logger
-       server.logger.info(" Starting server on " + sib_manager_ip + ", Port " + str(sib_manager_port))
-       server.serve_forever()
+    # Parameters needed to connect to manager and ancillary sib
+    if len(sys.argv) == 5:
+        manager_ip = sys.argv[1]
+        manager_port = int(sys.argv[2])
+        ancillary_ip = sys.argv[3]
+        ancillary_port = int(sys.argv[4])
+    else:
+        manager_port = 17714
+        manager_ip = "0.0.0.0"
+        ancillary_ip = "localhost"
+        ancillary_port = 10088
         
-   except KeyboardInterrupt:
-       print colored("SIBmanager> ", "blue", attrs=["bold"]) + "Goodbye!"
+    try:
+        # Create a logger object
+        logger = logging.getLogger("manager_server")
+       
+        # Start the manager server
+        server = ManagerServer((manager_ip, manager_port), ManagerServerHandler)
+        server.logger = logger
+        server.logger.info(" Starting server on " + manager_ip + ", Port " + str(manager_port))
+        
+        # Parameters needed to connect to manager and ancillary sib
+        server.manager_ip = manager_ip
+        server.manager_port = manager_port
+        server.ancillary_ip = ancillary_ip
+        server.ancillary_port = ancillary_port
+       
+        # Serve!
+        server.serve_forever()
+        
+    except KeyboardInterrupt:
+        print colored("SIBmanager> ", "blue", attrs=["bold"]) + "Goodbye!"
