@@ -92,7 +92,7 @@ def handler(clientsock, addr, port):
                     if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
                         
                         # set the status online
-                        a = SibLib("192.168.1.105", 10088)
+                        a = SibLib("127.0.0.1", 10088)
                         t = []
                         t.append(Triple(URI(ns + str(info["node_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
                         a.remove(t)
@@ -301,7 +301,7 @@ def socket_observer(sib, port, check_var):
                 print colored("treplies> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
                 
                 # set the status offline
-                a = SibLib("192.168.1.105", 10088)
+                a = SibLib("127.0.0.1", 10088)
                 t = []
                 t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
                 a.remove(t)
@@ -334,7 +334,7 @@ def remoteSIB(kp_port, pub_port, virtual_sib_id, check_var):
 
     print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' started a nev remote SIB with ip ' + str(kp_port) + ", port " + str(pub_port) + " and id " + str(virtual_sib_id)
 
-    host = "192.168.1.105"
+    host = "127.0.0.1"
     kp_addr = (host, kp_port)
     pub_addr = (host, pub_port)
 
