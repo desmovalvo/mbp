@@ -7,6 +7,7 @@ import uuid
 from SIBLib import SibLib
 from smart_m3.m3_kp import *
 from remoteSIB import *
+from virtualMultiSIB import *
 import threading
 import thread
 import random
@@ -66,7 +67,7 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id):
         
         ### thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
         threads[thread_id] = True
-        p = Process(target=remoteSIB, args=(kp_port, pub_port, virtual_sib_id, threads[thread_id]))
+        p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id]))
         p.start()
 
         # t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))
@@ -150,28 +151,73 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
                                         
 
     
-
-def NewVirtualMultiSIB(sib_list):
+def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id):
     print colored("request_handlers> ", "blue", attrs=["bold"]) + str(sib_list)
     print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
     # virtual multi sib id
     virtual_multi_sib_id = str(uuid.uuid4())
 
-    # # TODO start a virtual multi sib
-    # thread.start_new_thread(virtualiser, (10010, 10011))
+    # create two sockets
+    s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # generating two random ports
+    while True:
+        kp_port = random.randint(10000, 11000)
+        if s1.connect_ex(("localhost", kp_port)) != 0:
+            print "estratta la porta %s"%(str(kp_port))
+            break
+
+    while True:
+        pub_port = random.randint(10000, 11000)
+        if pub_port != kp_port:
+            if s2.connect_ex(("localhost", pub_port)) != 0:
+                print "estratta la porta %s"%(str(pub_port))
+                break        
+
+    
     
     # insert information in the ancillary SIB
-    a = SibLib("127.0.0.1", 10088)
-    t = []
-    for i in sib_list:
-        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i))))
+    try:
+        a = SibLib("127.0.0.1", 10088)
+        t = []
+        for i in sib_list:
+            t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i))))
+        
+        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
+        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
+        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port))))
+        t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_sib_id))))
+        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
+        t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multi_sib_id))))
+        a.insert(t)
 
-    t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + "127.0.0.1-10010")))
-    t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasSibIpPort"), URI(ns + "127.0.0.1-10010")))
-    a.insert(t)
-    
-    # return virtual multi sib id 
-    return virtual_multi_sib_id
+        virtual_multi_sib_info = {}
+        virtual_multi_sib_info["virtual_multi_sib_id"] = str(virtual_multi_sib_id)
+        virtual_multi_sib_info["virtual_multi_sib_ip"] = str(virtualiser_ip)
+        virtual_multi_sib_info["virtual_multi_sib_kp_port"] = kp_port
+
+        # start a virtual multi sib (nel try, in quanto va fatto solo se
+        # l'inserimento delle informazioni e' andato a buon fine)
+        
+        threads[thread_id] = True
+        p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_multi_sib_id, threads[thread_id], sib_list))
+        p.start()
+
+        # return virtual multi sib id
+        return virtual_multi_sib_info
+
+    except socket.error:
+        virtual_multi_sib_info = {}
+        virtual_multi_sib_info["return"] = "fail"
+        virtual_multi_sib_info["cause"] = "Connection to Ancillary Sib failed"
+        return virtual_multi_sib_info
+    except Exception, e: #TODO catturare qui i sibError
+        print 'ECCEZIONE: ' + str(e)
+        virtual_multi_sib_info = {}
+        virtual_multi_sib_info["return"] = "fail"
+        virtual_multi_sib_info["cause"] = "Sib Error"
+        return virtual_multi_sib_info
 
 def Discovery():
     # debug print

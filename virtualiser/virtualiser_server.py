@@ -159,7 +159,6 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
 
                                     # send a reply
                                     try:
-                                        time.sleep(30)
                                         self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
                                     except socket.error:
                                         # remove virtual sib info from the ancillary sib
@@ -184,10 +183,11 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
                                 
                             elif data["command"] == "NewVirtualMultiSIB":
                                 sib_list = data['sib_list']
-                                virtual_multi_sib_id = globals()[data["command"]](sib_list)
+                                thread_id = str(uuid.uuid4())
+                                virtual_multi_sib_info = globals()[data["command"]](sib_list, virtualiser_ip, virtualiser_id, threads, thread_id)
                                 # send a reply
                                 print "ritornato dalla funzione"
-                                self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_id':virtual_multi_sib_id}))
+                                self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_info':virtual_multi_sib_info}))
                             
                         else:
 

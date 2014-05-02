@@ -11,6 +11,9 @@ import logging
 import random
 import thread
 import time
+from SIBLib import *
+import time
+import datetime
 
 BUFSIZ = 1024
 
@@ -27,9 +30,9 @@ val_subscriptions = []
 
 # logging configuration
 LOG_DIRECTORY = "log/"
-LOG_FILE = LOG_DIRECTORY + str(time.strftime("%Y%m%d-%H%M-")) + "tserver.log"
+LOG_FILE = LOG_DIRECTORY + str(time.strftime("%Y%m%d-%H%M-")) + "remoteSIB.log"
 logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
-logger = logging.getLogger("tserver")
+logger = logging.getLogger("remoteSIB")
 
 ##############################################################
 #
@@ -51,7 +54,7 @@ def handler(clientsock, addr, port):
             if len(ssap_msg) == 1:
                 if ssap_msg == " ":
                     if sib["socket"] != None:
-                        print colored("tserver> ", "blue", attrs=["bold"]) + str(clientsock) + " is alive "                    
+                        print colored("remoteSIB> ", "blue", attrs=["bold"]) + str(clientsock) + " is alive "                    
                         sib["timer"] = datetime.datetime.now()
 
             else:
@@ -81,7 +84,7 @@ def handler(clientsock, addr, port):
                         info[k] = child.text
         
                     # debug info
-                    print colored("tserver> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
+                    print colored("remoteSIB> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
                     logger.info("Received the following  message from " + str(addr))
                     logger.info(str(complete_ssap_msg).replace("\n", ""))
                     logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
@@ -282,11 +285,11 @@ def handler(clientsock, addr, port):
         
         
                 except ET.ParseError:
-                    print colored("tserver> ", "red", attrs=["bold"]) + " ParseError"
+                    print colored("remoteSIB> ", "red", attrs=["bold"]) + " ParseError"
                     pass
     
         except socket.error:
-            print colored("tserver> ", "red", attrs=["bold"]) + " socket.error: break!"
+            print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket.error: break!"
             break
 
 
@@ -345,11 +348,11 @@ def socket_observer(sib, port, check_var):
     print colored("socket_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(key)
 
 
-def remoteSIB(kp_port, pub_port, virtual_sib_id, check_var):
+def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var):
 
-    print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' started a nev remote SIB with ip ' + str(kp_port) + ", port " + str(pub_port) + " and id " + str(virtual_sib_id)
+    print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' started a new remote SIB with ip ' + str(virtualiser_ip) + ", kpPort " + str(kp_port) + ", pubPort " + str(pub_port) + " and id " + str(virtual_sib_id)
 
-    host = "127.0.0.1"
+    host = "192.168.1.105"
     kp_addr = (host, kp_port)
     pub_addr = (host, pub_port)
 
@@ -397,4 +400,4 @@ def remoteSIB(kp_port, pub_port, virtual_sib_id, check_var):
 
             # incoming data
             else:
-                print colored("tserver> ", "blue", attrs=["bold"]) + ' incoming DATA'
+                print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming DATA'

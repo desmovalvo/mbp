@@ -1,16 +1,12 @@
 #!/usr/bin/python
 
 # requirements
-from SIBLib import *
 from SSAPLib import *
 from termcolor import *
 from lib.Subreq import *
 from smart_m3.m3_kp import *
 from xml.sax import make_parser
-import datetime
-import time
-import thread
-import threading
+
 
 ##############################################################
 #
@@ -18,62 +14,44 @@ import threading
 #
 ##############################################################
 
-# REGISTER REQUEST
-def handle_register_request(logger, conn, info, sib_list, sib_list_timers):
-    """This method is used to forge and send a reply to the REGISTER
-    REQUEST sent by a publisher entity."""
-
-    # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_register_request"
-    logger.info("REGISTER REQUEST handled by handle_register_request")
-
-    # setting the timestamp
-    sib_list_timers[str(conn)] = datetime.datetime.now()
-
-    thread.start_new_thread(socket_observer, (conn, sib_list, sib_list_timers))
-    print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(conn)
-
-
-    # build a reply message
-    reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                   info["space_id"],
-                                   "REGISTER",
-                                   info["transaction_id"],
-                                   '<parameter name="status">m3:Success</parameter>')
-    
-    # try to receive, then return
-    try:
-        conn.send(reply)
-        return True
-    except socket.error:
-        logger.error("REGISTER CONFIRM not sent!")
-        return False
-
-
 # JOIN REQUEST
-def handle_join_request(logger, info, ssap_msg, sib_list, kp_list):
+def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list):
     """The present method is used to manage the join request received from a KP."""
 
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
     logger.info("JOIN REQUEST handled by handle_join_request")
 
-    # forwarding message to the publishers
-    for sock in sib_list:
+    for s in sibs_info:
+        ip = s["ip"]
+        kp_port = s["kp_port"]
+        # socket to the sib
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(15)
+        #sib_list_conn.append(sib_sock)
+        
+        # connect to the 
         try:
-            sock.send(ssap_msg)
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "JOIN",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-            # send a notification error to the KP
-            kp_list[info["node_id"]].send(err_msg)
-            del kp_list[info["node_id"]]
-            logger.error("JOIN REQUEST forwarding failed")
+            sock.connect((ip, kp_port))
 
+            try:
+                sock.send(ssap_msg)
+            except socket.error:
+                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
+               
+        except :
+             print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                      info["space_id"],
+                                                      "JOIN",
+                                                      info["transaction_id"],
+                                                      '<parameter name="status">m3:Error</parameter>')
+             # send a notification error to the KP
+             kp_list[info["node_id"]].send(err_msg)
+             del kp_list[info["node_id"]]
+             logger.error("JOIN REQUEST forwarding failed")
 
+             
 # LEAVE REQUEST
 def handle_leave_request(logger, info, ssap_msg, sib_list, kp_list):
     """The present method is used to manage the leave request received from a KP."""

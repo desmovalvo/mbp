@@ -185,15 +185,6 @@ def NewVirtualMultiSIB(sib_list):
     # # TODO start a virtual multi sib
     # thread.start_new_thread(virtualiser, (virtual_multi_sib_id))
     
-    # insert information in the ancillary SIB
-    a = SibLib("127.0.0.1", 10088)
-    t = []
-    for i in sib_list:
-        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i))))
-
-    t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + "127.0.0.1-10010")))
-    t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasSibIpPort"), URI(ns + "127.0.0.1-10010")))
-    a.insert(t)
     
     # return virtual multi sib id 
     return virtual_multi_sib_id

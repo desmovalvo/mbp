@@ -36,6 +36,7 @@ class AncillaryHandler:
 
 #main function
 if __name__ == "__main__":
+     
     try:
         # socket to the manager process
         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
