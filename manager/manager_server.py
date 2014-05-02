@@ -61,25 +61,23 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # DeleteRemoteSIB request
                 elif data["command"] == "DeleteRemoteSIB":
-                    confirm = globals()[data["command"]](data["virtual_sib_id"])
+                    confirm = globals()[cmd.command](cmd.virtual_sib_id)
                                 
                     # send a reply
                     self.request.sendall(json.dumps(confirm))
 
                 # Discovery request
                 elif data["command"] == "Discovery":
-                    virtual_sib_list = globals()[data["command"]]()
+                    virtual_sib_list = globals()[cmd.command]()
                     
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
                                 
                 # NewVirtualMultiSIB request
                 elif data["command"] == "NewVirtualMultiSIB":
-                    sib_list = data['sib_list']
-                    virtual_multi_sib_id = globals()[data["command"]](sib_list)
+                    virtual_multi_sib_id = globals()[cmd.command](cmd.sib_list)
 
                     # send a reply
-                    print "ritornato dalla funzione"
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_id':virtual_multi_sib_id}))
 
             else:
