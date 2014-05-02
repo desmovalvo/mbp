@@ -5,7 +5,6 @@ import socket, select, string, sys
 from termcolor import colored
 import random
 import uuid
-from lib.SSAPLib import *
 import threading
 import thread
 from termcolor import *
