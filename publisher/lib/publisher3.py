@@ -120,7 +120,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_por
 
         # socket to the real SIB
         rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #rs.connect((realsib_host, realsib_port))
+        # we suppose that the real sib is on the same host
         rs.connect(('127.0.0.1', int(realsib_port)))
         
         # forward the message to the real SIB
