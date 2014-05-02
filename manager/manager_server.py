@@ -19,7 +19,8 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 COMMANDS = {
     "NewRemoteSIB" : ["owner"],
     "NewVirtualMultiSIB": ["sib_list"],
-    "Discovery" : []
+    "Discovery" : [],
+    "DeleteRemoteSIB" : ["virtual_sib_id"]
     }
 
 # classes
@@ -64,6 +65,14 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                                 
                                 # send a reply
                                 self.request.sendall(json.dumps(confirm))
+
+                            # DeleteRemoteSIB request
+                            if data["command"] == "DeleteRemoteSIB":
+                                confirm = globals()[data["command"]](data["virtual_sib_id"])
+                                
+                                # send a reply
+                                self.request.sendall(json.dumps(confirm))
+
 
                             # Discovery request
                             elif data["command"] == "Discovery":
@@ -118,7 +127,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':'no command supplied'}))
 
-        except Exception, e:
+        except ZeroDivisionError:#Exception, e:
             print colored("SIBmanager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
             self.server.logger.info(" Exception while receiving message: " + str(e))
             self.request.sendall(json.dumps({'return':'fail', 'cause':str(e)}))

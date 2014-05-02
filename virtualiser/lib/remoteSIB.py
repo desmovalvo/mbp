@@ -99,6 +99,7 @@ def handler(clientsock, addr, port):
                         t = []
                         t.append(Triple(URI(ns + str(info["node_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
                         a.insert(t)       
+                        t = []
 
 
                         # build a reply message
@@ -302,12 +303,16 @@ def socket_observer(sib, port, check_var):
                 
                 # set the status offline
                 a = SibLib("192.168.1.105", 10088)
-                t = []
-                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
-                a.remove(t)
-                t = []
-                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-                a.insert(t)       
+                t = [Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), None)]
+                result = a.execute_rdf_query(t)
+                if len(result) > 0:
+                    t = []
+                    t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + str(result[0][2]).split("#")[1]
+)))
+                    a.remove(t)
+                    t = []
+                    t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
+                    a.insert(t)       
 
                 sib["socket"] = None                
                 break

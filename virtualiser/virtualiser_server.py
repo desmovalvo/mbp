@@ -20,6 +20,7 @@ rdfs = "http://www.w3.org/2000/01/rdf-schema#"
 ns = "http://smartM3Lab/Ontology.owl#"
 
 threads = {}
+t_id = {}
 
 # logging configuration
 LOG_DIRECTORY = "log/"
@@ -31,7 +32,8 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 # while the values are lists of available parameters for that command
 COMMANDS = {
     "NewRemoteSIB" : ["owner"],
-    "NewVirtualMultiSIB": ["sib_list"],
+    "DeleteRemoteSIB" : ["virtual_sib_id"],
+    "NewVirtualMultiSIB": ["sib_list"]
     }
 
 # classes
@@ -66,13 +68,41 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
 
                             # decode 
                             print colored("Virtualiser> ", "blue", attrs=["bold"]) + "calling the proper method"
-                            if data["command"] == "NewRemoteSIB":
+                            
+
+
+                            if data["command"] == "DeleteRemoteSIB":
+                                confirm = globals()[data["command"]](data["virtual_sib_id"], threads, t_id, virtualiser_id)
+
+                                if confirm["return"] == "fail":
+                                    print colored("virtualiser_server> ", "red", attrs=["bold"]) + 'Deletion failed!' + confirm["cause"]
+
+                                    try:
+                                        self.request.sendall(json.dumps({'return':'fail', 'cause':confirm["cause"]}))
+                                    except socket.error:
+                                        print colored("Virtualiser> ", "red", attrs=["bold"]) + "Error message forwarding failed!"
+                                        pass
+
+            
+                                elif confirm["return"] == "ok":
+                                        
+                                    # send a reply
+                                    try:
+                                        self.request.sendall(json.dumps({'return':'ok'}))
+                                    except socket.error:
+                                        print colored("Virtualiser> ", "red", attrs=["bold"]) + "Confirm message forwarding failed!"
+        
+                                
+
+
+                            elif data["command"] == "NewRemoteSIB":
                                 #Passiamo al metodo NewRemoteSIB
                                 #l'owner della sib in modo che
                                 #inserisca nell'ancillary sib anche
                                 #questo dato
                                 thread_id = str(uuid.uuid4())
-                                virtual_sib_info = globals()[data["command"]](data["owner"], virtualiser_ip, threads, thread_id)
+                                virtual_sib_info = globals()[data["command"]](data["owner"], virtualiser_ip, threads, thread_id, virtualiser_id)
+                                
                                 if virtual_sib_info["return"] == "fail":
                                     # send a reply
                                     try:
@@ -87,6 +117,9 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
 
                                 
                                 else: #virtual_sib_info["return"] = "ok"
+                                    
+                                    t_id[virtual_sib_info["virtual_sib_id"]] = thread_id
+                                    
                                     print colored("Virtualiser_server> ", "blue", attrs=["bold"]) + "Updating the load of virtualiser  " + virtualiser_id
                                     
                                     #############################################
@@ -138,6 +171,7 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
                                         
                                         #killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
                                         threads[thread_id] = False
+                                        del t_id[virtual_sib_info["virtual_sib_id"]]
                                         
                                         print colored("Virtualiser> ", "red", attrs=["bold"]) + "Confirm message forwarding failed!"
                                                                                 
