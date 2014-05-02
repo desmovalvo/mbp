@@ -92,37 +92,11 @@ def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id):
         # remove virtual sib info from the ancillary sib
         a = SibLib("127.0.0.1", 10088)        
 
-        # query = """SELECT ?p ?o WHERE {ns:""" + str(virtual_sib_id) + """ ?p ?o}"""
-        # result = a.execute_sparql_query(query)  
-        # # for i in result:
-        # #     p = str((result[0][0][2]).split("#")[1])
-        # #     o = str((result[0][1][2]).split("#")[1])
-        # print result
-
         t = Triple(URI(ns + virtual_sib_id), None, None)
         result = a.execute_rdf_query(t)  
         print result
         a.remove(result)
 
-        # query = """SELECT ?o WHERE {ns:""" + str(virtual_sib_id) + """ ns:hasPubIpPort ?o}"""
-        # result = a.execute_sparql_query(query)  
-        # pubIpPort = str((result[0][0][2]).split("#")[1])
-        
-        # query = """SELECT ?o WHERE {ns:""" + str(virtual_sib_id) + """ ns:hasKpIpPort ?o}"""
-        # result = a.execute_sparql_query(query)  
-        # kpIpPort = str((result[0][0][2]).split("#")[1])
-        
-        # query = """SELECT ?o WHERE {ns:""" + str(virtual_sib_id) + """ ns:hasOwner ?o}"""
-        # result = a.execute_sparql_query(query)  
-        # owner = str((result[0][0][2]).split("#")[1])
-        
-        # query = """SELECT ?o WHERE {ns:""" + str(virtual_sib_id) + """ ns:hasStatus ?o}"""
-        # result = a.execute_sparql_query(query)  
-        # status = str((result[0][0][2]).split("#")[1])
-        
-        # t.append(Triple(URI(ns + virtual_sib_id), URI(ns + "hasKpIpPort"), URI(ns + kpIpPort)))
-        # t.append(Triple(URI(ns + virtual_sib_id), URI(ns + "hasOwner"), URI(ns + owner)))
-        # t.append(Triple(URI(ns + virtual_sib_id), URI(ns + "hasStatus"), URI(ns + status)))
         t = [Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + virtual_sib_id))]
         a.remove(t)
         print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Triples deleted!'

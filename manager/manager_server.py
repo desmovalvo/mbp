@@ -64,8 +64,17 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                                 confirm = globals()[data["command"]](data["owner"])
                                 
                                 # send a reply
-                                self.request.sendall(json.dumps(confirm))
-
+                                try:
+                                    self.request.sendall(json.dumps(confirm))
+                                except:
+                                    if corfirm["return"] == "fail":
+                                        # nothing to do
+                                        print "Send Failed"
+                                    else:
+                                        # Send DeleteRemoteSIB request to the virtualiser to remove the virtual sib just created
+                                        confirm = globals()["DeleteRemoteSIB"](confirm["virtual_sib_info"]["virtual_sib_id"])
+                                        
+                                    
                             # DeleteRemoteSIB request
                             if data["command"] == "DeleteRemoteSIB":
                                 confirm = globals()[data["command"]](data["virtual_sib_id"])
