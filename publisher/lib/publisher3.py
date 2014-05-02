@@ -15,7 +15,7 @@ import time
 import datetime
 
 
-def StartConnection(vsib_id, vsib_host, vsib_port, timer):
+def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_port):
     subscriptions = {}
     subs = {}
     #questo node_id serve solo per riempire il messaggio di register
@@ -105,10 +105,10 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer):
                 else:
                     timer = datetime.datetime.now()
                     print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
-                    thread.start_new_thread(handler, (sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions))
+                    thread.start_new_thread(handler, (sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_port))
         
 
-def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions):
+def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_port):
     
     if len(ssap_msg) == 1:
         if sock == vs:
@@ -121,7 +121,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions):
         # socket to the real SIB
         rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #rs.connect((realsib_host, realsib_port))
-        rs.connect(('127.0.0.1', 10020))
+        rs.connect(('127.0.0.1', int(realsib_port)))
         
         # forward the message to the real SIB
         if not "<transaction_type>REGISTER</transaction_type>" in ssap_msg:

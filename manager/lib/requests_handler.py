@@ -39,7 +39,11 @@ WHERE { ?s rdf:type ns:virtualiser .
 }
 LIMIT 1"""
     
-        result = a.execute_sparql_query(query)
+        try:
+            result = a.execute_sparql_query(query)
+        except SIBError:
+            confirm = {'return':'fail', 'cause':' SIBError.'}
+            return confirm
 
     except socket.error:
         print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'

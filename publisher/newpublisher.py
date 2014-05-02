@@ -13,9 +13,9 @@ import datetime
 
 ns = "http://smartM3Lab/Ontology.owl#"
 
-ancillary_ip = '192.168.1.105'
+ancillary_ip = "localhost"
 ancillary_port = '10088'
-manager_ip = '192.168.1.105'
+manager_ip = "localhost"
 manager_port = 17714
 
 class AncillaryHandler:
@@ -42,12 +42,19 @@ class AncillaryHandler:
 #main function
 if __name__ == "__main__":
     try:
-        if(len(sys.argv) < 2) :
-            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner'
+        if(len(sys.argv) < 6) :
+            print colored("publisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner ancillary_ip ancillary_port manager_ip manager_port realsib_port'
             sys.exit()
         
+        # ancillary sib informations
+        ancillary_ip = sys.argv[2]
+        ancillary_port = sys.argv[3]
+        manager_ip = sys.argv[4]
+        manager_port = int(sys.argv[5])     
+            
         # real sib information
         owner = sys.argv[1]
+        realsib_port = sys.argv[6]
 
         # socket to the manager process
         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -55,14 +62,12 @@ if __name__ == "__main__":
          
         # connect to the manager
         try:
-             print manager_ip
-             print manager_port
              manager.connect((manager_ip, manager_port))
         except :
-             print colored("newpublisher> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
+             print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
              sys.exit()        
 
-        print colored("newpublisher> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending register request!'
+        print colored("publisher> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending register request!'
 
         # build and send the request message 
         register_msg = {"command":"NewRemoteSIB", "owner":owner}
@@ -71,27 +76,27 @@ if __name__ == "__main__":
              manager.send(request)
              timer = datetime.datetime.now()
         except:
-             print colored("newpublisher> ", "red", attrs=["bold"]) + 'Registration failed! Try again!'  
+             print colored("publisher> ", "red", attrs=["bold"]) + 'Registration failed! Try again!'  
 
         
         while 1:
              if (datetime.datetime.now() - timer).total_seconds() > 15:
-                  print colored("newpublisher> ", "red", attrs=["bold"]) + 'No reply received. Try again!'
+                  print colored("publisher> ", "red", attrs=["bold"]) + 'No reply received. Try again!'
                   sys.exit(0)
 
              confirm_msg = manager.recv(4096)
              if confirm_msg:
-                  print colored("newpublisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
+                  print colored("publisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
                   print confirm_msg
                   break
 
         confirm = json.loads(confirm_msg)
         if confirm["return"] == "fail":
-            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
+            print colored("publisher> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
             sys.exit(0)
 
         elif confirm["return"] == "ok":
-            print colored("newpublisher> ", "blue", attrs=["bold"]) + 'Virtual Sib Created!'
+            print colored("publisher> ", "blue", attrs=["bold"]) + 'Virtual Sib Created!'
     
             virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
             virtual_sib_ip = confirm["virtual_sib_info"]["virtual_sib_ip"]
@@ -99,7 +104,7 @@ if __name__ == "__main__":
             
             # lancio publisher
             timer = datetime.datetime.now()
-            StartConnection(virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer)
+            StartConnection(virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_port)
 
 ############################################################
 ###
@@ -111,7 +116,7 @@ if __name__ == "__main__":
 ############################################################
                 
         # elif confirm["return"] == "ok":
-        #     print colored("newpublisher> ", "red", attrs=["bold"]) + 'Ready to subscribe to the ancillary sib'
+        #     print colored("publisher> ", "red", attrs=["bold"]) + 'Ready to subscribe to the ancillary sib'
         #     virtual_sib_id = confirm["virtual_sib_id"]
             
         #     # subscribe to the ancillary sib
@@ -141,4 +146,25 @@ if __name__ == "__main__":
 
                                 
     except KeyboardInterrupt:
-        print colored("Publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
+         print colored("publisher> ", "blue", attrs=["bold"]) + "Detected keyboard interrupt, sending DeleteRemoteSIB request"         
+         
+         # build json message
+         manager.close()
+         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+         delete_msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":virtual_sib_id}         
+         request = json.dumps(delete_msg)
+         
+         # send message
+         try:
+              manager.connect((manager_ip, manager_port))
+              manager.send(request)
+              confirm_msg = manager.recv(4096)
+              if confirm_msg:
+                   print colored("publisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
+                   print confirm_msg
+
+         except:
+              print colored("publisher> ", "red", attrs=["bold"]) + "Unable to send the DeleteRemoteSIB request!"
+
+         print colored("publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
+
