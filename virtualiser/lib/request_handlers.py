@@ -188,7 +188,7 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port))))
-        t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_sib_id))))
+        t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_multi_sib_id))))
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
         t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multi_sib_id))))
         a.insert(t)

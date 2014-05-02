@@ -111,8 +111,8 @@ if __name__=='__main__':
    else:
        sib_manager_port = 17714
        sib_manager_ip = "0.0.0.0"
-       ancillary_port = "localhost"
-       ancillary_ip = 10088
+       ancillary_ip = "localhost"
+       ancillary_port = 10088
 
    try:
        # Create a logger object

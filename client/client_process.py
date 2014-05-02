@@ -123,7 +123,7 @@ if __name__ == "__main__":
                         break
 
                 parsed_msg = json.loads(msg)
-                vmsib_id = parsed_msg["virtual_multi_sib_id"]
+                vmsib_id = parsed_msg["virtual_multi_sib_info"]["virtual_multi_sib_id"]
                 # print vmsib_id
 
                 # subscribe to the ancillary sib

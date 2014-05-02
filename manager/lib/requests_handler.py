@@ -177,7 +177,7 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
     # check if the received sibs are all existing and alive
     # TODO: add an or clause to allow the use of others multisibs 
     for sib in sib_list:
-        res = get_sib_ip_port(sib)
+        res = get_sib_ip_port(sib, a)
         if len(res) == 1:
             print "sib trovata"
         else:            
@@ -212,7 +212,7 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
             return confirm
 
         # build request message 
-        request_msg = {"command":"NewVirtualMultiSIB", "siblist":siblist}
+        request_msg = {"command":"NewVirtualMultiSIB", "sib_list":sib_list}
         request = json.dumps(request_msg)
         virtualiser.send(request)
 
@@ -233,6 +233,7 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
     
         # parse the reply
         confirm = json.loads(confirm_msg)
+        print "confirm: " + str(confirm)
         if confirm["return"] == "fail":
             print colored("requests_handler> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
             

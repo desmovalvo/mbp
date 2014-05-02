@@ -21,10 +21,12 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list):
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
     logger.info("JOIN REQUEST handled by handle_join_request")
-
+    
+    print sibs_info
+    
     for s in sibs_info:
-        ip = s["ip"]
-        kp_port = s["kp_port"]
+        ip = str(sibs_info[s]["ip"].split("#")[1])
+        kp_port = sibs_info[s]["kp_port"]
         # socket to the sib
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(15)
