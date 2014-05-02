@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+import sys
 import uuid
 import json
 import thread
@@ -9,7 +10,7 @@ from random import *
 from termcolor import *
 from SIBLib import SibLib
 from smart_m3.m3_kp import *
-import sys
+import socket, select, string, sys
 
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"
@@ -57,7 +58,7 @@ LIMIT 1"""
         virtualiser_port = int(result[0][2][2].split("#")[1])        
 
         virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        virtualiser.settimeout(2)
+        virtualiser.settimeout(15)
         
         # connect to the virtualiser
         try :
@@ -72,9 +73,16 @@ LIMIT 1"""
         request_msg = {"command":"NewRemoteSIB", "owner":owner}
         request = json.dumps(request_msg)
         virtualiser.send(request)
-            
+
         while 1:
-            confirm_msg = virtualiser.recv(4096)
+            try:
+                confirm_msg = virtualiser.recv(4096)
+            except socket.timeout:
+                print colored("request_handler> ", "red", attrs=["bold"]) + 'Connection to the virtualiser timed out'
+                confirm = {'return':'fail', 'cause':' Connection to the virtualiser timed out.'}
+                virtualiser.close()
+                return confirm
+            
             if confirm_msg:
                 print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
                 print confirm_msg
@@ -129,7 +137,7 @@ def DeleteRemoteSIB(virtual_sib_id):
 
     
     virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    virtualiser.settimeout(2)
+    virtualiser.settimeout(15)
         
     # connect to the virtualiser
     try :

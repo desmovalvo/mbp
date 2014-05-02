@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
         # socket to the manager process
         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        manager.settimeout(2)
+        manager.settimeout(15)
          
         # connect to the manager
         try:
@@ -84,7 +84,12 @@ if __name__ == "__main__":
                   print colored("publisher> ", "red", attrs=["bold"]) + 'No reply received. Try again!'
                   sys.exit(0)
 
-             confirm_msg = manager.recv(4096)
+             try:
+                  confirm_msg = manager.recv(4096)
+             except socket.timeout:
+                  print colored("publisher> ", "red", attrs=["bold"]) + "Request timed out"
+                  sys.exit(0)
+
              if confirm_msg:
                   print colored("publisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
                   print confirm_msg
@@ -162,6 +167,8 @@ if __name__ == "__main__":
               if confirm_msg:
                    print colored("publisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
                    print confirm_msg
+         except socket.timeout:
+              print colored("publisher> ", "red", attrs=["bold"]) + 'Connection timed out'
 
          except:
               print colored("publisher> ", "red", attrs=["bold"]) + "Unable to send the DeleteRemoteSIB request!"

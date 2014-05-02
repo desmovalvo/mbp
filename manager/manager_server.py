@@ -40,9 +40,9 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
             
             # Decode the request
             if data.has_key("command"):
-
+                
                 if data["command"] in COMMANDS.keys():
-
+                    
                     # debug print
                     print colored("SIBmanager> ", "blue", attrs=["bold"]) + "received the command " + colored(data["command"], "cyan", attrs=['bold'])
                     self.server.logger.info(" Received the command " + str(data))
@@ -141,22 +141,22 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
 if __name__=='__main__':
 
-    if len(sys.argv) == 3:
-        sib_manager_ip = sys.argv[1]
-        sib_manager_port = int(sys.argv[2])
-    else:
+   if len(sys.argv) == 3:
+       sib_manager_ip = sys.argv[1]
+       sib_manager_port = int(sys.argv[2])
+   else:
         sib_manager_port = 17714
         sib_manager_ip = "0.0.0.0"
 
-    try:
-        # Create a logger object
-        logger = logging.getLogger("manager_server")
-        
+   try:
+       # Create a logger object
+       logger = logging.getLogger("manager_server")
+       
         # Start the manager server
-        server = ManagerServer((sib_manager_ip, sib_manager_port), ManagerServerHandler)
-        server.logger = logger
-        server.logger.info(" Starting server on " + sib_manager_ip + ", Port " + str(sib_manager_port))
-        server.serve_forever()
+       server = ManagerServer((sib_manager_ip, sib_manager_port), ManagerServerHandler)
+       server.logger = logger
+       server.logger.info(" Starting server on " + sib_manager_ip + ", Port " + str(sib_manager_port))
+       server.serve_forever()
         
-    except KeyboardInterrupt:
-        print colored("SIBmanager> ", "blue", attrs=["bold"]) + "Goodbye!"
+   except KeyboardInterrupt:
+       print colored("SIBmanager> ", "blue", attrs=["bold"]) + "Goodbye!"
