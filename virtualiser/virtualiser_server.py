@@ -159,7 +159,6 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
 
                                     # send a reply
                                     try:
-                                        time.sleep(30)
                                         self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
                                     except socket.error:
                                         # remove virtual sib info from the ancillary sib

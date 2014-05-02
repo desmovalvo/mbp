@@ -1,6 +1,7 @@
 # requirements
 from lib.requests_handler import *
 from collections import Counter
+from lib.command import *
 from termcolor import *
 import SocketServer
 import logging
@@ -37,104 +38,58 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
             data = json.loads(self.request.recv(1024).strip())            
             print colored("SIBmanager> ", "blue", attrs=["bold"]) + "received the following message:"
             print data
-            
-            # Decode the request
-            if data.has_key("command"):
-                
-                if data["command"] in COMMANDS.keys():
+
+            # Check if the command is valid
+            cmd = Command(data)
+            if cmd.valid:
+                print colored("SIBmanager> ", "blue", attrs=["bold"]) + "calling the proper method"
+
+                # NewRemoteSIB request
+                if cmd.command == "NewRemoteSIB":
+                    confirm = globals()[cmd.command](cmd.owner)
                     
-                    # debug print
-                    print colored("SIBmanager> ", "blue", attrs=["bold"]) + "received the command " + colored(data["command"], "cyan", attrs=['bold'])
-                    self.server.logger.info(" Received the command " + str(data))
-
-                    # check the number of arguments
-                    if len(data.keys())-1 == len(COMMANDS[data["command"]]):
-
-                        # check the arguments
-                        cd = data.keys()
-                        cd.remove("command")
-
-                        # if we received a command with the right arguments...
-                        if Counter(cd) == Counter(COMMANDS[data["command"]]):
-
-                            print colored("SIBmanager> ", "blue", attrs=["bold"]) + "calling the proper method"
-
-                            # NewRemoteSIB request
-                            if data["command"] == "NewRemoteSIB":
-                                confirm = globals()[data["command"]](data["owner"])
-                                
-                                # send a reply
-                                try:
-                                    self.request.sendall(json.dumps(confirm))
-                                except:
-                                    if corfirm["return"] == "fail":
-                                        # nothing to do
-                                        print "Send Failed"
-                                    else:
-                                        # Send DeleteRemoteSIB request to the virtualiser to remove the virtual sib just created
-                                        confirm = globals()["DeleteRemoteSIB"](confirm["virtual_sib_info"]["virtual_sib_id"])
-                                        
-                                    
-                            # DeleteRemoteSIB request
-                            if data["command"] == "DeleteRemoteSIB":
-                                confirm = globals()[data["command"]](data["virtual_sib_id"])
-                                
-                                # send a reply
-                                self.request.sendall(json.dumps(confirm))
-
-
-                            # Discovery request
-                            elif data["command"] == "Discovery":
-                                virtual_sib_list = globals()[data["command"]]()
-
-                                # send a reply
-                                self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
-                                
-                            # NewVirtualMultiSIB request
-                            elif data["command"] == "NewVirtualMultiSIB":
-                                sib_list = data['sib_list']
-                                virtual_multi_sib_id = globals()[data["command"]](sib_list)
-
-                                # send a reply
-                                print "ritornato dalla funzione"
-                                self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_id':virtual_multi_sib_id}))
-                            
-                        # if the received command has wrong arguments...
+                    # send a reply
+                    try:
+                        self.request.sendall(json.dumps(confirm))
+                    except:
+                        if corfirm["return"] == "fail":
+                            # nothing to do
+                            print "Send Failed"
                         else:
+                            # Send DeleteRemoteSIB request to the virtualiser to remove the virtual sib just created
+                            confirm = globals()["DeleteRemoteSIB"](confirm["virtual_sib_info"]["virtual_sib_id"])
 
-                            # debug print
-                            print colored("SIBmanager> ", "red", attrs=["bold"]) + "wrong arguments"
-                            self.server.logger.info(" Wrong arguments, skipping message...")
+                # DeleteRemoteSIB request
+                elif data["command"] == "DeleteRemoteSIB":
+                    confirm = globals()[data["command"]](data["virtual_sib_id"])
+                                
+                    # send a reply
+                    self.request.sendall(json.dumps(confirm))
 
-                            # send a reply
-                            self.request.sendall(json.dumps({'return':'fail', 'cause':'wrong arguments'}))                                                
-
-                    # if the received command has a wrong number of arguments...
-                    else:
-                        # debug print
-                        print colored("SIBmanager> ", "red", attrs=["bold"]) + "wrong number of arguments"
-                        self.server.logger.info(" Wrong number of arguments, skipping message...")
-
-                        # send a reply
-                        self.request.sendall(json.dumps({'return':'fail', 'cause':'wrong number of arguments'}))                    
-
-                # if we received an invalid command
-                else:
-                    # debug print
-                    print colored("SIBmanager> ", "red", attrs=["bold"]) + "invalid command! Skipping message..."
-                    self.server.logger.info(" Invalid command, skipping message...")
+                # Discovery request
+                elif data["command"] == "Discovery":
+                    virtual_sib_list = globals()[data["command"]]()
+                    
+                    # send a reply
+                    self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
+                                
+                # NewVirtualMultiSIB request
+                elif data["command"] == "NewVirtualMultiSIB":
+                    sib_list = data['sib_list']
+                    virtual_multi_sib_id = globals()[data["command"]](sib_list)
 
                     # send a reply
-                    self.request.sendall(json.dumps({'return':'fail', 'cause':'invalid command'}))
+                    print "ritornato dalla funzione"
+                    self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_id':virtual_multi_sib_id}))
 
-            # if the received message does not contain a command
             else:
                 # debug print
-                print colored("SIBmanager> ", "red", attrs=["bold"]) + "no command supplied, skipping message"
-                self.server.logger.info(" No command supplied, skipping message")
-
+                print colored("SIBmanager> ", "red", attrs=["bold"]) + cmd.invalid_cause
+                self.server.logger.info(" " + cmd.invalid_cause)
+                
                 # send a reply
-                self.request.sendall(json.dumps({'return':'fail', 'cause':'no command supplied'}))
+                self.request.sendall(json.dumps({'return':'fail', 'cause':cmd.invalid_cause}))                                                
+                
 
         except ZeroDivisionError:#Exception, e:
             print colored("SIBmanager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
