@@ -101,17 +101,16 @@ def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip,
         a.remove(t)
         print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Triples deleted!'
 
-        #killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
+        # killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
         threads[t_id[virtual_sib_id]] = False
         print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' killed ' 
-
-
 
         #############################################
         ##                                         ##
         ## Update the load of selected virtualiser ##
         ##                                         ##
         #############################################
+
         # get old load
         try:
             query = """SELECT ?load

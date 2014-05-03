@@ -97,11 +97,11 @@ if __name__ == "__main__":
                                vm_sib.append(vsib[int(sib)-1])
 
                 print colored("client_process> ", "blue", attrs=['bold']) + 'Sending NewVirtualMultiSIB request to the manager!'
-
+                               
                 # socket to the manager process
                 manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 manager.settimeout(2)
-
+                
                 # connect to the manager
                 try :
                     manager.connect((manager_ip, manager_port))
