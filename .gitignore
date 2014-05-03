@@ -54,3 +54,5 @@ tools/WebSIBExplorer/wse.db
 tools/WebSIBExplorer/wse.db
 tools/WebSIBExplorer/wse.db
 virtualiser/.gitignore
+tools/WebSIBExplorer/wse.db
+virtualiser/.gitignore
