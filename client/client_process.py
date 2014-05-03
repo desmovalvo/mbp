@@ -88,7 +88,7 @@ if __name__ == "__main__":
                 vm_sib = []
                 # create new virtual multi sib
                 while 1:
-                    print colored("client_process> ", "blue", attrs=["bold"]) + "Select a sib ([0] to break): "
+                     print colored("client_process> ", "blue", attrs=["bold"]) + "Select a sib ([0] to break): "
                     sib = raw_input("> ")
                     if sib == "0": 
                         break
