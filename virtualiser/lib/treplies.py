@@ -20,18 +20,107 @@ mutex = Lock()
 num_confirms = {}
 
 
-
 ##############################################################
 #
 # REQUESTS
 #
 ##############################################################
 
-def confirm_handler(sib_sock, sibs_info, kp_list, n):
+def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
     global mutex
     global num_confirms
     
+    ###############################################
+    ## ricezione e riunificazione del messaggio  ##
+    ###############################################
+    complete_ssap_msg = ""
+    while 1:
+        try:
+            ssap_msg = sib_sock.recv(BUFSIZ)
+ 
+            # check whether we received a blank message
+            if not ssap_msg and not complete_ssap_msg:
+                break
+
+            if ssap_msg != None:
+                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+
+            if "</SSAP_message>" in complete_ssap_msg:
+                ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
+                complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
+                
+            # try to decode the message
+            try:
+                    
+                # parse the ssap message
+                root = ET.fromstring(ssap_msg)           
+                info = {}
+                for child in root:
+                    if child.attrib.has_key("name"):
+                        k = child.tag + "_" + str(child.attrib["name"])
+                    else:
+                        k = child.tag
+                    info[k] = child.text
+
+                if info["transaction_type"] == "JOIN":
+                    # debug info
+                    print colored("treplies>", "green", attrs=["bold"]) + " handle_join_confirm"
+                    logger.info("JOIN CONFIRM handled by handle_join_confirm")
+  
+                    # check if we already received a failure
+                    mutex.acquire()
+                    if not num_confirms[info["node_id"]] == None:
+                        try:
+
+                            # check if the current message represent a successful insertion
+                            if info["parameter_status"] == "m3:Success":
+                               
+                                num_confirms[info["node_id"]] -= 1
+                                if num_confirms[info["node_id"]] == 0:
+                                    kp_list[info["node_id"]].send(ssap_msg)
+                                    print "inviata conferma join al kp"
+                                    kp_list[info["node_id"]].close()
+                
+                            else:
+                                num_confirms[info["node_id"]] = None
+                                # send SSAP ERROR MESSAGE
+                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                                         info["space_id"],
+                                                                         "JOIN",
+                                                                         info["transaction_id"],
+                                                                         '<parameter name="status">m3:Error</parameter>')
+                                kp_list[info["node_id"]].send(err_msg)
+                                kp_list[info["node_id"]].close()
+                                del kp_list[info["node_id"]]
+                                logger.error("JOIN CONFIRM forwarding failed")
+  
+                        except socket.error:
+                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+
+                
+                    mutex.release()
+
+
+            except ET.ParseError:
+                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                pass
+
+        except socket.error:
+            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
+
+                
+            
+        
+
+def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
+
+    global mutex
+    global num_confirms
+    
+    ###############################################
+    ## ricezione e riunificazione del messaggio  ##
+    ###############################################
     complete_ssap_msg = ""
     while 1:
         try:
@@ -60,37 +149,46 @@ def confirm_handler(sib_sock, sibs_info, kp_list, n):
                     else:
                         k = child.tag
                     info[k] = child.text
-  
-                # check if we already received a failure
-                mutex.acquire()
-                if not num_confirms[info["node_id"]] == None:
 
-                    # check if the current message represent a successful insertion
-                    if info["parameter_status"] == "m3:Success":
 
-                        num_confirms[info["node_id"]] -= 1
-                        print n + "-----------" + str(num_confirms)
-                        if num_confirms[info["node_id"]] == 0:
-                            print "Inoltro ai kp"
-                            kp_list[info["node_id"]].send(ssap_msg)
-                            if info["transaction_type"] == "LEAVE":
+                if info["transaction_type"] == "LEAVE":
+                    # debug info
+                    print colored("treplies>", "green", attrs=["bold"]) + " handle_leave_confirm"
+                    logger.info("LEAVE CONFIRM handled by handle_leave_confirm")
+
+                    # check if we already received a failure
+                    mutex.acquire()
+                    if not num_confirms[info["node_id"]] == None:
+                        try:
+        
+                            # check if the current message represent a successful insertion
+                            if info["parameter_status"] == "m3:Success":
+                                
+                                num_confirms[info["node_id"]] -= 1
+                                if num_confirms[info["node_id"]] == 0:
+                                    kp_list[info["node_id"]].send(ssap_msg)       
+                                    print "inviata conferma join al kp"
+                                    kp_list[info["node_id"]].close()
+                                    del kp_list[info["node_id"]]
+        
+                            else:
+                                num_confirms[info["node_id"]] = None
+                                # send SSAP ERROR MESSAGE
+                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                                         info["space_id"],
+                                                                         "LEAVE",
+                                                                         info["transaction_id"],
+                                                                         '<parameter name="status">m3:Error</parameter>')
+                                kp_list[info["node_id"]].send(err_msg)
                                 kp_list[info["node_id"]].close()
-                                del kp_list[info["node_id"]]
+                                logger.error("LEAVE CONFIRM forwarding failed")
 
-                    else:
-                        num_confirms[info["node_id"]] = None
-                        # send SSAP ERROR MESSAGE
-                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                 info["space_id"],
-                                                                 "LEAVE",
-                                                                 info["transaction_id"],
-                                                                 '<parameter name="status">m3:Error</parameter>')
-                        kp_list[info["node_id"]].send(err_msg)
-                        kp_list[info["node_id"]].close()
-                       
+                        except socket.error:
+                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
 
-                mutex.release()
-            
+        
+                    mutex.release()
+                    
             except ET.ParseError:
                 print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
@@ -100,6 +198,98 @@ def confirm_handler(sib_sock, sibs_info, kp_list, n):
             print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
 
 
+
+# INSERT CONFIRM
+def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
+    """This method is used to decide what to do once an INSERT CONFIRM
+    is received. We can send the confirm back to the KP (if all the
+    sibs sent a confirm), decrement a counter (if we are waiting for
+    other sibs to reply) or send an error message (if the current
+    message or one of the previous replies it's a failure)"""
+
+    global mutex
+    global num_confirms
+    
+    ###############################################
+    ## ricezione e riunificazione del messaggio  ##
+    ###############################################
+    complete_ssap_msg = ""
+    while 1:
+        try:
+            ssap_msg = sib_sock.recv(BUFSIZ)
+ 
+            # check whether we received a blank message
+            if not ssap_msg and not complete_ssap_msg:
+                break
+
+            if ssap_msg != None:
+                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+
+            if "</SSAP_message>" in complete_ssap_msg:
+                ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
+                complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
+                
+            # try to decode the message
+            try:
+                    
+                # parse the ssap message
+                root = ET.fromstring(ssap_msg)           
+                info = {}
+                for child in root:
+                    if child.attrib.has_key("name"):
+                        k = child.tag + "_" + str(child.attrib["name"])
+                    else:
+                        k = child.tag
+                    info[k] = child.text
+
+                if info["transaction_type"] == "INSERT":
+  
+                    # debug message
+                    print colored("treplies>", "green", attrs=["bold"]) + " handle_insert_confirm"
+                    logger.info("INSERT CONFIRM handled by handle_insert_confirm")
+                    
+                    # check if we already received a failure
+                    mutex.acquire()
+                    if not num_confirms[info["node_id"]] == None:
+                        try:
+                            # check if the current message represent a successful insertion
+                            if info["parameter_status"] == "m3:Success":
+                                num_confirms[info["node_id"]] -= 1
+                                if num_confirms[info["node_id"]] == 0:    
+                                    kp_list[info["node_id"]].send(ssap_msg)
+                                    print "inviata conferma join al kp"
+                                    kp_list[info["node_id"]].close()
+    
+                            # if the current message represent a failure...
+                            else:
+                                
+                                num_confirms[info["node_id"]] = None
+                                # send SSAP ERROR MESSAGE
+                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                                 info["space_id"],
+                                                                 "INSERT",
+                                                                 info["transaction_id"],
+                                                                 '<parameter name="status">m3:Error</parameter>')
+                                kp_list[info["node_id"]].send(err_msg)
+                                kp_list[info["node_id"]].close()
+                                
+                                logger.error("INSERT CONFIRM forwarding failed")
+
+                        except socket.error:
+                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+
+                
+                    mutex.release()
+
+
+            except ET.ParseError:
+                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                pass
+
+        except socket.error:
+            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
+
+    
 
     
 # JOIN REQUEST
@@ -148,12 +338,10 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id
              del kp_list[info["node_id"]]
              logger.error("JOIN REQUEST forwarding failed")
 
-    
-        print "***************   " + str(num_confirms)
         
         n = str(uuid.uuid4())
         t[n] = n
-        thread.start_new_thread(confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n]))
+        thread.start_new_thread(join_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
     
 # LEAVE REQUEST
 def handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id):
@@ -205,46 +393,60 @@ def handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_i
         
         n = str(uuid.uuid4())
         t[n] = n
-        thread.start_new_thread(confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n]))
-
-
-
-
-
-    # # forwarding message to the publishers
-    # for sock in sib_list:
-    #     try:
-    #         sock.send(ssap_msg)
-    #     except socket.error:
-    #         err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-    #                                          info["space_id"],
-    #                                          "LEAVE",
-    #                                          info["transaction_id"],
-    #                                          '<parameter name="status">m3:Error</parameter>')
-    #         kp_list[info["node_id"]].send(err_msg)
-    #         logger.error("LEAVE REQUEST forwarding failed")
+        thread.start_new_thread(leave_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
 
 
 # INSERT REQUEST
-def handle_insert_request(logger, info, ssap_msg, sib_list, kp_list):
+def handle_insert_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id):
     """The present method is used to manage the insert request received from a KP."""
+
+    t = {}
+    global num_confirms
+    # TODO spostare questo assegnamento a dopo il parsing in modo da
+    # non dover passare a questa funzione il node_id
+    num_confirms[node_id] = num
+    sib_list_conn = {}
 
     # debug info
     print colored("treplies>", "green", attrs=["bold"]) + " handle_insert_request"
     logger.info("INSERT REQUEST handled by handle_insert_request")
 
-    # forwarding message to the publishers
-    for sock in sib_list:
+
+    for s in sibs_info:
+        ip = str(sibs_info[s]["ip"].split("#")[1])
+        kp_port = sibs_info[s]["kp_port"]
+        # socket to the sib
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #sock.settimeout(15)
+        sib_list_conn[s] = sock
+        
+        # connect to the 
         try:
-            sock.send(ssap_msg)
-        except socket.error:
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "INSERT",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-            kp_list[info["node_id"]].send(err_msg)
-            logger.error("INSERT REQUEST forwarding failed")
+            sock.connect((ip, kp_port))
+
+            try:
+                sock.send(ssap_msg)
+            except socket.error:
+                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
+               
+        except :
+             print colored("treplies> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                      info["space_id"],
+                                                      "INSERT",
+                                                      info["transaction_id"],
+                                                      '<parameter name="status">m3:Error</parameter>')
+             # send a notification error to the KP
+             kp_list[info["node_id"]].send(err_msg)
+             logger.error("INSERT REQUEST forwarding failed")
+
+    
+        print "***************   " + str(num_confirms)
+        
+        n = str(uuid.uuid4())
+        t[n] = n
+        thread.start_new_thread(insert_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
+
 
 
 # REMOVE REQUEST
