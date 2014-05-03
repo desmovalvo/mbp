@@ -92,6 +92,23 @@ def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip,
         # remove virtual sib info from the ancillary sib
         a = SibLib(ancillary_ip, ancillary_port)
 
+        # check if the remote SIB is part of a virtual multi SIB
+        t = Triple(None, URI(ns + "composedBy"), URI(ns + virtual_sib_id))
+        result = a.execute_rdf_query(t)
+        a.remove(result)
+        
+        # check if we have to set the multi SIBs offline
+        for vmsib in result:
+            t2 = Triple(URI(vmsib[0]), URI(ns + "composedBy"), None)
+            r = a.execute_rdf_query(t2)
+            if len(r) == 0:
+                t3 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), None)
+                t4 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), URI(ns + "offline"))
+                r = a.execute_rdf_query(t3)
+                a.remove(r)
+                a.insert(t4)
+
+        # remove the triples related to the remote SIB
         t = Triple(URI(ns + virtual_sib_id), None, None)
         result = a.execute_rdf_query(t)  
         print result
