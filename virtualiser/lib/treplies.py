@@ -63,7 +63,7 @@ def confirm_handler(sib_sock, sibs_info, kp_list, n):
   
                 # check if we already received a failure
                 mutex.acquire()
-                if not confirms[info["node_id"]] == None:
+                if not num_confirms[info["node_id"]] == None:
 
                     # check if the current message represent a successful insertion
                     if info["parameter_status"] == "m3:Success":
@@ -98,6 +98,7 @@ def confirm_handler(sib_sock, sibs_info, kp_list, n):
             
         except socket.error:
             print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+
 
 
     
@@ -155,9 +156,10 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id
         thread.start_new_thread(confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n]))
     
 # LEAVE REQUEST
-def handle_leave_request(logger, info, ssap_msg, sib_list, kp_list, num, node_id):
+def handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id):
     """The present method is used to manage the leave request received from a KP."""
 
+    t = {}
     global num_confirms
     # TODO spostare questo assegnamento a dopo il parsing in modo da
     # non dover passare a questa funzione il node_id

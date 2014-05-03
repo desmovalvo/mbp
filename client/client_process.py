@@ -89,12 +89,12 @@ if __name__ == "__main__":
                 # create new virtual multi sib
                 while 1:
                      print colored("client_process> ", "blue", attrs=["bold"]) + "Select a sib ([0] to break): "
-                    sib = raw_input("> ")
-                    if sib == "0": 
-                        break
-                    else:
-                        if not vsib[int(sib)-1] in vm_sib:
-                            vm_sib.append(vsib[int(sib)-1])
+                     sib = raw_input("> ")
+                     if sib == "0": 
+                          break
+                     else:
+                          if not vsib[int(sib)-1] in vm_sib:
+                               vm_sib.append(vsib[int(sib)-1])
 
                 print colored("client_process> ", "blue", attrs=['bold']) + 'Sending NewVirtualMultiSIB request to the manager!'
 
