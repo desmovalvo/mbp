@@ -52,3 +52,7 @@ log/20140402-1234-tserver.log
 log/
 tools/WebSIBExplorer/wse.db
 tools/WebSIBExplorer/wse.db
+tools/WebSIBExplorer/wse.db
+virtualiser/.gitignore
+tools/WebSIBExplorer/wse.db
+virtualiser/.gitignore

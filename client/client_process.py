@@ -95,7 +95,7 @@ if __name__ == "__main__":
                      else:
                           if not vsib[int(sib)-1] in vm_sib:
                                vm_sib.append(vsib[int(sib)-1])
-                               
+
                 print colored("client_process> ", "blue", attrs=['bold']) + 'Sending NewVirtualMultiSIB request to the manager!'
                                
                 # socket to the manager process
