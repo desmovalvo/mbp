@@ -1,4 +1,4 @@
 #!/bin/bash
 
 PWD=$(pwd)
-xfce4-terminal -T ancillary --working-directory=$PWD/ancillary --tab -T anc_explorer --working-directory=$PWD/ancillary --tab -T manager --working-directory=$PWD/manager --tab -T virtualiser --working-directory=$PWD/manager --tab -T publisher --working-directory=$PWD/publisher --tab -T explorer --working-directory=$PWD/tools/WebSIBExplorer --tab -T real_sib --working-directory=/tmp 
+xfce4-terminal --tab -T ancillary --working-directory=$PWD/ancillary --tab -T anc_explorer --working-directory=$PWD/ancillary --tab -T manager --working-directory=$PWD/manager --tab -T virtualiser --working-directory=$PWD/manager --tab -T publisher --working-directory=$PWD/publisher --tab -T explorer --working-directory=$PWD/tools/WebSIBExplorer --tab -T real_sib --working-directory=/tmp 
