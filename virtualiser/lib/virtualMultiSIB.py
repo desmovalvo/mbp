@@ -86,7 +86,8 @@ def handler(clientsock, addr, port, sibs_info):
                 if info["message_type"] == "REQUEST" and info["transaction_type"] == "JOIN":
                     confirms[info["node_id"]] = len(sibs_info)
                     kp_list[info["node_id"]] = clientsock
-                    handle_join_request(logger, info, ssap_msg, sibs_info, kp_list)
+                    handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
+
     
                 # LEAVE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
