@@ -8,6 +8,9 @@ import sys
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"
 
+anc_ip = "localhost"
+anc_port = 10088
+
 # templates
 virtualiser_template = """
     <li>%s</li><br>
@@ -99,7 +102,7 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         """Respond to a GET request."""
 
         # connection to the Ancillary SIB
-        a = SIBLib.SibLib(sys.argv[1], int(sys.argv[2]))
+        a = SIBLib.SibLib(anc_ip, anc_port)
         a.join_sib()
         
         # get the informations from the Ancillary SIB  
@@ -145,11 +148,14 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
 
 
 def run():
-    print('http server is starting...')
+
+    if len(sys.argv) == 3:
+	anc_ip = sys.argv[1]
+	anc_port = sys.argv[2]
 
     server_address = ('0.0.0.0', 8000)
     httpd = HTTPServer(server_address, AncillaryRequestHandler)
-    print('http server is running...')
+    print('Ancillary explorer started on http://localhost:8000 ...')
     httpd.serve_forever()
     
 
