@@ -311,13 +311,13 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
                 # set the status offline
                 a = SibLib(ancillary_ip, ancillary_port)
 
-                t = []
-                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
-                a.remove(t)
+                # t = []
+                # t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
+                # a.remove(t)
 
-                t = []
-                t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-                a.insert(t)       
+                # t = []
+                # t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
+                # a.insert(t)       
 
                 t = [Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), None)]
                 result = a.execute_rdf_query(t)
