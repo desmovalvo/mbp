@@ -81,25 +81,36 @@ def handler(clientsock, addr, port, sibs_info):
                 logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
                     
                 ### REQUESTS
-    
+                
+                # sib_list_conn = {}
+                
+                # # create the sockets for the sibs
+                # for s in sibs_info:
+                #     ip = str(sibs_info[s]["ip"].split("#")[1])
+                #     kp_port = sibs_info[s]["kp_port"]
+                #     # socket to the sib
+                #     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                #     sib_list_conn[s] = sock
+
+                
                 # JOIN REQUEST: completed
                 if info["message_type"] == "REQUEST" and info["transaction_type"] == "JOIN":
                     confirms[info["node_id"]] = len(sibs_info)
                     kp_list[info["node_id"]] = clientsock
-                    handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], info["node_id"])
+                    handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
 
     
                 # LEAVE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
                     confirms[info["node_id"]] = len(sibs_info)
                     kp_list[info["node_id"]] = clientsock
-                    handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], info["node_id"])
+                    handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
     
                 # INSERT REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
                     confirms[info["node_id"]] = len(sibs_info)
                     kp_list[info["node_id"]] = clientsock
-                    handle_insert_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], info["node_id"])
+                    handle_insert_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
     
                 # REMOVE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
@@ -214,14 +225,6 @@ def virtualMultiSIB(virtualiser_ip, kp_port, pub_port, virtual_multi_sib_id, che
         sibs_info[s]["ip"] = str(result[0][2]).split("-")[0]
         sibs_info[s]["kp_port"] = int(str(result[0][2]).split("-")[1])
         
-    # # creating and activating the socket for the Publishers
-    # pub_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-    # pub_socket.bind(pub_addr)
-    # pub_socket.listen(2)
-    # logger.info('Virtual Multi SIB waiting for publishers on port ' + str(pub_port))
-
     # sockets
     sockets = [kp_socket]
 

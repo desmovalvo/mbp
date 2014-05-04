@@ -106,7 +106,7 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                 print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
-        except socket.error:
+        except ZeroDivisionError:#socket.error:
             print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
 
                 
@@ -293,13 +293,11 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
     
 # JOIN REQUEST
-def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id):
+def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num):
     """The present method is used to manage the join request received from a KP."""
     t = {}
     global num_confirms 
-    # TODO spostare questo assegnamento a dopo il parsing in modo da
-    # non dover passare a questa funzione il node_id
-    num_confirms[node_id] = num
+    num_confirms[info["node_id"]] = num
     sib_list_conn = {}
 
       
@@ -307,7 +305,7 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
     logger.info("JOIN REQUEST handled by handle_join_request")
     
-    print sibs_info
+    # print sibs_info
     
     for s in sibs_info:
         ip = str(sibs_info[s]["ip"].split("#")[1])
@@ -316,7 +314,7 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #sock.settimeout(15)
         sib_list_conn[s] = sock
-        
+
         # connect to the 
         try:
             sock.connect((ip, kp_port))
@@ -344,14 +342,12 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id
         thread.start_new_thread(join_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
     
 # LEAVE REQUEST
-def handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id):
+def handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, num):
     """The present method is used to manage the leave request received from a KP."""
 
     t = {}
     global num_confirms
-    # TODO spostare questo assegnamento a dopo il parsing in modo da
-    # non dover passare a questa funzione il node_id
-    num_confirms[node_id] = num
+    num_confirms[info["node_id"]] = num
     sib_list_conn = {}
 
     
@@ -397,14 +393,12 @@ def handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_i
 
 
 # INSERT REQUEST
-def handle_insert_request(logger, info, ssap_msg, sibs_info, kp_list, num, node_id):
+def handle_insert_request(logger, info, ssap_msg, sibs_info, kp_list, num):
     """The present method is used to manage the insert request received from a KP."""
 
     t = {}
     global num_confirms
-    # TODO spostare questo assegnamento a dopo il parsing in modo da
-    # non dover passare a questa funzione il node_id
-    num_confirms[node_id] = num
+    num_confirms[info["node_id"]] = num
     sib_list_conn = {}
 
     # debug info
