@@ -116,21 +116,21 @@ def handler(clientsock, addr, port, sibs_info):
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
                     confirms[info["node_id"]] = len(sibs_info)
                     kp_list[info["node_id"]] = clientsock
-                    handle_remove_request(logger, info, ssap_msg, sibs_info, kp_list)
+                    handle_remove_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
     
                 # SPARQL QUERY REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "sparql":
                     confirms[info["node_id"]] = len(sibs_info)
                     query_results[info["node_id"]] = []
                     kp_list[info["node_id"]] = clientsock
-                    handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list)
+                    handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], query_results)
     
                 # RDF QUERY REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "RDF-M3":
                     confirms[info["node_id"]] = len(sibs_info)
                     query_results[info["node_id"]] = []
                     kp_list[info["node_id"]] = clientsock
-                    handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list)
+                    handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], query_results)
     
                 # RDF SUBSCRIBE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
