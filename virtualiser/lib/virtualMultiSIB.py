@@ -138,54 +138,21 @@ def handler(clientsock, addr, port, sibs_info):
                     confirms[info["node_id"]] = len(sibs_info)
                     initial_results[info["node_id"]] = []
                     kp_list[info["node_id"]] = clientsock
-                    handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, clientsock, val_subscriptions)
+                    handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions, active_subscriptions, initial_results)
     
                 # RDF UNSUBSCRIBE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
-                    handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, clientsock, val_subscriptions)
-        
+                    confirms[info["node_id"]] = len(sibs_info)
+                    handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions)
+                
     
-                ### CONFIRMS
     
-                # JOIN CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "JOIN":
-                    handle_join_confirm(logger, clientsock, info, ssap_msg, confirms, kp_list)
-    
-                # LEAVE CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "LEAVE":
-                    handle_leave_confirm(logger, info, ssap_msg, confirms, kp_list)
-    
-                # INSERT CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "INSERT":
-                    handle_insert_confirm(logger, info, ssap_msg, confirms, kp_list)
-    
-                # REMOVE CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "REMOVE":
-                    handle_remove_confirm(logger, info, ssap_msg, confirms, kp_list)
-    
-                # SPARQL QUERY CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
-                    handle_sparql_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results)
-    
-                # RDF QUERY CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
-                    handle_rdf_query_confirm(logger, info, ssap_msg, confirms, kp_list, query_results)
-    
-                # RDF SUBSCRIBE CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": # and not "sparql" in ssap_msg
-                    handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
-    
+                # CONFIRMS
                 # RDF UNSUBSCRIBE CONFIRM
                 elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
                     handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
     
-                ### INDICATIONS
-                    
-                # SUBSCRIBE INDICATION
-                elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
-                    handle_subscribe_indication(logger, ssap_msg, info, clientsock, val_subscriptions)
-    
-    
+                
             except ET.ParseError:
                 print colored("virtualMultiSIB> ", "red", attrs=["bold"]) + " ParseError"
                 pass

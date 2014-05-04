@@ -11,6 +11,7 @@ import logging
 import random
 import thread
 import time
+from xml.sax import make_parser
 from SIBLib import *
 import time
 import datetime
@@ -151,7 +152,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 
                         # generating a Subreq instance
                         newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
- 
+                        
                         # forwarding message to the publisher
                         try:
                             sib["socket"].send(ssap_msg)
