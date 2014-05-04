@@ -167,7 +167,7 @@ def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                 num_confirms[info["node_id"]] -= 1
                                 if num_confirms[info["node_id"]] == 0:
                                     kp_list[info["node_id"]].send(ssap_msg)       
-                                    print "inviata conferma join al kp"
+
                                     kp_list[info["node_id"]].close()
                                     del kp_list[info["node_id"]]
         
@@ -257,7 +257,7 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                 num_confirms[info["node_id"]] -= 1
                                 if num_confirms[info["node_id"]] == 0:    
                                     kp_list[info["node_id"]].send(ssap_msg)
-                                    print "inviata conferma insert al kp"
+                                    
                                     kp_list[info["node_id"]].close()
     
                             # if the current message represent a failure...
@@ -347,7 +347,7 @@ def remove_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                 num_confirms[info["node_id"]] -= 1
                                 if num_confirms[info["node_id"]] == 0:                      
                                     kp_list[info["node_id"]].send(ssap_msg)
-                                    print "inviata conferma remove al kp"
+
                                     kp_list[info["node_id"]].close()
                     
                             # if the current message represent a failure...
@@ -418,7 +418,7 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
                     else:
                         k = child.tag
                     info[k] = child.text
-                print "sono nel remove confirm handler: messaggio decodificato"
+
                 if info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
 
                     # debug message
@@ -532,7 +532,7 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
                     else:
                         k = child.tag
                     info[k] = child.text
-                print "sono nel remove confirm handler: messaggio decodificato"
+
                 if info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
 
                     # debug info
@@ -616,17 +616,14 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
     global mutex
     global num_confirms
 
-    print "sono nel subscribe confirm!!!!!"
     
     ###############################################
     ## ricezione e riunificazione del messaggio  ##
     ###############################################
     complete_ssap_msg = ""
     while 1:
-        print "while"
         try:
             ssap_msg = sib_sock.recv(BUFSIZ)
-            print "------------------" + ssap_msg
             # check whether we received a blank message
             if not ssap_msg and not complete_ssap_msg:
                 break
@@ -640,7 +637,6 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                 
             # try to decode the message
             try:
-                print "prova decod"
                 
                 # parse the ssap message
                 root = ET.fromstring(ssap_msg)           
@@ -651,8 +647,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                     else:
                         k = child.tag
                     info[k] = child.text
-                print "sono nel subscribe confirm handler: messaggio decodificato"
-                print ssap_msg
+
                 if info["transaction_type"] == "SUBSCRIBE":
 
                     if info["message_type"] == "CONFIRM":
@@ -704,7 +699,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                                                                                     s.result,
                                                                                     ssap_msg_dict["subscription_id"])
                                                                                     #subreq_instance.subscription_id)                        
-                                                print ssap_reply
+
                                                 subreq_instance.conn.send(ssap_reply)
                         
                                 # if the current message represent a failure...
@@ -734,6 +729,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
 
                         
                 elif info["transaction_type"] == "UNSUBSCRIBE":
+                    # TODO qui bisogna anche eliminare l'istanza della subscription!
                     # debug info
                     print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_unsubscribe_confirm"
                     logger.info("RDF UNSUBSCRIBE CONFIRM handled by handle_rdf_unsubscribe_confirm")
@@ -798,8 +794,6 @@ def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num):
     # debug message
     print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
     logger.info("JOIN REQUEST handled by handle_join_request")
-    
-    # print sibs_info
     
     for s in sibs_info:
         ip = str(sibs_info[s]["ip"].split("#")[1])
@@ -878,9 +872,6 @@ def handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, num):
              del kp_list[info["node_id"]]
              logger.error("JOIN REQUEST forwarding failed")
 
-    
-        print "***************   " + str(num_confirms)
-        
         n = str(uuid.uuid4())
         t[n] = n
         thread.start_new_thread(leave_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
@@ -928,8 +919,6 @@ def handle_insert_request(logger, info, ssap_msg, sibs_info, kp_list, num):
              kp_list[info["node_id"]].send(err_msg)
              logger.error("INSERT REQUEST forwarding failed")
 
-    
-        print "***************   " + str(num_confirms)
         
         n = str(uuid.uuid4())
         t[n] = n
@@ -980,8 +969,6 @@ def handle_remove_request(logger, info, ssap_msg, sibs_info, kp_list, num):
              logger.error("REMOVE REQUEST forwarding failed")
 
     
-        print "***************   " + str(num_confirms)
-        
         n = str(uuid.uuid4())
         t[n] = n
         thread.start_new_thread(remove_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
@@ -1030,8 +1017,6 @@ def handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, num,
              logger.error("SPARQL QUERY REQUEST forwarding failed")
 
     
-        print "***************   " + str(num_confirms)
-        
         n = str(uuid.uuid4())
         t[n] = n
         thread.start_new_thread(sparql_query_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, query_results))
@@ -1080,8 +1065,6 @@ def handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, qu
              logger.error("SPARQL QUERY REQUEST forwarding failed")
 
     
-        print "***************   " + str(num_confirms)
-        
         n = str(uuid.uuid4())
         t[n] = n
         thread.start_new_thread(rdf_query_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, query_results))
@@ -1141,9 +1124,6 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num
              logger.error("RDF SUBSCRIBE REQUEST forwarding failed")
              
              
-    
-        print "***************   " + str(num_confirms)
-        
         n = str(uuid.uuid4())
         t[n] = n
         thread.start_new_thread(rdf_subscribe_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, initial_results, active_subscriptions, clientsock, val_subscriptions, newsub))
@@ -1197,151 +1177,9 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, n
              logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
              break
              
-    
-        print "***************   " + str(num_confirms)
 
 
 
-##############################################################
-#
-# OLD confirms
-#
-##############################################################
-
-# RDF SUBSCRIBE CONFIRM
-def handle_rdf_subscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions):
-    """This method is used to manage rdf SUBSCRIBE CONFIRM received. """
-
-    # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_confirm"
-    logger.info("RDF SUBSCRIBE CONFIRM handled by handle_rdf_subscribe_confirm")
-    
-    # check if we already received a failure
-    if not confirms[info["node_id"]] == None:
-
-        # check if the current message represent a successful insertion
-        if info["parameter_status"] == "m3:Success":
-
-            confirms[info["node_id"]] -= 1
-
-            # store the corrispondence between the real sib and the real_subscription_id
-            for s in val_subscriptions:                              
-                
-                if s.node_id == info["node_id"] and s.request_transaction_id == info["transaction_id"]:
-#                    s.received_confirm(clientsock, info["parameter_subscription_id"])
-                    subreq_instance = s
-                
-                    # convert ssap_msg to dict
-                    ssap_msg_dict = {}
-                    parser = make_parser()
-                    ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                    parser.setContentHandler(ssap_mh)
-                    parser.parse(StringIO(ssap_msg))
-        
-                    # extract triples from ssap reply
-                    triple_list = parse_M3RDF(ssap_msg_dict["results"])
-                      
-                    for triple in triple_list:
-                        initial_results[info["node_id"]].append(triple)
-                    
-                    # remove duplicates
-                    for triple in initial_results[info["node_id"]]:
-                        if not triple in s.result:
-                            s.result.append(triple)
-                            
-                    initial_results[info["node_id"]] = s.result
-        
-                    if confirms[info["node_id"]] == 0:    
-                        # build ssap reply                
-                        ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
-                                                            ssap_msg_dict["space_id"],
-                                                            ssap_msg_dict["transaction_id"],
-                                                            s.result,
-                                                            subreq_instance.virtual_subscription_id)                        
-                        subreq_instance.conn.send(ssap_reply)
-
-        # if the current message represent a failure...
-        else:
-            
-            confirms[info["node_id"]] = None
-            # send SSAP ERROR MESSAGE
-            err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                             info["space_id"],
-                                             "SUBSCRIBE",
-                                             info["transaction_id"],
-                                             '<parameter name="status">m3:Error</parameter>')
-
-            for s in val_subscriptions:
-                if s.node_id == info["node_id"] and s.request_transaction_id == ["transaction_id"]:
-                    s.conn.send(err_msg)
-                    logger.error("SUBSCRIBE CONFIRM forwarding failed")
-                    
-
-# RDF UNSUBSCRIBE CONFIRM
-def handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions):
-    """This method is used to manage UNSUBSCRIBE CONFIRM received. """
-
-    # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_unsubscribe_confirm"
-    logger.info("RDF UNSUBSCRIBE CONFIRM handled by handle_rdf_unsubscribe_confirm")
-
-
-    for s in val_subscriptions:
-        if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
-            # check if we already received a failure
-            if not confirms[info["node_id"]] == None:
-                # check if the current message represent a successful insertion
-                if info["parameter_status"] == "m3:Success":
-
-                    confirms[info["node_id"]] -= 1
-
-                    if confirms[info["node_id"]] == 0:    
-
-                        s.conn.send(ssap_msg)
-
-
-                # if the current message represent a failure...
-                else:
-            
-                    confirms[info["node_id"]] = None
-                    # send SSAP ERROR MESSAGE
-                    err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                             info["space_id"],
-                                                             "UNSUBSCRIBE",
-                                                             info["transaction_id"],
-                                                             '<parameter name="status">m3:Error</parameter><parameter name="subscription_id">virtual_sub_id</parameter>')
-
-                    s.conn.send(ssap_reply)
-
-                    logger.error("SUBSCRIBE CONFIRM forwarding failed")
-                    
-                    # destroy the class instance
-                    del s
-
-
-##############################################################
-#
-# INDICATIONS
-#
-##############################################################
-
-def handle_subscribe_indication(logger, ssap_msg, info, fromsocket, val_subscriptions):
-
-    # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_indication"
-    logger.info("SUBSCRIBE INDICATION handled by handle_subscribe_indication")
-
-    for s in val_subscriptions:
-        if str(s.virtual_subscription_id) == str(info["parameter_subscription_id"]):
-
-            # send the message to the kp
-            print "Inoltro la indication"
-            try:
-                s.conn.send(ssap_msg)
-            except socket.error:
-                print "inoltro indication fallito"
-            
-            break
                 
 
 ##############################################################

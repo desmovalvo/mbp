@@ -121,7 +121,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 
                             # add the sib to the list
                             sib["socket"] = clientsock
-                            print "ACTUAL SIB: " + str(sib)
+                            #print "ACTUAL SIB: " + str(sib)
                             
                             print colored("remoteSIB>", "green", attrs=["bold"]) + " handle_register_request"
                             logger.info("REGISTER REQUEST handled by handle_register_request")
@@ -242,11 +242,9 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             if str(s.subscription_id) == str(info["parameter_subscription_id"]):
 
                                 # send the message to the kp
-                                print "Inoltro la indication"
                                 try:
                                     s.conn.send(ssap_msg)
                                 except socket.error:
-                                    print "inoltro indication fallito"
                                 
                                 break
                 
@@ -301,7 +299,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 # SOCKET OBSERVER THREAD
 def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
     
-    print "obs id: " + str(uuid.uuid4())
+    #print "obs id: " + str(uuid.uuid4())
     key = sib["socket"]
 
     while check_var:

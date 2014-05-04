@@ -12,12 +12,8 @@ import thread
 import time
 from SIBLib import *
 
-# KP_PORT = 10010
-# PUB_PORT = 10011
-# HOST = 'localhost'
 BUFSIZ = 1024
-#KP_ADDR = (HOST, KP_PORT)
-#PUB_ADDR = (HOST, PUB_PORT)
+
 kp_list = {}
 confirms = {}
 query_results = {}
@@ -145,13 +141,6 @@ def handler(clientsock, addr, port, sibs_info):
                     confirms[info["node_id"]] = len(sibs_info)
                     handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions)
                 
-    
-    
-                # CONFIRMS
-                # RDF UNSUBSCRIBE CONFIRM
-                elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
-                    handle_rdf_unsubscribe_confirm(logger, info, ssap_msg, confirms, kp_list, initial_results, active_subscriptions, clientsock, val_subscriptions)
-    
                 
             except ET.ParseError:
                 print colored("virtualMultiSIB> ", "red", attrs=["bold"]) + " ParseError"
