@@ -15,6 +15,7 @@ SSAP_MESSAGE_CONFIRM_TEMPLATE = '''<SSAP_message>
 %s
 </SSAP_message>'''
 
+
 SSAP_SUCCESS_PARAM_TEMPLATE = '<parameter name = "status">%s</parameter>'
 
 SSAP_BNODES_PARAM_TEMPLATE = '<parameter name = "bnodes"><urllist>%s</urllist></parameter>'
