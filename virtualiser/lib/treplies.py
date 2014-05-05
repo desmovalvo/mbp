@@ -103,7 +103,7 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
 
             except ET.ParseError:
-                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except ZeroDivisionError:#socket.error:
@@ -190,7 +190,7 @@ def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                     mutex.release()
                     
             except ET.ParseError:
-                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
             
             
@@ -282,7 +282,7 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
 
             except ET.ParseError:
-                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:
@@ -372,7 +372,7 @@ def remove_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
 
             except ET.ParseError:
-                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:
@@ -487,7 +487,7 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
 
 
             except ET.ParseError:
-                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:
@@ -601,7 +601,7 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
 
 
             except ET.ParseError:
-                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:
@@ -767,7 +767,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
 
 
             except ET.ParseError:
-                print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
                 pass
 
         except socket.error:

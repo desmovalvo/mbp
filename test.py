@@ -24,7 +24,6 @@ def random_generator(size, chars, ns):
         a = a + random.choice(chars)
     return a
 
-
 kp1 = SibLib(sib_ip, sib_port)
 
 ###########################
@@ -240,6 +239,43 @@ else:
 
 print colored("Mediana: " + str(median), "blue", attrs=["bold"])
 print
+
+
+
+###########################
+#                         #
+#         REMOVE          #
+#                         #
+###########################
+# rimozione di una tripla 
+print colored("REMOVE TRIPLE...", "blue", attrs=["bold"])
+
+key = random.choice(triples.keys())
+soggetto = triples[key]["soggetto"]
+oggetto = triples[key]["oggetto"]
+predicato = triples[key]["predicato"]
+
+tot = []
+for it in range(num_iter):
+    start = time.time()
+    t = Triple(URI(soggetto), URI(predicato), URI(oggetto))
+    kp1.remove(t)
+    end = time.time() - start
+    print "Time: " + str(end)
+    tot.append(end)
+print "____________________"
+tot.sort()
+if len(tot)%2 == 0:
+    median = (tot[len(tot)/2] + tot[len(tot)/2-1]) / 2
+else:
+    median = tot[len(tot)/2] 
+
+print colored("Mediana: " + str(median), "blue", attrs=["bold"])
+print
+
+del triples[key]
+
+
 
 
 ###########################

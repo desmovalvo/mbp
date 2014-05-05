@@ -57,7 +57,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
             if len(ssap_msg) == 1:
                 if ssap_msg == " ":
                     if sib["socket"] != None:
-                        print colored("remoteSIB> ", "blue", attrs=["bold"]) + str(clientsock) + " is alive "                    
+                        #print colored("remoteSIB> ", "blue", attrs=["bold"]) + str(clientsock) + " is alive "                    
                         sib["timer"] = datetime.datetime.now()
 
             else:
@@ -245,7 +245,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 try:
                                     s.conn.send(ssap_msg)
                                 except socket.error:
-                                
+                                    print colored("remoteSIB>", "red", attrs=["bold"]) + " indication send failed"
                                 break
                 
                             
@@ -334,7 +334,7 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
                 break
             else:
                 time.sleep(5)
-                print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
+                #print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
                 sib["socket"].send(" ")
                 
         except IOError:
