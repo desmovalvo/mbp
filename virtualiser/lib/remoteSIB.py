@@ -245,7 +245,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 try:
                                     s.conn.send(ssap_msg)
                                 except socket.error:
-                                
+                                    print 'socket.error'
                                 break
                 
                             
