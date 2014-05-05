@@ -104,7 +104,7 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_port):
                     sys.exit()
                 else:
                     timer = datetime.datetime.now()
-                    print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
+                    #print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
                     thread.start_new_thread(handler, (sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_port))
         
 
@@ -112,7 +112,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_por
     
     if len(ssap_msg) == 1:
         if sock == vs:
-            print "It's only a check but I like it!"
+            #print "It's only a check but I like it!"
             vs.send(" ")
     
     else:
