@@ -2,6 +2,7 @@
 
 # requirements
 from multiprocessing import Process
+from output_helpers import *
 from termcolor import *
 import uuid
 from SIBLib import SibLib
@@ -19,7 +20,7 @@ ns = "http://smartM3Lab/Ontology.owl#"
 
 def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port):
     # debug print
-    print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
+    print reqhandler_print(True) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
     # virtual sib id
     virtual_sib_id = str(uuid.uuid4())
@@ -165,78 +166,99 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
     return confirm
                                         
 
+
+############################################################
+#
+# NewVirtualMultiSIB
+#
+# This function handles the NewVirtualMultiSIB request and
+# it's called by the virtualiser_server once it receives
+# a NewVirtualMultiSIB request message
+#
+############################################################
     
 def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id, ancillary_ip, ancillary_port):
-    print colored("request_handlers> ", "blue", attrs=["bold"]) + str(sib_list)
-    print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
+
+    # debug print
+    print reqhandler_print(True) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
+    print reqhandler_print(True) + "SIB list: " + str(sib_list)
+
     # virtual multi sib id
     virtual_multi_sib_id = str(uuid.uuid4())
 
-    # create two sockets
+    # create a socket
     s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # generating two random ports
+    # generating a random port
     while True:
         kp_port = random.randint(10000, 11000)
         if s1.connect_ex(("localhost", kp_port)) != 0:
-            print "estratta la porta %s"%(str(kp_port))
+            print reqhandler_print(True) + "generated port " + str(kp_port) + " for the new VMSIB"
             break
 
-    while True:
-        pub_port = random.randint(10000, 11000)
-        if pub_port != kp_port:
-            if s2.connect_ex(("localhost", pub_port)) != 0:
-                print "estratta la porta %s"%(str(pub_port))
-                break        
-
-    
-    
-    # insert information in the ancillary SIB
     try:
+        # insert information into the ancillary SIB
         a = SibLib(ancillary_ip, ancillary_port)
         t = []
         for i in sib_list:
             t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i))))
-        
+    
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
-        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port))))
         t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_multi_sib_id))))
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
         t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multi_sib_id))))
         a.insert(t)
 
+        # fill a dictionary with the info about the VMSIB
         virtual_multi_sib_info = {}
         virtual_multi_sib_info["virtual_multi_sib_id"] = str(virtual_multi_sib_id)
         virtual_multi_sib_info["virtual_multi_sib_ip"] = str(virtualiser_ip)
         virtual_multi_sib_info["virtual_multi_sib_kp_port"] = kp_port
 
-        # start a virtual multi sib (nel try, in quanto va fatto solo se
-        # l'inserimento delle informazioni e' andato a buon fine)
-        
+        # start a virtual multi sib        
         threads[thread_id] = True
-        p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_multi_sib_id, threads[thread_id], sib_list, ancillary_ip, ancillary_port))
+        p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, virtual_multi_sib_id, threads[thread_id], sib_list, ancillary_ip, ancillary_port))
         p.start()
 
-        # return virtual multi sib id
+        # return the virtual multi sib info
         return virtual_multi_sib_info
 
     except socket.error:
+
+        # we received a socket_error, so we couldn't write into the Ancillary SIB
         virtual_multi_sib_info = {}
         virtual_multi_sib_info["return"] = "fail"
         virtual_multi_sib_info["cause"] = "Connection to Ancillary Sib failed"
+
+        # return the virtual multi sib info
         return virtual_multi_sib_info
-    except Exception, e: #TODO catturare qui i sibError
-        print 'ECCEZIONE: ' + str(e)
+
+    except Exception, e: 
+
+        # TODO: we catch here the SIB Error but maybe it's not the best place 
+        print reqhandler_print(False) + str(e)
         virtual_multi_sib_info = {}
         virtual_multi_sib_info["return"] = "fail"
         virtual_multi_sib_info["cause"] = "Sib Error"
+
+        # return the virtual multi sib info
         return virtual_multi_sib_info
+
+
+############################################################
+#
+# Discovery
+#
+# This function handles the Discovery request and
+# it's called by the virtualiser_server once it receives
+# a Discovery request message
+#
+############################################################
 
 def Discovery(ancillary_ip, ancillary_port):
     # debug print
-    print colored("request_handlers> ", "blue", attrs=["bold"]) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
+    print reqhandler_print(True) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
     # query to the ancillary sib to get all the existing virtual sib 
     query = """
         SELECT ?s ?o
