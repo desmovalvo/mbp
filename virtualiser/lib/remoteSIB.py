@@ -53,13 +53,14 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
         try:
             ssap_msg = clientsock.recv(BUFSIZ)
 
-            # it may be a "space" character
+            # it may be a "space" character from a subscribed kp or from a publisher
             if len(ssap_msg) == 1:
                 if ssap_msg == " ":
+                    # received a ping from publisher: update his timer
                     if sib["socket"] != None:
                         #print colored("remoteSIB> ", "blue", attrs=["bold"]) + str(clientsock) + " is alive "                    
                         sib["timer"] = datetime.datetime.now()
-
+      
             else:
     
                 # check whether we received a blank message
@@ -128,11 +129,15 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             
                             # setting the timestamp
                             sib["timer"] = datetime.datetime.now()
-
+                            
+                            # New register request received:
+                            # set check_var to False to kill the actual socket observer
                             check_var = False
                             time.sleep(1)
+                            # Then set it to True and start the new socket observer
                             check_var = True
-
+                            
+                            # TODO kp_port non serve passarlo: il socket observer non lo usa!!
                             thread.start_new_thread(socket_observer, (sib, kp_port, check_var, ancillary_ip, ancillary_port))                            
                             print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
 
@@ -144,19 +149,26 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 
                     # RDF/SPARQL SUBSCRIBE REQUEST
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE":
-                        kp_list[info["node_id"]] = clientsock
-                        
+                        # kp_list[info["node_id"]] = {}
+                        # kp_list[info["node_id"]]["socket"] = clientsock
+                        # kp_list[info["node_id"]]["timer"] = datetime.datetime.now()
+
                         # debug info
                         print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
                         logger.info("SUBSCRIBE REQUEST handled")
 
                         # generating a Subreq instance
-                        newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
+                        newsub = Subreq(clientsock, info)#, info["node_id"], info["transaction_id"])
                         
                         # forwarding message to the publisher
                         try:
                             sib["socket"].send(ssap_msg)
                             val_subscriptions.append(newsub)
+                            # kp_check_var = True
+                            # TODO: e' meglio far partire il seguente thread quando riceviamo la conferma di sottoscrizione? In caso inizia a pingare prima di mandare la conferma e da' problemi...
+                            thread.start_new_thread(kp_observer, (newsub, sib, ancillary_ip, ancillary_port))#, kp_list[info["node_id"]], kp_check_var))                            
+                            print colored("remoteSIB> ", "blue", attrs=["bold"]) + "Subscribed kp observer started for socket " + str(newsub.conn)
+
 
                         except socket.error:
                             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
@@ -165,7 +177,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                                              info["transaction_id"],
                                                              '<parameter name="status">m3:Error</parameter>')
                             newsub.conn.send(err_msg)
-                            del nuwsub
+                            del newsub
                             
                             logger.error("SUBSCRIBE REQUEST forwarding failed")
 
@@ -224,7 +236,11 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 
                         for s in val_subscriptions:
                             if str(s.subscription_id) == str(info["parameter_subscription_id"]):
-                                s.conn.send(ssap_msg)
+                                
+                                try:
+                                    s.conn.send(ssap_msg)
+                                except socket.error:
+                                    pass
                                                                         
                                 # destroy the class instance
                                 del s
@@ -310,14 +326,6 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
                 # set the status offline
                 a = SibLib(ancillary_ip, ancillary_port)
 
-                # t = []
-                # t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
-                # a.remove(t)
-
-                # t = []
-                # t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-                # a.insert(t)       
-
                 t = [Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), None)]
                 result = a.execute_rdf_query(t)
 
@@ -349,6 +357,45 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
         #     print 'boh'
         
     print colored("socket_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(key)
+
+
+
+# SUBSCRIBED KP OBSERVER THREAD
+def kp_observer(newsub, sib, ancillary_ip, ancillary_port):#, kp, kp_check_var):
+    
+    #print "kp obs id: " + str(uuid.uuid4())
+    
+    while True:# kp_check_var:
+        
+        time.sleep(5)
+        #print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
+        try:
+            #kp["socket"].send(" ")
+            newsub.conn.send(" ")
+        except socket.error:
+            print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket " + str(newsub.conn) + " dead"
+                
+            # TODO: build and send an unsubscribe request to the publisher
+
+            ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(newsub.node_id,
+                                                      newsub.space_id,
+                                                      UNSUBSCRIBE,
+                                                      newsub.request_transaction_id,
+                                                      '<parameter name="status">m3:Error</parameter>',
+                                                      '<parameter name = "subscription_id">' + newsub.subscription_id + '</parameter>')
+
+            sib["socket"].send(ssap_msg)
+            
+            # set kp["socket"] to None
+            #kp["socket"] = None
+            
+            # exit while
+            # kp_check_var = False
+            break
+        
+    print colored("kp_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(kp["socket"])
+
+
 
 
 def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, ancillary_ip, ancillary_port):

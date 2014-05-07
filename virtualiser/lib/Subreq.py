@@ -7,11 +7,13 @@ import uuid
 class Subreq:
 
     # initialization (called on SUBSCRIBE REQUEST)
-    def __init__(self, connection, node_id, request_transaction_id):
+    def __init__(self, connection, info):#node_id, request_transaction_id):
         self.conn = connection # this is the connection to the kp
-        self.node_id = node_id
-        self.request_transaction_id = request_transaction_id
-        self.subscription_id = uuid.uuid4()
+        self.node_id = info["node_id"]
+        self.space_id = info["space_id"]
+        self.request_transaction_id = info["transaction_id"]
+        #self.subscription_id = uuid.uuid4()
+        self.subscription_id = None
         self.real_sib_id = {}
         self.result = []
 

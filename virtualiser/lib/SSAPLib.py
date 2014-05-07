@@ -57,6 +57,17 @@ SSAP_MESSAGE_REQUEST_TEMPLATE = '''<SSAP_message>
 %s
 </SSAP_message>'''
 
+
+# <SSAP_message>
+# <node_id>a286ddc6-1398-463d-83bf-f5fada42b47f-6736c3fe-a2b3-4a8a-a159-fa13688f76ab</node_id>
+# <space_id>X</space_id>
+# <transaction_type>UNSUBSCRIBE</transaction_type>
+# <message_type>REQUEST</message_type>
+# <transaction_id>5</transaction_id>
+# <parameter name = "subscription_id">http://subscribe_graph#a286ddc6-1398-463d-83bf-f5fada42b47f-6736c3fe-a2b3-4a8a-a159-fa13688f76ab_3</parameter>
+# </SSAP_message>
+
+
 SSAP_SUCCESS_PARAM_TEMPLATE = '<parameter name = "status">%s</parameter>'
 
 SSAP_RESULTS_RDF_PARAM_TEMPLATE = """
