@@ -1,18 +1,18 @@
 #!/usr/bin/python
 
 # requirements
+import uuid
+import thread
+import threading
 from SSAPLib import *
 from termcolor import *
 from lib.Subreq import *
 from smart_m3.m3_kp import *
 from output_helpers import *
-from xml.sax import make_parser
-import thread
-import threading
-from xml.etree import ElementTree as ET
 from termcolor import colored
+from xml.sax import make_parser
 from threading import Thread, Lock
-import uuid
+from xml.etree import ElementTree as ET
 
 
 BUFSIZ = 1024
@@ -786,7 +786,8 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
 # JOIN/LEAVE/INSERT/REMOVE REQUESTS
 def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
 
-    """The present method is used to manage the join or leave requests received from a KP."""
+    """The present method is used to manage the join/leave/insert/remove
+    requests received from a KP."""
 
     t = {}
     global num_confirms 
@@ -837,6 +838,60 @@ def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
         # spawning threads
         func = globals()[info["transaction_type"].lower() + "_confirm_handler"]
         thread.start_new_thread(func, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
+
+
+# RDF/SPARQL QUERY REQUEST
+def handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, query_results):
+
+    """The present method is used to manage the query request received from a KP."""
+
+    t = {}
+    global num_confirms
+    num_confirms[info["node_id"]] = num
+    sib_list_conn = {}
+
+    # debug info
+    print treplies_print(True) + " handle_query_request"
+    logger.info(info["parameter_type"] + " QUERY REQUEST handled by handle_sparql_query_request")
+
+
+    for s in sibs_info:
+        ip = str(sibs_info[s]["ip"].split("#")[1])
+        kp_port = sibs_info[s]["kp_port"]
+        # socket to the sib
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #sock.settimeout(15)
+        sib_list_conn[s] = sock
+        
+        # connect to the 
+        try:
+            sock.connect((ip, kp_port))
+
+            try:
+                sock.send(ssap_msg)
+            except socket.error:
+                print treplies_print(False) + " Send failed"       
+               
+        except :
+             print treplies_print(False) + 'Unable to connect to the sibs'
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
+                                                      info["space_id"],
+                                                      "QUERY",
+                                                      info["transaction_id"],
+                                                      '<parameter name="status">m3:Error</parameter>')
+             # send a notification error to the KP
+             kp_list[info["node_id"]].send(err_msg)
+             logger.error(info["parameter_type"] + " QUERY REQUEST forwarding failed")
+
+    
+        n = str(uuid.uuid4())
+        t[n] = n
+
+        if info["parameter_type"] == "sparql":
+            thread.start_new_thread(sparql_query_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, query_results))
+        else:
+            thread.start_new_thread(rdf_query_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, query_results))
+
 
 
 # SPARQL QUERY REQUEST

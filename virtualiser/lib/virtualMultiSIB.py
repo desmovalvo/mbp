@@ -1,17 +1,17 @@
 #!/usr/bin/python
 
 # requirements
-from xml.etree import ElementTree as ET
-from treplies import *
-from Subreq import *
-from termcolor import *
-import socket, select
-import threading
-import logging
-import thread
 import time
+import thread
+import logging
+import threading
 from SIBLib import *
+from Subreq import *
+import socket, select
+from treplies import *
+from termcolor import *
 from output_helpers import *
+from xml.etree import ElementTree as ET
 
 BUFSIZ = 1024
 
@@ -79,17 +79,7 @@ def handler(clientsock, addr, port, sibs_info):
                     
                 ### REQUESTS
                 
-                # sib_list_conn = {}
-                
-                # # create the sockets for the sibs
-                # for s in sibs_info:
-                #     ip = str(sibs_info[s]["ip"].split("#")[1])
-                #     kp_port = sibs_info[s]["kp_port"]
-                #     # socket to the sib
-                #     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                #     sib_list_conn[s] = sock
-                
-                # JOIN REQUEST
+                # JOIN/LEAVE/REMOVE/INSERT REQUEST
                 if info["message_type"] == "REQUEST" and info["transaction_type"] in ["JOIN", "LEAVE", "REMOVE", "INSERT"]:
                     
                     # how many confirms should we wait? 
@@ -101,51 +91,44 @@ def handler(clientsock, addr, port, sibs_info):
                     # call the method that handles the request and wait for confirms
                     handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
     
-                # # LEAVE REQUEST
-                # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
-                #     confirms[info["node_id"]] = len(sibs_info)
-                #     kp_list[info["node_id"]] = clientsock
-                #     handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
-    
-                # # INSERT REQUEST
-                # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
-                #     confirms[info["node_id"]] = len(sibs_info)
-                #     kp_list[info["node_id"]] = clientsock
-                #     handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
-    
-                # # REMOVE REQUEST
-                # elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
-                #     confirms[info["node_id"]] = len(sibs_info)
-                #     kp_list[info["node_id"]] = clientsock
-                #     handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
-    
-                # SPARQL QUERY REQUEST
-                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "sparql":
+                # SPARQL/RDF QUERY REQUEST
+                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY":
+
+                    # how many confirms should we wait? 
                     confirms[info["node_id"]] = len(sibs_info)
+
+                    # creation of an empty array in which we'll insert the query results
                     query_results[info["node_id"]] = []
+
+                    # store the client socket from which we received the request
                     kp_list[info["node_id"]] = clientsock
-                    handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], query_results)
-    
-                # RDF QUERY REQUEST
-                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "RDF-M3":
-                    confirms[info["node_id"]] = len(sibs_info)
-                    query_results[info["node_id"]] = []
-                    kp_list[info["node_id"]] = clientsock
-                    handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], query_results)
+
+                    # call the method that handles the request and wait for confirms
+                    handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], query_results)
     
                 # RDF SUBSCRIBE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
     
+                    # how many confirms should we wait? 
                     confirms[info["node_id"]] = len(sibs_info)
+
+                    # creation of an empty array in which we'll insert the initial results
                     initial_results[info["node_id"]] = []
+
+                    # store the client socket from which we received the request
                     kp_list[info["node_id"]] = clientsock
+
+                    # call the method that handles the request and wait for confirms
                     handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions, active_subscriptions, initial_results)
     
                 # RDF UNSUBSCRIBE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
+
+                    # how many confirms should we wait? 
                     confirms[info["node_id"]] = len(sibs_info)
+
+                    # call the method that handles the request and wait for confirms
                     handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions)
-                
                 
             except ET.ParseError:
                 print vmsib_print(False) + " ParseError"
