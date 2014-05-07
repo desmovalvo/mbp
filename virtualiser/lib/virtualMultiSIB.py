@@ -88,32 +88,36 @@ def handler(clientsock, addr, port, sibs_info):
                 #     # socket to the sib
                 #     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 #     sib_list_conn[s] = sock
-
                 
-                # JOIN REQUEST: completed
+                # JOIN REQUEST
                 if info["message_type"] == "REQUEST" and info["transaction_type"] == "JOIN":
+                    
+                    # how many confirms should we wait? 
                     confirms[info["node_id"]] = len(sibs_info)
-                    kp_list[info["node_id"]] = clientsock
-                    handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
 
+                    # store the client socket from which we received the request
+                    kp_list[info["node_id"]] = clientsock
+                    
+                    # call the method that handles the request and wait for confirms
+                    handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
     
                 # LEAVE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "LEAVE":
                     confirms[info["node_id"]] = len(sibs_info)
                     kp_list[info["node_id"]] = clientsock
-                    handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
+                    handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
     
                 # INSERT REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "INSERT":
                     confirms[info["node_id"]] = len(sibs_info)
                     kp_list[info["node_id"]] = clientsock
-                    handle_insert_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
+                    handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
     
                 # REMOVE REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "REMOVE":
                     confirms[info["node_id"]] = len(sibs_info)
                     kp_list[info["node_id"]] = clientsock
-                    handle_remove_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
+                    handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
     
                 # SPARQL QUERY REQUEST
                 elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY" and info["parameter_type"] == "sparql":

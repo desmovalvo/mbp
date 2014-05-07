@@ -5,6 +5,7 @@ from SSAPLib import *
 from termcolor import *
 from lib.Subreq import *
 from smart_m3.m3_kp import *
+from output_helpers import *
 from xml.sax import make_parser
 import thread
 import threading
@@ -65,7 +66,7 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
                 if info["transaction_type"] == "JOIN":
                     # debug info
-                    print colored("treplies>", "green", attrs=["bold"]) + " handle_join_confirm"
+                    print treplies_print(True) + " handle_join_confirm"
                     logger.info("JOIN CONFIRM handled by handle_join_confirm")
   
                     # check if we already received a failure
@@ -96,18 +97,18 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                 logger.error("JOIN CONFIRM forwarding failed")
   
                         except socket.error:
-                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+                            print treplies_print(False) + " socket.error: break!"
 
                 
                     mutex.release()
 
 
             except ET.ParseError:
-                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print treplies_print(False) + " ParseError"
                 pass
 
         except ZeroDivisionError:#socket.error:
-            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
+            print treplies_print(False) + " socket.error"
 
                 
             
@@ -153,7 +154,7 @@ def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
                 if info["transaction_type"] == "LEAVE":
                     # debug info
-                    print colored("treplies>", "green", attrs=["bold"]) + " handle_leave_confirm"
+                    print treplies_print(True) + " handle_leave_confirm"
                     logger.info("LEAVE CONFIRM handled by handle_leave_confirm")
 
                     # check if we already received a failure
@@ -184,18 +185,18 @@ def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                 logger.error("LEAVE CONFIRM forwarding failed")
 
                         except socket.error:
-                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+                            print treplies_print(False) + " socket.error: break!"
 
         
                     mutex.release()
                     
             except ET.ParseError:
-                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print treplies_print(False) + " ParseError"
                 pass
             
             
         except socket.error:
-            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+            print treplies_print(False) + " socket.error: break!"
 
 
 
@@ -245,7 +246,7 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                 if info["transaction_type"] == "INSERT":
   
                     # debug message
-                    print colored("treplies>", "green", attrs=["bold"]) + " handle_insert_confirm"
+                    print treplies_print(True) + " handle_insert_confirm"
                     logger.info("INSERT CONFIRM handled by handle_insert_confirm")
                     
                     # check if we already received a failure
@@ -275,18 +276,18 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                 logger.error("INSERT CONFIRM forwarding failed")
 
                         except socket.error:
-                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+                            print treplies_print(False) + " socket.error: break!"
 
                 
                     mutex.release()
 
 
             except ET.ParseError:
-                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print treplies_print(False) + " ParseError"
                 pass
 
         except socket.error:
-            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
+            print treplies_print(False) + " socket.error"
 
 
 # REMOVE CONFIRM
@@ -335,7 +336,7 @@ def remove_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                 if info["transaction_type"] == "REMOVE":
 
                     # debug message
-                    print colored("treplies>", "green", attrs=["bold"]) + " handle_remove_confirm"
+                    print treplies_print(True) + " handle_remove_confirm"
                     logger.info("REMOVE CONFIRM handled by handle_remove_confirm")
                         
                     # check if we already received a failure
@@ -365,18 +366,18 @@ def remove_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                 logger.error("REMOVE CONFIRM forwarding failed")
                      
                         except socket.error:
-                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+                            print treplies_print(False) + " socket.error: break!"
 
                 
                     mutex.release()
 
 
             except ET.ParseError:
-                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print treplies_print(False) + " ParseError"
                 pass
 
         except socket.error:
-            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
+            print treplies_print(False) + " socket.error"
 
 
 
@@ -422,7 +423,7 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
                 if info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
 
                     # debug message
-                    print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_query_confirm"
+                    print treplies_print(True) + " handle_sparql_query_confirm"
                     logger.info("SPARQL QUERY CONFIRM handled by handle_sparql_query_confirm")
                             
                     # check if we already received a failure
@@ -480,18 +481,18 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
                                 logger.error("SPARQL CONFIRM forwarding failed")
                     
                         except socket.error:
-                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+                            print treplies_print(False) + " socket.error: break!"
 
                 
                     mutex.release()
 
 
             except ET.ParseError:
-                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print treplies_print(False) + " ParseError"
                 pass
 
         except socket.error:
-            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
+            print treplies_print(False) + " socket.error"
                     
 # RDF QUERY CONFIRM
 def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_results):
@@ -536,7 +537,7 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
                 if info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
 
                     # debug info
-                    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_query_confirm"
+                    print treplies_print(True) + " handle_rdf_query_confirm"
                     logger.info("RDF QUERY CONFIRM handled by handle_rdf_query_confirm")
                     
                     # check if we already received a failure
@@ -594,18 +595,18 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
                                 logger.error("RDF QUERY CONFIRM forwarding failed")
                     
                         except socket.error:
-                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+                            print treplies_print(False) + " socket.error: break!"
 
                 
                     mutex.release()
 
 
             except ET.ParseError:
-                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print treplies_print(False) + " ParseError"
                 pass
 
         except socket.error:
-            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
+            print treplies_print(False) + " socket.error"
                     
 
 
@@ -652,7 +653,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
 
                     if info["message_type"] == "CONFIRM":
                         # debug info
-                        print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_confirm"
+                        print treplies_print(True) + " handle_rdf_subscribe_confirm"
                         logger.info("RDF SUBSCRIBE CONFIRM handled by handle_rdf_subscribe_confirm")
                         
                         # check if we already received a failure
@@ -719,7 +720,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                                             logger.error("SUBSCRIBE CONFIRM forwarding failed")
                         
                             except socket.error:
-                                print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+                                print treplies_print(False) + " socket.error: break!"
                     
                         mutex.release()
                     elif info["message_type"] == "INDICATION":
@@ -731,7 +732,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                 elif info["transaction_type"] == "UNSUBSCRIBE":
                     # TODO qui bisogna anche eliminare l'istanza della subscription!
                     # debug info
-                    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_unsubscribe_confirm"
+                    print treplies_print(True) + " handle_rdf_unsubscribe_confirm"
                     logger.info("RDF UNSUBSCRIBE CONFIRM handled by handle_rdf_unsubscribe_confirm")
                     
                     # check if we already received a failure
@@ -761,17 +762,17 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                                 logger.error("UNSUBSCRIBE CONFIRM forwarding failed")
                     
                         except socket.error:
-                            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error: break!"
+                            print treplies_print(False) + " socket.error: break!"
                 
                     mutex.release()
 
 
             except ET.ParseError:
-                #print colored("treplies> ", "red", attrs=["bold"]) + " ParseError"
+                #print treplies_print(False) + " ParseError"
                 pass
 
         except socket.error:
-            print colored("treplies> ", "red", attrs=["bold"]) + " socket.error"
+            print treplies_print(False) + " socket.error"
                                         
                     
     
@@ -782,196 +783,64 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
 #
 ##############################################################
     
-# JOIN REQUEST
-def handle_join_request(logger, info, ssap_msg, sibs_info, kp_list, num):
-    """The present method is used to manage the join request received from a KP."""
+# JOIN/LEAVE/INSERT REQUESTS
+def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
+
+    """The present method is used to manage the join or leave requests received from a KP."""
+
     t = {}
     global num_confirms 
     num_confirms[info["node_id"]] = num
     sib_list_conn = {}
-
       
     # debug message
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_join_request"
-    logger.info("JOIN REQUEST handled by handle_join_request")
+    print treplies_print(True) + " handle_generic_request"
+    logger.info(info["transaction_type"] + " REQUEST handled by handle_generic_request")
     
+    # cycle through all the SIBs that compose the VMSIB
     for s in sibs_info:
+
+        # get connection parameters from the sibs_info dict
         ip = str(sibs_info[s]["ip"].split("#")[1])
         kp_port = sibs_info[s]["kp_port"]
+
         # socket to the sib
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #sock.settimeout(15)
         sib_list_conn[s] = sock
 
-        # connect to the 
+        # connect to the SIBs
         try:
             sock.connect((ip, kp_port))
 
             try:
                 sock.send(ssap_msg)
             except socket.error:
-                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
+                print treplies_print(False) + " Send failed"       
                
         except :
-             print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
+             print treplies_print(False) + 'Unable to connect to the sibs'
              err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                                       info["space_id"],
-                                                      "JOIN",
+                                                      info["transaction_type"],
                                                       info["transaction_id"],
                                                       '<parameter name="status">m3:Error</parameter>')
              # send a notification error to the KP
              kp_list[info["node_id"]].send(err_msg)
              del kp_list[info["node_id"]]
-             logger.error("JOIN REQUEST forwarding failed")
+             logger.error(info["transaction_type"] + " REQUEST forwarding failed")
 
         
         n = str(uuid.uuid4())
         t[n] = n
-        thread.start_new_thread(join_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
-    
-# LEAVE REQUEST
-def handle_leave_request(logger, info, ssap_msg, sibs_info, kp_list, num):
-    """The present method is used to manage the leave request received from a KP."""
-
-    t = {}
-    global num_confirms
-    num_confirms[info["node_id"]] = num
-    sib_list_conn = {}
-
-    
-    # debug message
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_leave_request"
-    logger.info("LEAVE REQUEST handled by handle_leave_request")
-
-    for s in sibs_info:
-        ip = str(sibs_info[s]["ip"].split("#")[1])
-        kp_port = sibs_info[s]["kp_port"]
-        # socket to the sib
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #sock.settimeout(15)
-        sib_list_conn[s] = sock
-        
-        # connect to the 
-        try:
-            sock.connect((ip, kp_port))
-
-            try:
-                sock.send(ssap_msg)
-            except socket.error:
-                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
-               
-        except :
-             print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
-                                                      "JOIN",
-                                                      info["transaction_id"],
-                                                      '<parameter name="status">m3:Error</parameter>')
-             # send a notification error to the KP
-             kp_list[info["node_id"]].send(err_msg)
-             del kp_list[info["node_id"]]
-             logger.error("JOIN REQUEST forwarding failed")
-
-        n = str(uuid.uuid4())
-        t[n] = n
-        thread.start_new_thread(leave_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
-
-
-# INSERT REQUEST
-def handle_insert_request(logger, info, ssap_msg, sibs_info, kp_list, num):
-    """The present method is used to manage the insert request received from a KP."""
-
-    t = {}
-    global num_confirms
-    num_confirms[info["node_id"]] = num
-    sib_list_conn = {}
-
-    # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_insert_request"
-    logger.info("INSERT REQUEST handled by handle_insert_request")
-
-
-    for s in sibs_info:
-        ip = str(sibs_info[s]["ip"].split("#")[1])
-        kp_port = sibs_info[s]["kp_port"]
-        # socket to the sib
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #sock.settimeout(15)
-        sib_list_conn[s] = sock
-        
-        # connect to the 
-        try:
-            sock.connect((ip, kp_port))
-
-            try:
-                sock.send(ssap_msg)
-            except socket.error:
-                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
-               
-        except :
-             print colored("treplies> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
-                                                      "INSERT",
-                                                      info["transaction_id"],
-                                                      '<parameter name="status">m3:Error</parameter>')
-             # send a notification error to the KP
-             kp_list[info["node_id"]].send(err_msg)
-             logger.error("INSERT REQUEST forwarding failed")
-
-        
-        n = str(uuid.uuid4())
-        t[n] = n
-        thread.start_new_thread(insert_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
-
-
-
-# REMOVE REQUEST
-def handle_remove_request(logger, info, ssap_msg, sibs_info, kp_list, num):
-    """The present method is used to manage the remove request received from a KP."""
-
-    t = {}
-    global num_confirms
-    num_confirms[info["node_id"]] = num
-    sib_list_conn = {}
-
-    # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_remove_request"
-    logger.info("REMOVE REQUEST handled by handle_remove_request")
-
-
-    for s in sibs_info:
-        ip = str(sibs_info[s]["ip"].split("#")[1])
-        kp_port = sibs_info[s]["kp_port"]
-        # socket to the sib
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #sock.settimeout(15)
-        sib_list_conn[s] = sock
-        
-        # connect to the 
-        try:
-            sock.connect((ip, kp_port))
-
-            try:
-                sock.send(ssap_msg)
-            except socket.error:
-                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
-               
-        except :
-             print colored("treplies> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
-                                                      "REMOVE",
-                                                      info["transaction_id"],
-                                                      '<parameter name="status">m3:Error</parameter>')
-             # send a notification error to the KP
-             kp_list[info["node_id"]].send(err_msg)
-             logger.error("REMOVE REQUEST forwarding failed")
-
-    
-        n = str(uuid.uuid4())
-        t[n] = n
-        thread.start_new_thread(remove_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
+        if info["transaction_type"] == "JOIN":
+            thread.start_new_thread(join_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
+        elif info["transaction_type"] == "LEAVE":
+            thread.start_new_thread(leave_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
+        elif info["transaction_type"] == "INSERT":
+            thread.start_new_thread(insert_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
+        elif info["transaction_type"] == "REMOVE":
+            thread.start_new_thread(remove_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
 
 
 # SPARQL QUERY REQUEST
@@ -984,7 +853,7 @@ def handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, num,
     sib_list_conn = {}
 
     # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_sparql_query_request"
+    print treplies_print(True) + " handle_sparql_query_request"
     logger.info("SPARQL QUERY REQUEST handled by handle_sparql_query_request")
 
 
@@ -1003,10 +872,10 @@ def handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, num,
             try:
                 sock.send(ssap_msg)
             except socket.error:
-                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
+                print treplies_print(False) + " Send failed"       
                
         except :
-             print colored("treplies> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
+             print treplies_print(False) + 'Unable to connect to the sibs'
              err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                                       info["space_id"],
                                                       "QUERY",
@@ -1032,7 +901,7 @@ def handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, qu
     sib_list_conn = {}
 
     # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_query_request"
+    print treplies_print(True) + " handle_rdf_query_request"
     logger.info("RDF QUERY REQUEST handled by handle_rdf_query_request")
 
 
@@ -1051,10 +920,10 @@ def handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, qu
             try:
                 sock.send(ssap_msg)
             except socket.error:
-                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
+                print treplies_print(False) + " Send failed"       
                
         except :
-             print colored("treplies> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
+             print treplies_print(False) + 'Unable to connect to the sibs'
              err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                                       info["space_id"],
                                                       "QUERY",
@@ -1080,7 +949,7 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num
     sib_list_conn = {}
 
     # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_subscribe_request"
+    print treplies_print(True) + " handle_rdf_subscribe_request"
     logger.info("RDF SUBSCRIBE REQUEST handled by handle_rdf_subscribe_request")
 
     # generating a Subreq instance
@@ -1110,10 +979,10 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num
             try:
                 sock.send(ssap_msg)
             except socket.error:
-                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
+                print treplies_print(False) + " Send failed"       
                
         except socket.error:
-             print colored("treplies> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
+             print treplies_print(False) + 'Unable to connect to the sibs'
              err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                                       info["space_id"],
                                                       "SUBSCRIBE",
@@ -1140,7 +1009,7 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, n
     sib_list_conn = {}
 
     # debug info
-    print colored("treplies>", "green", attrs=["bold"]) + " handle_rdf_unsubscribe_request"
+    print treplies_print(True) + " handle_rdf_unsubscribe_request"
     logger.info("RDF UNSUBSCRIBE REQUEST handled by handle_rdf_unsubscribe_request")
 
     # # find the Subreq instance
@@ -1163,10 +1032,10 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, n
             try:
                 sock.send(ssap_msg)
             except socket.error:
-                print colored("treplies>", "red", attrs=["bold"]) + " Send failed"       
+                print treplies_print(False) + " Send failed"       
                
         except socket.error:
-             print colored("treplies> ", "red", attrs=['bold']) + 'Unable to connect to the sibs'
+             print treplies_print(False) + 'Unable to connect to the sibs'
              err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                                       info["space_id"],
                                                       "UNSUBSCRIBE",
