@@ -783,7 +783,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
 #
 ##############################################################
     
-# JOIN/LEAVE/INSERT REQUESTS
+# JOIN/LEAVE/INSERT/REMOVE REQUESTS
 def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
 
     """The present method is used to manage the join or leave requests received from a KP."""
@@ -833,14 +833,10 @@ def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
         
         n = str(uuid.uuid4())
         t[n] = n
-        if info["transaction_type"] == "JOIN":
-            thread.start_new_thread(join_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
-        elif info["transaction_type"] == "LEAVE":
-            thread.start_new_thread(leave_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
-        elif info["transaction_type"] == "INSERT":
-            thread.start_new_thread(insert_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
-        elif info["transaction_type"] == "REMOVE":
-            thread.start_new_thread(remove_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
+
+        # spawning threads
+        func = globals()[info["transaction_type"].lower() + "_confirm_handler"]
+        thread.start_new_thread(func, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
 
 
 # SPARQL QUERY REQUEST
@@ -889,6 +885,7 @@ def handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, num,
         n = str(uuid.uuid4())
         t[n] = n
         thread.start_new_thread(sparql_query_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, query_results))
+        
 
 
 # RDF QUERY REQUEST
