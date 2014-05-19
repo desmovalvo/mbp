@@ -379,7 +379,7 @@ def kp_observer(newsub, sib, ancillary_ip, ancillary_port):#, kp, kp_check_var):
 
             ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(newsub.node_id,
                                                       newsub.space_id,
-                                                      UNSUBSCRIBE,
+                                                      "UNSUBSCRIBE",
                                                       newsub.request_transaction_id,
                                                       '<parameter name="status">m3:Error</parameter>',
                                                       '<parameter name = "subscription_id">' + newsub.subscription_id + '</parameter>')
