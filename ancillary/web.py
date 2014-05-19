@@ -28,6 +28,7 @@ remote_sib_template = """
         <li><b>Status:</b> %s</li>
         <li><b>KP ip and port:</b> %s</li>
         <li><b>Pub ip and port:</b> %s</li>
+        <li><b>Triple list:</b> %s</li>
     </ul><p>
 """
 
@@ -41,6 +42,22 @@ vmsib_template = """
 """
 
 # functions
+def get_sib_content(ip, port):
+
+    # get all the triples from the given sib
+
+    b = SIBLib.SibLib(ip, port)
+    b.join_sib()
+    query = """SELECT ?s ?p ?o WHERE { ?s ?p ?o }"""    
+    res = b.execute_sparql_query(query)
+    tlist = "<table border=0>"
+    for t in res:
+        tripla = "<tr><td>" + str(t[0][2]) + "</td><td>" + str(t[1][2]) + "</td><td>" + str(t[2][2]) + "</td></tr>"
+        tlist = tlist + tripla
+    tlist = tlist + "</table>"
+    return tlist
+    
+
 def get_virtualisers(a):
     # List of the available virtualisers
     virtualisers_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -65,6 +82,7 @@ SELECT ?s ?ip ?port ?load
                                       str(el[1][2].replace(ns, "")), 
                                       str(el[2][2].replace(ns, "")), 
                                       str(el[3][2].replace(ns, "")))
+
     v = v + """</ul>"""
     
     # return value
@@ -91,12 +109,23 @@ SELECT ?s ?owner ?status ?kpipport ?pubipport
     # create html code
     v = "<h2>Remote SIBs</h2><ul>"
     for el in res:
+        print el[3][2]
+        ip = str(el[3][2].replace(ns, "")).split("-")[0]
+        port = int(str(el[3][2].replace(ns, "")).split("-")[1])
+
+        if el[2][2].replace(ns, "") == "online":
+            c = get_sib_content(ip, port)
+        else:
+            c = ""
+
         v = v + remote_sib_template%(str(el[0][2].replace(ns, "")),
                                      str(el[1][2].replace(ns, "")),
                                      str(el[2][2].replace(ns, "")),
                                      str(el[3][2].replace(ns, "")),
                                      str(el[4][2].replace(ns, "")),
+                                     c
             )
+
     v = v + """</ul>"""
     
     # return value
@@ -185,6 +214,9 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         s.wfile.write("body { background:#222333; }")
         s.wfile.write("body { font-size:10pt; }")
         s.wfile.write("body { font-family:arial; }")
+        s.wfile.write("table { font-family:arial; }")
+        s.wfile.write("table { font-size:7pt; }")
+        s.wfile.write("table { border-spacing: 20px; }")
         s.wfile.write("header { color:#ffffff; }")
         s.wfile.write("header { padding:20px; }")
         s.wfile.write("article { border:1px solid; }")
@@ -210,9 +242,11 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
 def run():
 
     if len(sys.argv) == 3:
-	anc_ip = sys.argv[1]
-	anc_port = sys.argv[2]
-
+	global anc_ip
+        anc_ip = sys.argv[1]
+        global anc_port 
+	anc_port = int(sys.argv[2])
+        
     server_address = ('0.0.0.0', 8000)
     httpd = HTTPServer(server_address, AncillaryRequestHandler)
     print('Ancillary explorer started on http://localhost:8000 ...')
