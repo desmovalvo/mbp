@@ -171,8 +171,7 @@ try:
             print "a = SibLib(" + sib_ip + ", " + sib_port + ")"
             print "a.join_sib()"
             print "to connect to the sib"
-            # a = SibLib(sib_ip, int(sib_port))
-            # a.join_sib()
+
 
 except KeyboardInterrupt:
     print colored("client_process> ", "blue", attrs=["bold"]) + "Goodbye!"
