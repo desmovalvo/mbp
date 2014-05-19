@@ -38,25 +38,25 @@ if int(sys.argv[3]) == 0:
 elif int(sys.argv[3]) == 1:
 
     print 'Inserimento triple del test set 1'
-    b.insert(Triple(URI(ns + "Alice"), URI(rdf + "type"), URI(ns + "Person")))
-    b.insert(Triple(URI(ns + "Roger"), URI(rdf + "type"), URI(ns + "Person")))
-    b.insert(Triple(URI(ns + "Bob"), URI(rdf + "type"), URI(ns + "Person")))
-    b.insert(Triple(URI(ns + "Tom"), URI(rdf + "type"), URI(ns + "Person")))
-    b.insert(Triple(URI(ns + "Luise"), URI(rdf + "type"), URI(ns + "Person")))
-    b.insert(Triple(URI(ns + "Lincoln"), URI(rdf + "type"), URI(ns + "Person")))
-    b.insert(Triple(URI(ns + "Alice"), URI(ns + "is"), Literal(25)))
-    b.insert(Triple(URI(ns + "Roger"), URI(ns + "is"), Literal(26)))
-    b.insert(Triple(URI(ns + "Bob"), URI(ns + "is"), Literal(27)))
-    b.insert(Triple(URI(ns + "Tom"), URI(ns + "is"), Literal(28)))
-    b.insert(Triple(URI(ns + "Luise"), URI(ns + "is"), Literal(29)))
-    b.insert(Triple(URI(ns + "Lincoln"), URI(ns + "is"), Literal(30)))
+    a.insert(Triple(URI(ns + "Alice"), URI(rdf + "type"), URI(ns + "Person")))
+    a.insert(Triple(URI(ns + "Roger"), URI(rdf + "type"), URI(ns + "Person")))
+    a.insert(Triple(URI(ns + "Bob"), URI(rdf + "type"), URI(ns + "Person")))
+    a.insert(Triple(URI(ns + "Tom"), URI(rdf + "type"), URI(ns + "Person")))
+    a.insert(Triple(URI(ns + "Luise"), URI(rdf + "type"), URI(ns + "Person")))
+    a.insert(Triple(URI(ns + "Lincoln"), URI(rdf + "type"), URI(ns + "Person")))
+    a.insert(Triple(URI(ns + "Alice"), URI(ns + "is"), Literal(25)))
+    a.insert(Triple(URI(ns + "Roger"), URI(ns + "is"), Literal(26)))
+    a.insert(Triple(URI(ns + "Bob"), URI(ns + "is"), Literal(27)))
+    a.insert(Triple(URI(ns + "Tom"), URI(ns + "is"), Literal(28)))
+    a.insert(Triple(URI(ns + "Luise"), URI(ns + "is"), Literal(29)))
+    a.insert(Triple(URI(ns + "Lincoln"), URI(ns + "is"), Literal(30)))
 
 elif int(sys.argv[3]) == 2:
 
     print 'Inserimento triple del test set 2'
-    b.insert(Triple(URI(ns + "Frank"), URI(rdf + "type"), URI(ns + "Person")))
-    b.insert(Triple(URI(ns + "Mark"), URI(rdf + "type"), URI(ns + "Person")))
-    b.insert(Triple(URI(ns + "Frank"), URI(ns + "is"), Literal(15)))
-    b.insert(Triple(URI(ns + "Mark"), URI(ns + "is"), Literal(36)))
-    b.insert(Triple(URI(ns + "Frank"), URI(ns + "hasBrother"), URI(ns + "Mark")))
-    b.insert(Triple(URI(ns + "Frank"), URI(ns + "hasBrother"), URI(ns + "Tom")))
+    a.insert(Triple(URI(ns + "Frank"), URI(rdf + "type"), URI(ns + "Person")))
+    a.insert(Triple(URI(ns + "Mark"), URI(rdf + "type"), URI(ns + "Person")))
+    a.insert(Triple(URI(ns + "Frank"), URI(ns + "is"), Literal(15)))
+    a.insert(Triple(URI(ns + "Mark"), URI(ns + "is"), Literal(36)))
+    a.insert(Triple(URI(ns + "Frank"), URI(ns + "hasBrother"), URI(ns + "Mark")))
+    a.insert(Triple(URI(ns + "Frank"), URI(ns + "hasBrother"), URI(ns + "Tom")))

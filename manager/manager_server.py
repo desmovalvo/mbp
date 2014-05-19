@@ -20,7 +20,8 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 COMMANDS = {
     "NewRemoteSIB" : ["owner"],
     "NewVirtualMultiSIB": ["sib_list"],
-    "Discovery" : [],
+    "DiscoveryAll" : [],
+    "DiscoveryWhere" : ["sib_profile"],
     "DeleteRemoteSIB" : ["virtual_sib_id"]
     }
 
@@ -66,12 +67,20 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     # send a reply
                     self.request.sendall(json.dumps(confirm))
 
-                # Discovery request
-                elif data["command"] == "Discovery":
+                # DiscoveryAll request
+                elif data["command"] == "DiscoveryAll":
                     virtual_sib_list = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port)
                     
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
+
+                # DiscoveryWhere request
+                elif data["command"] == "DiscoveryWhere":
+                    virtual_sib_list = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.sib_profile)
+                    
+                    # send a reply
+                    self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
+
                                 
                 # NewVirtualMultiSIB request
                 elif data["command"] == "NewVirtualMultiSIB":

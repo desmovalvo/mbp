@@ -250,17 +250,43 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
 
 
 
-def Discovery(ancillary_ip, ancillary_port):
+def DiscoveryAll(ancillary_ip, ancillary_port):
     # debug print
     print ancillary_ip
     print ancillary_port
-    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("DiscoveryAll", "cyan", attrs=["bold"])
     # query to the ancillary sib to get all the existing virtual sib 
     query = """
         SELECT ?s ?o
         WHERE {?s ns:hasKpIpPort ?o}
         """
     a = SibLib("127.0.0.1", 10088)
+    result = a.execute_sparql_query(query)
+    
+    virtual_sib_list = {}
+    for i in result:
+        sib_id = str(i[0][2].split('#')[1])
+        virtual_sib_list[sib_id] = {} 
+        sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2].split('#')[1]).split("-")[0]
+        sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2].split('#')[1]).split("-")[1]
+    return virtual_sib_list
+
+def DiscoveryWhere(ancillary_ip, ancillary_port, sib_profile):
+    # debug print
+    print ancillary_ip
+    print ancillary_port
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("DiscoveryWhere", "cyan", attrs=["bold"])
+    
+    key = str(sib_profile.split(":")[0])
+    value = str(sib_profile.split(":")[1])
+
+    # query to the ancillary sib to get all the reachable sibs with key value = value
+    query = """
+SELECT ?s ?o
+WHERE {?s ns:hasKpIpPort ?o .
+       ?s ns:""" + key + """ ns:""" + value +"""}"""
+
+    a = SibLib(ancillary_ip, int(ancillary_port))
     result = a.execute_sparql_query(query)
     
     virtual_sib_list = {}
