@@ -1005,7 +1005,7 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num
     logger.info("RDF SUBSCRIBE REQUEST handled by handle_rdf_subscribe_request")
 
     # generating a Subreq instance
-    newsub = Subreq(clientsock, info["node_id"], info["transaction_id"])
+    newsub = Subreq(clientsock, info)
     val_subscriptions.append(newsub)
 
     # convert ssap_msg to dict

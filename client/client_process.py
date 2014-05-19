@@ -47,13 +47,26 @@ try:
         print colored("client_process> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
         sys.exit()        
 
-    print colored("client_process> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending discovery request!'
+    if(len(sys.argv) < 2) :
+        print colored("client_process> ", "blue", attrs=["bold"]) + 'Connect to the manager. Sending DiscoveryAll request: searching all reachable sibs...'
 
-    # build and send discovery request to the manager
-    msg = {"command":"Discovery"}
-    request = json.dumps(msg)
-    manager.send(request)
-    
+        # build and send discovery request to the manager
+        msg = {"command":"DiscoveryAll"}
+        request = json.dumps(msg)
+        manager.send(request)
+
+
+        
+    elif(len(sys.argv) == 3) :
+        print colored("client_process> ", "blue", attrs=["bold"]) + 'Sending DiscoveryWhere request: searching all reachable sibs with ' + str(sys.argv[1]) + ' = ' + str(sys.argv[2])
+        
+        # build and send discovery request to the manager
+        sib_profile =  str(sys.argv[1]) + ":" + str(sys.argv[2])
+        msg = {"command":"DiscoveryWhere", "sib_profile":sib_profile}
+        request = json.dumps(msg)
+        manager.send(request)
+
+
     # wait for reply from manager
     while 1:
         msg = manager.recv(4096)
@@ -158,8 +171,7 @@ try:
             print "a = SibLib(" + sib_ip + ", " + sib_port + ")"
             print "a.join_sib()"
             print "to connect to the sib"
-            # a = SibLib(sib_ip, int(sib_port))
-            # a.join_sib()
+
 
 except KeyboardInterrupt:
     print colored("client_process> ", "blue", attrs=["bold"]) + "Goodbye!"
