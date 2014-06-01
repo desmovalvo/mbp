@@ -6,7 +6,7 @@ from smart_m3.m3_kp import *
 import sys
 
 # namespaces
-ns = "http://smartm3.org/ontology.owl#"
+ns = "http://smartM3Lab/Ontology.owl#"
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 owl = "http://www.w3.org/2002/07/owl#"
 xsd = "http://www.w3.org/2001/XMLSchema#"

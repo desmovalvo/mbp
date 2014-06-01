@@ -16,8 +16,8 @@ import socket, select, string, sys
 #main function
 if __name__ == "__main__":
     try:
-        if(len(sys.argv) < 6) :
-            print colored("publisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner ancillary_ip ancillary_port manager_ip manager_port realsib_port'
+        if(len(sys.argv) < 7) :
+            print colored("publisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner ancillary_ip ancillary_port manager_ip manager_port realsib_ip realsib_port'
             sys.exit()
         
         # manager sib informations
@@ -26,7 +26,8 @@ if __name__ == "__main__":
             
         # real sib information
         owner = sys.argv[1]
-        realsib_port = sys.argv[6]
+        realsib_ip = sys.argv[6]
+        realsib_port = sys.argv[7]
 
         # socket to the manager process
         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,7 +81,7 @@ if __name__ == "__main__":
             
             # lancio publisher
             timer = datetime.datetime.now()
-            StartConnection(virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_port)
+            StartConnection(virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_ip, realsib_port)
                                 
     except KeyboardInterrupt:
          print colored("publisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"]) + " request"
