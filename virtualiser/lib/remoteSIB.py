@@ -400,7 +400,15 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
 #             #                                               '<parameter name="status">m3:Error</parameter>',
 #             #                                               '<parameter name = "subscription_id">' + str(newsub.subscription_id) + '</parameter>')
                 
-#             #     sib["socket"].send(ssap_msg)
+            # TODO: build and send an unsubscribe request to the publisher
+
+#             ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(newsub.node_id,
+#                                                       newsub.space_id,
+#                                                       "UNSUBSCRIBE",
+#                                                       newsub.request_transaction_id,
+#                                                       '<parameter name="status">m3:Error</parameter>',
+#                                                       '<parameter name = "subscription_id">' + newsub.subscription_id + '</parameter>')
+# #             #     sib["socket"].send(ssap_msg)
 
 #         except socket.error:
 #             print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket " + str(newsub.conn) + " dead"
