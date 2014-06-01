@@ -60,6 +60,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     if sib["socket"] != None:
                         #print colored("remoteSIB> ", "blue", attrs=["bold"]) + str(clientsock) + " is alive "                    
                         sib["timer"] = datetime.datetime.now()
+            elif len(ssap_msg) == 0:
+                break
       
             else:
     
@@ -78,6 +80,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                 try:
                         
                     # parse the ssap message
+                    print "BEGIN" + ssap_msg + "END"
                     root = ET.fromstring(ssap_msg)           
                     info = {}
                     for child in root:
@@ -304,7 +307,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 
         
         
-                except ET.ParseError:
+                except ZeroDivisionError: #ET.ParseError:
                     print colored("remoteSIB> ", "red", attrs=["bold"]) + " ParseError"
                     pass
     
