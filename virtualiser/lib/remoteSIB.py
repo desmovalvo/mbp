@@ -271,7 +271,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             
                     ### OTHER REQUESTS
                     elif info["message_type"] == "REQUEST":
-                        kp_list[info["node_id"]] = clientsock
+                        # kp_list[info["node_id"]] = clientsock
+                        kp_list[info["node_id"] + "_" + info["transaction_id"]] = clientsock
 
                         # debug message
                         print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
@@ -288,8 +289,10 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                                                      '<parameter name="status">m3:Error</parameter>')
 
                             # send a notification error to the KP
-                            kp_list[info["node_id"]].send(err_msg)
-                            del kp_list[info["node_id"]]
+                            # kp_list[info["node_id"]].send(err_msg)
+                            kp_list[info["node_id"] + "_" + info["transaction_id"]].send(err_msg)
+                            # del kp_list[info["node_id"]]
+                            del kp_list[info["node_id"] + "_" + info["transaction_id"]]
                             logger.error(info["transaction_type"] + " REQUEST forwarding failed")
 
 
@@ -302,12 +305,12 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         logger.info(info["transaction_type"] + " CONFIRM handled")
                     
                         # forward message to the kp
-                        kp_list[info["node_id"]].send(ssap_msg)
-                        kp_list[info["node_id"]].close()                        
-
-        
-        
-                except ZeroDivisionError: #ET.ParseError:
+                        # kp_list[info["node_id"]].send(ssap_msg)
+                        # kp_list[info["node_id"]].close()                        
+                        kp_list[info["node_id"] + "_" + info["transaction_id"]].send(ssap_msg)
+                        kp_list[info["node_id"] + "_" + info["transaction_id"]].close()                        
+       
+                except ET.ParseError:
                     print colored("remoteSIB> ", "red", attrs=["bold"]) + " ParseError"
                     pass
     
