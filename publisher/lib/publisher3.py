@@ -148,19 +148,28 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
         ssap_msg = rs.recv(4096)
         
         if ssap_msg:
-            print colored("tpublisher>", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib"
-            print colored("tpublisher>", "blue", attrs=["bold"]) + " Forwarding confirm message to the Virtual Sib"
+            print colored("publisher3> ", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib, sending it to the Virtual Sib"
     
             # connect to remote host
             try :
                 tvs.send(ssap_msg)
+
+                # if "</SSAP_message>" in ssap_msg:
+                #     print colored("publisher3> ", "red", attrs=[]) + "closing sockets used for the confirm message"
+                #     tvs.close()
+                #     rs.close()
+                #     break
+
             except socket.error:
-                print colored("tpublisher>", "red", attrs=["bold"]) + "Socket error"
+                print colored("publisher3> ", "red", attrs=["bold"]) + "Socket error"
 
         else:
             rs.close()
             tvs.close()
-            break    
+            break
+    
+    # print colored("publisher3> ", "red", attrs=[]) + "Closing thread"
+    # return
 
 
 def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):

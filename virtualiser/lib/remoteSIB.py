@@ -80,7 +80,6 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                 try:
                         
                     # parse the ssap message
-                    print "BEGIN" + ssap_msg + "END"
                     root = ET.fromstring(ssap_msg)           
                     info = {}
                     for child in root:
@@ -143,13 +142,11 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             # TODO kp_port non serve passarlo: il socket observer non lo usa!!
                             thread.start_new_thread(socket_observer, (sib, kp_port, check_var, ancillary_ip, ancillary_port))                            
                             print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
-
                 
                         except socket.error:
                             logger.error("REGISTER CONFIRM not sent!")
                     
           
-
                     # RDF/SPARQL SUBSCRIBE REQUEST
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE":
                         # kp_list[info["node_id"]] = {}
@@ -317,7 +314,6 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
         except socket.error:
             print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket.error: break!"
             break
-
 
 # SOCKET OBSERVER THREAD
 def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):

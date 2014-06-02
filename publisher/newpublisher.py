@@ -73,6 +73,7 @@ if __name__ == "__main__":
             sys.exit(0)
 
         elif confirm["return"] == "ok":
+            manager.close()
             print colored("publisher> ", "blue", attrs=["bold"]) + 'Virtual Sib Created!'
     
             virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
