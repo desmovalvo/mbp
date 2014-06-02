@@ -154,11 +154,11 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             try :
                 tvs.send(ssap_msg)
 
-                # if "</SSAP_message>" in ssap_msg:
-                #     print colored("publisher3> ", "red", attrs=[]) + "closing sockets used for the confirm message"
-                #     tvs.close()
-                #     rs.close()
-                #     break
+                if "</SSAP_message>" in ssap_msg:
+                    print colored("publisher3> ", "red", attrs=[]) + "closing sockets used for the confirm message"
+                    tvs.close()
+                    rs.close()
+                    break
 
             except socket.error:
                 print colored("publisher3> ", "red", attrs=["bold"]) + "Socket error"
@@ -168,8 +168,8 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             tvs.close()
             break
     
-    # print colored("publisher3> ", "red", attrs=[]) + "Closing thread"
-    # return
+    print colored("publisher3> ", "red", attrs=[]) + "Closing thread"
+    return
 
 
 def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
