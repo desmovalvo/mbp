@@ -96,16 +96,52 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_po
    
         for sock in read_sockets:
 
+# #            decommentare
+# #            incoming message from remote server
+#             if sock == vs:
+#                 ssap_msg = sock.recv(4096)
+#                 if not ssap_msg:
+#                     print colored("publisher> ", "red", attrs=["bold"]) + "Connection closed by foreign host"
+#                     sys.exit()
+#                 else:
+# #                    decommentare
+                    
+#                     print "MESSAGGIO RICEVUTO:" + ssap_msg + "___END"
+
+#                     timer = datetime.datetime.now()
+#                     #print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
+#                     thread.start_new_thread(handler, (sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip, realsib_port))
+
+            
+
+            # ALE: separazione dei messaggi            
             #incoming message from remote server
             if sock == vs:
+                 
+                complete_ssap_msg = ""
+                
                 ssap_msg = sock.recv(4096)
+                complete_ssap_msg = ssap_msg
                 if not ssap_msg:
                     print colored("publisher> ", "red", attrs=["bold"]) + "Connection closed by foreign host"
                     sys.exit()
                 else:
-                    timer = datetime.datetime.now()
-                    #print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
-                    thread.start_new_thread(handler, (sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip, realsib_port))
+                    messages = ssap_msg.split("<SSAP_message>")
+#                    del messages[0]
+                    for i in messages:
+                        if "</SSAP_message>" in i:                            
+                            msg = "<SSAP_message>" + str(i)
+                        else:
+                            msg = i
+                        if len(msg) > 0:
+                            print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread for the message ' + str(msg)
+                            print 
+                            timer = datetime.datetime.now()
+                        #print colored("publisher>", "blue", attrs=["bold"]) + 'Starting a new thread...'
+                            thread.start_new_thread(handler, (sock, msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip, realsib_port))                        
+        
+#             #         # FINE CODICE ALE ################
+                        
         
 
 def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip, realsib_port):
@@ -116,7 +152,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip,
             vs.send(" ")
     
     else:
-        print colored("publisher> ", "blue", attrs=["bold"]) + "started a thread"
+        print colored("publisher> ", "blue", attrs=["bold"]) + "started a thread for message:\n" + ssap_msg
 
         # socket to the real SIB
         rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -140,7 +176,6 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
 
     # socket to the virtual sib
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tvs.settimeout(2)
     tvs.connect((vsib_host, vsib_port))
 
     while 1:
@@ -153,6 +188,7 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             # connect to remote host
             try :
                 tvs.send(ssap_msg)
+                # vs.send(ssap_msg)
 
                 if "</SSAP_message>" in ssap_msg:
                     print colored("publisher3> ", "red", attrs=[]) + "closing sockets used for the confirm message"
@@ -168,11 +204,14 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             tvs.close()
             break
     
-    print colored("publisher3> ", "red", attrs=[]) + "Closing thread"
-    return
+    # print colored("publisher3> ", "red", attrs=[]) + "Closing thread"
+    # return
 
 
 def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
+
+    # Thread name
+    tn = random.randint(0,1000)
 
     # we open a socket for each subscription
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -184,7 +223,7 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
         ssap_msg = rs.recv(4096)
         if len(ssap_msg) > 1:
             # forwarding subscription-related message to the virtual sib
-            print colored("tpublisher>", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
+            print colored("tpublisher " + str(tn) + ">", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
             
             # connect to remote host
             try :
@@ -196,5 +235,5 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
                                 
 
             except socket.error:
-                print colored("tpublisher>", "red", attrs=["bold"]) + "Socket error"
+                print colored("tpublisher " + str(tn) + ">", "red", attrs=["bold"]) + "Socket error"
                 

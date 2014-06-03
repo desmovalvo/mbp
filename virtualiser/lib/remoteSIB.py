@@ -75,6 +75,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                 if "</SSAP_message>" in complete_ssap_msg:
                     ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
                     complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
+
+                    print "MESSAGGIO COMPLETO: \n" + ssap_msg + "%%%FINE"
                     
                 # try to decode the message
                 try:
@@ -253,7 +255,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
                         # debug info
                         print colored("remoteSIB>", "green", attrs=["bold"]) + " indication handled"
-                        logger.info("SUBSCRIBE INDICATION handled")
+                        logger.info("SUBSCRIBE INDICATION handled")                
 
                         for s in val_subscriptions:
                             if str(s.subscription_id) == str(info["parameter_subscription_id"]):
@@ -261,6 +263,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 # send the message to the kp
                                 try:
                                     s.conn.send(ssap_msg)
+                                    print 'SEND RIUSCITA'
                                 except socket.error:
                                     print colored("remoteSIB>", "red", attrs=["bold"]) + " indication send failed"
                                 break
@@ -278,6 +281,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         # forwarding message to the publisher
                         try:
                             sib["socket"].send(ssap_msg)
+                            print "MESSAGGIO FORWARDATO: " + ssap_msg + "___END"
+                            
                         except socket.error:
                             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
                                                                      info["space_id"],
