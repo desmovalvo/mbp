@@ -97,7 +97,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':cmd.invalid_cause}))                                                
                 
-        except Exception, e:
+        except ZeroDivisionError: #Exception, e:
             print colored("SIBmanager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
             self.server.logger.info(" Exception while receiving message: " + str(e))
             self.request.sendall(json.dumps({'return':'fail', 'cause':str(e)}))

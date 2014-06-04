@@ -16,6 +16,11 @@ import socket, select, string, sys
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"
 
+PREFIXES = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <""" + ns + ">"
 
 #functions
 def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
@@ -29,6 +34,7 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
         try:
             result = get_best_virtualiser(a)
         except SIBError:
+            print 'sn qui'
             confirm = {'return':'fail', 'cause':' SIBError.'}
             return confirm
 
@@ -104,7 +110,7 @@ def DeleteRemoteSIB(ancillary_ip, ancillary_port, virtual_sib_id):
     try:
         print virtual_sib_id
         
-        query = """SELECT ?ip ?port WHERE {?vid ns:hasRemoteSib ns:"""+ str(virtual_sib_id) + """ .
+        query = PREFIXES + """SELECT ?ip ?port WHERE {?vid ns:hasRemoteSib ns:"""+ str(virtual_sib_id) + """ .
 ?vid ns:hasIP ?ip .
 ?vid ns:hasPort ?port}"""
         
@@ -256,11 +262,11 @@ def DiscoveryAll(ancillary_ip, ancillary_port):
     print ancillary_port
     print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("DiscoveryAll", "cyan", attrs=["bold"])
     # query to the ancillary sib to get all the existing virtual sib 
-    query = """
+    query = PREFIXES + """
         SELECT ?s ?o
         WHERE {?s ns:hasKpIpPort ?o}
         """
-    a = SibLib("127.0.0.1", 10088)
+    a = SibLib(ancillary_ip, ancillary_port)
     result = a.execute_sparql_query(query)
     
     virtual_sib_list = {}
@@ -281,7 +287,7 @@ def DiscoveryWhere(ancillary_ip, ancillary_port, sib_profile):
     value = str(sib_profile.split(":")[1])
 
     # query to the ancillary sib to get all the reachable sibs with key value = value
-    query = """
+    query = PREFIXES + """
 SELECT ?s ?o
 WHERE {?s ns:hasKpIpPort ?o .
        ?s ns:""" + key + """ ns:""" + value +"""}"""

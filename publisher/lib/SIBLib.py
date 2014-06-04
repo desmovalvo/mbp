@@ -1,4 +1,5 @@
-from smart_m3.m3_kp import *
+# from smart_m3.m3_kp import *
+from smart_m3.m3_kp_api import *
 import uuid
 
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -7,76 +8,103 @@ xsd = "http://www.w3.org/2001/XMLSchema#"
 rdfs = "http://www.w3.org/2000/01/rdf-schema#"
 ns = "http://smartM3Lab/Ontology.owl#"
 
-class SibLib(KP):
+class SibLib():
 
     # __init__: constructor method
     def __init__(self, server_ip, server_port):
-        KP.__init__(self, str(uuid.uuid4()))
-        self.ss_handle = ("X", (TCPConnector, (server_ip,server_port)))
+        self.node = m3_kp_api(False, server_ip, server_port)
 
     # join_sib: method to join the sib
+    # since this method is no longer required, it only calls pass()
     def join_sib(self):
-        self.join(self.ss_handle)
+        pass
 
     # leave_sib: method to leave the sib
     def leave_sib(self):
-        self.leave(self.ss_handle)
+        self.node.leave()
                 
     # insert: method to insert a triple in the sib
     def insert(self, triples):
-        ins = self.CreateInsertTransaction(self.ss_handle)
 
-        # NOTE: the following line calls the send function
-        # without confirm, to avoid socket errors
-        ins.send(triples, "python", confirm = True)
+        # build a list if the parameter is a Triple
+        if type(triples).__name__ != 'list':
+            t = [triples]
+        else:
+            t = triples
 
-        self.CloseInsertTransaction(ins)
+        # insert
+        self.node.load_rdf_insert(t)
 
     # remove: method to remove a triple from the sib
     def remove(self, triples):
-        rem = self.CreateRemoveTransaction(self.ss_handle)                                       
-        rem.remove(triples)
-        self.CloseRemoveTransaction(rem)
+
+        # build a list if the parameter is a Triple
+        if type(triples).__name__ != 'list':
+            t = [triples]
+        else:
+            t = triples
+            
+        # remove
+        self.node.load_rdf_remove(t)
 
     # update: method to update a triple in the sib
     def update(self, triple_to_insert, triple_to_remove):
-        # Update = Insert + Remove
-        upd = self.CreateUpdateTransaction(self.ss_handle)                                        
-        upd.update(triple_to_insert, "RDF-M3", triple_to_remove, "RDF-M3")
-        self.CloseUpdateTransaction(upd)
 
-    # create_subscription: method to subscribe to a triple
-    def create_subscription(self, subject_field, predicate_field, object_field, HandlerClass):
+        # build a list if the parameter is a Triple
+        if type(triple_to_insert).__name__ != 'list':
+            ti = [triple_to_insert]
+        else:
+            ti = triple_to_insert
+
+        # build a list if the parameter is a Triple
+        if type(triple_to_remove).__name__ != 'list':
+            tr = [triple_to_remove]
+        else:
+            tr = triple_to_remove
         
-        triple = [Triple(subject_field, predicate_field, object_field)]
-        self.st = self.CreateSubscribeTransaction(self.ss_handle)
+        # remove
+        self.node.load_rdf_remove(tr)
 
-        initial_results = self.st.subscribe_rdf(triple, HandlerClass(self))
-        print initial_results
+        # insert
+        self.node.load_rdf_insert(ti)
 
-    # create_triple: method used to create triple
-    def create_triple(self, subject_field, predicate_field, object_field):
-        triple = Triple(URI(ns + subject_field), 
-                         URI(ns + predicate_field), 
-                         URI(ns + object_field))
-        return triple
+    # create_rdf_subscription: method to subscribe with rdf to a triple
+    def create_rdf_subscription(self, triple, HandlerClass):
 
-    # execute_query: method to execute a query on the sib
+        # build a list if the parameter is a Triple
+        if type(triple).__name__ != 'list':
+            t = [triple]
+        else:
+            t = triple
+
+        # subscription
+        return self.node.load_subscribe_RDF(t, HandlerClass)
+
+    # rdf initial results
+    def rdf_initial_results(self):
+
+        return self.node.result_RDF_first_sub
+
+    # create_sparql_subscription: method to subscribe with SPARQL to a triple
+    def create_sparql_subscription(self, query, HandlerClass):
+        
+        return self.node.load_subscribe_sparql(query, HandlerClass)
+
+    # sparql initial results
+    def sparql_initial_results(self):
+
+        return self.node.result_sparql_first_sub
+
+    # execute_sparql_query: method to execute a sparql query, given a string
     def execute_sparql_query(self, query):
-        qt = self.CreateQueryTransaction(self.ss_handle)
-        result = qt.sparql_query(query)
-        self.CloseQueryTransaction(qt)
-        return result
+        self.node.load_query_sparql(query)
+        return self.node.result_sparql_query        
 
-    def execute_rdf_query(self, query):
-        self.rdf_query = self.CreateQueryTransaction(self.ss_handle)
-        self.result_rdf_query = self.rdf_query.rdf_query(query)
-        self.CloseQueryTransaction(self.rdf_query)
-#        print str(self.result_rdf_query)
-        return self.result_rdf_query
+    # execute_rdf_query: method to execute a rdf query, given a triple
+    def execute_rdf_query(self, triple):
+        self.node.load_query_rdf(triple)
+        return self.node.result_rdf_query
 
-    # load_ontology: inject an ontology saved on a owl file into the sib
-    def load_ontology(self, owl_file):
-        ins = self.CreateInsertTransaction(self.ss_handle)
-        ins.send(owl_file, encoding = "rdf-xml", confirm = True)
-        self.CloseInsertTransaction(ins)
+    # unsubscribe
+    def unsubscribe(self, sub):
+        self.node.load_unsubscribe(sub)

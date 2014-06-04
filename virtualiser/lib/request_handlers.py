@@ -16,6 +16,12 @@ import random
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 ns = "http://smartM3Lab/Ontology.owl#"
 
+PREFIXES = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <""" + ns + ">"
+
 #functions
 
 def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port):
@@ -131,7 +137,7 @@ def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip,
 
         # get old load
         try:
-            query = """SELECT ?load
+            query = PREFIXES + """SELECT ?load
 WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
 
             result = a.execute_sparql_query(query)

@@ -19,6 +19,12 @@ import sys
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 ns = "http://smartM3Lab/Ontology.owl#"
 
+PREFIXES = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <""" + ns + ">"
+
 threads = {}
 t_id = {}
 
@@ -112,7 +118,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                         # get old load
                         try:
                             a = SibLib(self.server.ancillary_ip, self.server.ancillary_port)
-                            query = """SELECT ?load
+                            query = PREFIXES + """SELECT ?load
 WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
 
                             result = a.execute_sparql_query(query)
@@ -201,9 +207,9 @@ WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':cmd.invalid_cause}))
 
-        except Exception, e:
+        except ZeroDivisionError: #Exception, e:
             print virtserver_print(False) + "Exception while receiving message: " + str(e)
-            self.server.logger.info(" Exception while receiving message: ") + str(e)
+            self.server.logger.info(" Exception while receiving message: " + str(e))
 
 
 ##############################################################
@@ -234,7 +240,7 @@ if __name__=='__main__':
         
         # Insert the virtualiser informations into the Ancillary SIB
         ancillary_sib = SibLib(ancillary_ip, ancillary_port)
-        ancillary_sib.join_sib()
+#        ancillary_sib.join_sib()
         triples = []
         triples.append(Triple(URI(ns + virtualiser_id), URI(rdf + "type"), URI(ns + "virtualiser")))
         triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(0))))

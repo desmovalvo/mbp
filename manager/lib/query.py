@@ -18,7 +18,12 @@ ns:""" + sib_id + """ ns:hasKpIpPort ?ip }"""
 
 
 def get_best_virtualiser(ancillary):
-    query = """SELECT DISTINCT ?s ?ip ?port
+    query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+SELECT DISTINCT ?s ?ip ?port
 WHERE { ?s rdf:type ns:virtualiser .
         ?s ns:load ?o .
         ?s ns:hasIP ?ip .
