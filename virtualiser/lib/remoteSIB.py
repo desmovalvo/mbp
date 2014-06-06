@@ -76,8 +76,6 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
                     complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
 
-                    print "MESSAGGIO COMPLETO: \n" + ssap_msg + "%%%FINE"
-                    
                 # try to decode the message
                 try:
                         
@@ -93,9 +91,9 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
         
                     # debug info
                     print colored("remoteSIB> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
-                    logger.info("Received the following  message from " + str(addr))
-                    logger.info(str(complete_ssap_msg).replace("\n", ""))
-                    logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
+                    # logger.info("Received the following  message from " + str(addr))
+                    # logger.info(str(complete_ssap_msg).replace("\n", ""))
+                    # logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
                         
                     ### REQUESTS
         
@@ -128,8 +126,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             sib["socket"] = clientsock
                             #print "ACTUAL SIB: " + str(sib)
                             
-                            print colored("remoteSIB>", "green", attrs=["bold"]) + " handle_register_request"
-                            logger.info("REGISTER REQUEST handled by handle_register_request")
+#                            print colored("remoteSIB>", "green", attrs=["bold"]) + " handle_register_request"
+                            # logger.info("REGISTER REQUEST handled by handle_register_request")
                             
                             # setting the timestamp
                             sib["timer"] = datetime.datetime.now()
@@ -156,8 +154,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         # kp_list[info["node_id"]]["timer"] = datetime.datetime.now()
 
                         # debug info
-                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
-                        logger.info("SUBSCRIBE REQUEST handled")
+#                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
+                        # logger.info("SUBSCRIBE REQUEST handled")
 
                         # generating a Subreq instance
                         newsub = Subreq(clientsock, info)#, info["node_id"], info["transaction_id"])
@@ -188,8 +186,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     # RDF/SPARQL SUBSCRIBE CONFIRM
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": 
                         # debug info
-                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
-                        logger.info("SUBSCRIBE CONFIRM handled")
+#                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
+                        # logger.info("SUBSCRIBE CONFIRM handled")
                         
                         # store the corrispondence between the real sib and the real_subscription_id
                         for s in val_subscriptions:                              
@@ -202,8 +200,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     # RDF/SPARQL UNSUBSCRIBE REQUEST
                     elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
                         # debug info
-                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
-                        logger.info("UNSUBSCRIBE REQUEST handled")
+#                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
+                        # logger.info("UNSUBSCRIBE REQUEST handled")
 
                         # find the Subreq instance
                         for s in val_subscriptions:
@@ -233,8 +231,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     # RDF/SPARQL UNSUBSCRIBE CONFIRM
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
                         # debug info
-                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
-                        logger.info("UNSUBSCRIBE CONFIRM handled")
+#                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
+                        # logger.info("UNSUBSCRIBE CONFIRM handled")
 
 
                         for s in val_subscriptions:
@@ -254,8 +252,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     # RDF/SPARQL SUBSCRIBE INDICATION
                     elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
                         # debug info
-                        print colored("remoteSIB>", "green", attrs=["bold"]) + " indication handled"
-                        logger.info("SUBSCRIBE INDICATION handled")                
+#                        print colored("remoteSIB>", "green", attrs=["bold"]) + " indication handled"
+                        # logger.info("SUBSCRIBE INDICATION handled")                
 
                         for s in val_subscriptions:
                             if str(s.subscription_id) == str(info["parameter_subscription_id"]):
@@ -263,7 +261,6 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 # send the message to the kp
                                 try:
                                     s.conn.send(ssap_msg)
-                                    print 'SEND RIUSCITA'
                                 except socket.error:
                                     print colored("remoteSIB>", "red", attrs=["bold"]) + " indication send failed"
                                 break
@@ -275,13 +272,12 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         kp_list[info["node_id"] + "_" + info["transaction_id"]] = clientsock
 
                         # debug message
-                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
-                        logger.info(info["transaction_type"] + " REQUEST handled")
+#                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
+                        # logger.info(info["transaction_type"] + " REQUEST handled")
 
                         # forwarding message to the publisher
                         try:
                             sib["socket"].send(ssap_msg)
-                            print "MESSAGGIO FORWARDATO: " + ssap_msg + "___END"
                             
                         except socket.error:
                             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
@@ -303,8 +299,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     elif info["message_type"] == "CONFIRM":
 
                         # debug info
-                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
-                        logger.info(info["transaction_type"] + " CONFIRM handled")
+#                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
+                        # logger.info(info["transaction_type"] + " CONFIRM handled")
                     
                         # forward message to the kp
                         # kp_list[info["node_id"]].send(ssap_msg)
@@ -459,7 +455,7 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
     #kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     kp_socket.bind(kp_addr)
     kp_socket.listen(2)
-    logger.info('Remote SIB waiting for KPs on port ' + str(kp_port))
+    # logger.info('Remote SIB waiting for KPs on port ' + str(kp_port))
     
     # creating and activating the socket for the Publishers
     pub_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -467,7 +463,7 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
     pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     pub_socket.bind(pub_addr)
     pub_socket.listen(2)
-    logger.info('Remote SIB waiting for publishers on port ' + str(pub_port))
+    # logger.info('Remote SIB waiting for publishers on port ' + str(pub_port))
 
     # sockets
     sockets = [kp_socket, pub_socket]
@@ -475,7 +471,7 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
     # loop
     while check_var:
 
-        print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' waiting for connections...'
+#        print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' waiting for connections...'
         
         # select the read_sockets
         read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
@@ -486,8 +482,8 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
             # new connection
             if sock in sockets:
                 clientsock, addr = sock.accept()
-                print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
-                logger.info('Incoming connection from ' + str(addr))
+#                print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
+                # logger.info('Incoming connection from ' + str(addr))
                 thread.start_new_thread(handler, (clientsock, addr, kp_port, ancillary_ip, ancillary_port))
 
             # incoming data

@@ -34,7 +34,6 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
         try:
             result = get_best_virtualiser(a)
         except SIBError:
-            print 'sn qui'
             confirm = {'return':'fail', 'cause':' SIBError.'}
             return confirm
 
