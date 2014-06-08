@@ -19,7 +19,7 @@ PREFIX ns: <http://smartM3Lab/Ontology.owl#>
 SELECT ?s ?p ?o
 WHERE { ?s ?p ?o }"""
 
-class IndicationHandler:
+class RDFIndicationHandler:
 
     def __init__(self, app):	
         self.app = app
@@ -46,6 +46,38 @@ class IndicationHandler:
             
         # disable the text area
         self.app.results_text.config(state = DISABLED)
+
+
+class SPARQLIndicationHandler:
+
+    def __init__(self, app):	
+        self.app = app
+
+    def handle(self, added, removed):
+
+        # enable and clear the text area
+        self.app.results_text.config(state = NORMAL)
+        self.app.results_text.delete(1.0, END)
+        
+        print added
+
+        # notify the added triples
+        self.app.results_text.insert(INSERT, "INDICATION - triples inserted:\n")
+        ta = ""
+        for t in added:
+            ta = ta + str(t[2][2]) + " " + str(t[1][2]) + " " + str(t[0][2]) + "\n" 
+        self.app.results_text.insert(INSERT, ta + "\n")
+
+        # notify the removed triples
+        self.app.results_text.insert(INSERT, "INDICATION - triples deleted:\n")
+        td = ""
+        for t in removed:
+            td = td + str(t[2][2]) + " " + str(t[1][2]) + " " + str(t[0][2]) + "\n" 
+        self.app.results_text.insert(INSERT, td + "\n")
+            
+        # disable the text area
+        self.app.results_text.config(state = DISABLED)
+
 
 
 # main class
@@ -350,7 +382,7 @@ class Application(Frame):
         
         # subscribe
         try:
-            s = self.kp.create_rdf_subscription(t, IndicationHandler(self))
+            s = self.kp.create_rdf_subscription(t, RDFIndicationHandler(self))
 
             # add the subscription to the combobox
             self.rdf_active_subs_combobox.config(state = NORMAL)
@@ -516,7 +548,117 @@ class Application(Frame):
             self.notification_label["text"] = 'Error with SPARQL query'
             print colored("failed!", "red", attrs=["bold"])
             print sys.exc_info()
+
+
+    ########################################################
+    ##
+    ## SPARQL SUBSCRIPTION
+    ##
+    ########################################################
+
+    def sparql_subscription(self):
+
+        # notification
+        print "SPARQL Subscription:",
         
+        # get the subscription text
+        s = self.sparql_text.get(1.0, END)
+        
+        # subscribe
+        try:
+            s = self.kp.create_sparql_subscription(s, SPARQLIndicationHandler(self))
+
+            # add the subscription to the combobox
+            self.sparql_active_subs_combobox.config(state = NORMAL)
+            m = self.sparql_active_subs_combobox['menu']
+            m.add_command(label = str(s.sub_id), command=Tkinter._setit(self.sparql_active_subs_combobox_var, str(s.sub_id)))
+            self.sparql_subscriptions[s.sub_id] = s
+            self.sparql_active_subs_label["text"] = "SPARQL Active subs (" + str(len(self.sparql_subscriptions)) + ")"
+
+            # initial results
+            ir = self.kp.sparql_initial_results()
+
+            # enable and clear the text area
+            self.results_text.config(state = NORMAL)
+            self.results_text.delete(1.0, END)
+        
+            # notify the initial results
+            self.results_text.insert(INSERT, "Initial results:\n")
+            i = ""
+            for t in ir:
+                i = i + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n" 
+            self.results_text.insert(INSERT, i + "\n")
+
+            # disable the text area
+            self.results_text.config(state = DISABLED)            
+
+            # notification
+            print "OK!"
+            self.notification_label["text"] = 'Subscribe request successful!'
+
+        except:
+            
+            # notify the failure
+            self.notification_label["text"] = 'Error during Subscription'
+            print colored("failed!", "red", attrs=["bold"])
+            print sys.exc_info()
+            
+
+    ########################################################
+    ##
+    ## SPARQL UNSUBSCRIBE
+    ##
+    ########################################################
+    
+    def sparql_unsubscription(self):
+        
+        # get the subscription id      
+        sub_id = self.sparql_active_subs_combobox_var.get()
+
+        # notification
+        print "Unsubscribe request for " + str(sub_id) + ":",
+
+        try:
+            
+            # unsubscribe
+            self.kp.unsubscribe(self.sparql_subscriptions[sub_id])
+
+            # remove the subscription from the dictionary
+            del self.sparql_subscriptions[sub_id]
+
+            # remove the subscription from the combobox
+            self.sparql_active_subs_combobox.config(state = NORMAL)
+            m = self.sparql_active_subs_combobox['menu']
+            m.delete(0, 'end')
+            for sub in self.sparql_subscriptions.keys():
+                m.add_command(label = str(sub), command=Tkinter._setit(self.sparql_active_subs_combobox_var, str(sub)))            
+            self.sparql_active_subs_combobox_var.set('')
+            self.sparql_active_subs_label["text"] = "SPARQL Active subs (" + str(len(self.sparql_subscriptions)) + ")"
+
+            # enable and clear the text area
+            self.results_text.config(state = NORMAL)
+            self.results_text.delete(1.0, END)
+
+            # disable the text area
+            self.results_text.config(state = DISABLED)            
+
+            # notification
+            print "OK"
+            self.notification_label["text"] = 'Unsubscribe request successful!'
+
+        except:
+
+            # notification of the failure
+            self.notification_label["text"] = 'Unsubscribe request failed!'
+            print colored("failed!", "red", attrs=["bold"])
+            print sys.exc_info()
+
+        
+    ########################################################
+    ##
+    ## CREATION OF THE WIDGETS
+    ##
+    ########################################################
 
     def createWidgets(self):
         
@@ -560,7 +702,7 @@ class Application(Frame):
         self.results_text = Text(self.results_frame)
         self.results_text.pack()
         self.results_text.config(state = DISABLED)
-        self.results_text.config(height = 20, width=200)
+        self.results_text.config(height = 19, width=200)
 
         # RDFSPARQL frame
         self.rdfsparql_frame = Frame(self)
@@ -658,7 +800,6 @@ class Application(Frame):
         self.rdf_unsubscription_button.grid(row = 4, column = 2)
         
         # Separator
-#        self.sep = Separator(self.rdfsparql_frame, orient = VERTICAL)
         self.sep = Frame(self.rdfsparql_frame, height = 250, relief=SUNKEN)
         self.sep.grid(row = 0, column = 3, rowspan = 5)
 
@@ -668,13 +809,13 @@ class Application(Frame):
 
         # Sparql Text
         self.sparql_text = Text(self.rdfsparql_frame)
-        self.sparql_text.grid(row = 1, column = 4, rowspan = 2, padx = 20, pady = 3)
+        self.sparql_text.grid(row = 1, column = 4, rowspan = 2, padx = 20, pady = 3, columnspan = 3)
         self.sparql_text.config(height = 8, state = DISABLED)
         self.sparql_text.insert(INSERT, general_sparql_query)
 
         # Sparql buttons' frame
         self.sparqlbuttons_frame = Frame(self.rdfsparql_frame)
-        self.sparqlbuttons_frame.grid(row = 3, column = 4, padx = 20, pady = 3)
+        self.sparqlbuttons_frame.grid(row = 3, column = 4, padx = 20, pady = 3, columnspan = 3)
 
         # Sparql_Query button
         self.sparql_query_button = Button(self.sparqlbuttons_frame)
@@ -693,24 +834,36 @@ class Application(Frame):
         # Sparql_Subscription button
         self.sparql_subscription_button = Button(self.sparqlbuttons_frame)
         self.sparql_subscription_button["text"] = "SPARQL Subscription"
-        self.sparql_subscription_button["command"] =  None
+        self.sparql_subscription_button["command"] =  self.sparql_subscription
         self.sparql_subscription_button.config( state = DISABLED )
         self.sparql_subscription_button.grid(row = 0, column = 2)
 
+        # SPARQL Active_Subs_Label Label
+        self.sparql_active_subs_label = Label(self.rdfsparql_frame, text="SPARQL Active subs (0)")
+        self.sparql_active_subs_label.grid(row = 4, column = 4, sticky = W, padx = 20, pady = 3)
+
+        # SPARQL active subscriptions combobox
+        self.sparql_active_subs_combobox_var = StringVar(self.rdfsparql_frame)
+        self.sparql_active_subs_combobox_items = ()
+        self.sparql_active_subs_combobox = OptionMenu(self.rdfsparql_frame, self.sparql_active_subs_combobox_var, self.sparql_active_subs_combobox_items)
+        self.sparql_active_subs_combobox.config( state = DISABLED, width = 20 )
+        self.sparql_active_subs_combobox.grid(row = 4, column = 5)
+
         # Sparql_Unsubscription button
-        self.sparql_unsubscription_button = Button(self.sparqlbuttons_frame)
+        self.sparql_unsubscription_button = Button(self.rdfsparql_frame)
         self.sparql_unsubscription_button["text"] = "SPARQL Unsubscription"
-        self.sparql_unsubscription_button["command"] =  None
+        self.sparql_unsubscription_button["command"] =  self.sparql_unsubscription
         self.sparql_unsubscription_button.config( state = DISABLED )
-        self.sparql_unsubscription_button.grid(row = 0, column = 3)
+        self.sparql_unsubscription_button.grid(row = 4, column = 6)
 
-        # # Notification frame
-        # self.notification_frame = Frame(self)
-        # self.notification_frame.pack(padx = 10, pady = 10)
+        # Notification frame
+        self.notification_frame = LabelFrame(self.rdfsparql_frame)
+        self.notification_frame.grid(row = 5, column = 0, columnspan = 7, sticky = E+W)
+        self.notification_frame.config(relief = SUNKEN)
 
-        # # Notification Label
-        # self.notification_label = Label(self.sparql_frame, text="Waiting for commands...")
-        # self.notification_label.pack(side = BOTTOM, padx = 10, pady = 10)
+        # Notification Label
+        self.notification_label = Label(self.notification_frame, text="Waiting for commands...")
+        self.notification_label.pack(side = BOTTOM, padx = 10, pady = 10)
 
     # Constructor
     def __init__(self, master=None):
