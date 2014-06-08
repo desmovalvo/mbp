@@ -698,11 +698,16 @@ class Application(Frame):
         self.results_frame = Frame(self)
         self.results_frame.pack(padx = 10, pady = 10)
         
+        # Results Scrollbar
+        self.results_scrollbar = Scrollbar(self.results_frame)
+        self.results_scrollbar.pack(side = RIGHT, fill = Y)
+
         # Result Text
-        self.results_text = Text(self.results_frame)
+        self.results_text = Text(self.results_frame, yscrollcommand=self.results_scrollbar.set)
         self.results_text.pack()
         self.results_text.config(state = DISABLED)
         self.results_text.config(height = 19, width=200)
+        self.results_scrollbar.config( command = self.results_text.yview )
 
         # RDFSPARQL frame
         self.rdfsparql_frame = Frame(self)
@@ -809,13 +814,19 @@ class Application(Frame):
 
         # Sparql Text
         self.sparql_text = Text(self.rdfsparql_frame)
-        self.sparql_text.grid(row = 1, column = 4, rowspan = 2, padx = 20, pady = 3, columnspan = 3)
+        self.sparql_text.grid(row = 1, column = 4, rowspan = 2, padx = (20,0), pady = 3, columnspan = 3)
         self.sparql_text.config(height = 8, state = DISABLED)
         self.sparql_text.insert(INSERT, general_sparql_query)
 
+        # Sparql scrollbar
+        self.sparql_scrollbar = Scrollbar(self.rdfsparql_frame)
+        self.sparql_scrollbar.grid(row = 1, column = 7, rowspan = 2, sticky = N + S, pady = 3, padx = (0,20))
+        self.sparql_scrollbar.config( command = self.sparql_text.yview )
+        self.sparql_text.config(yscrollcommand=self.sparql_scrollbar.set)
+
         # Sparql buttons' frame
         self.sparqlbuttons_frame = Frame(self.rdfsparql_frame)
-        self.sparqlbuttons_frame.grid(row = 3, column = 4, padx = 20, pady = 3, columnspan = 3)
+        self.sparqlbuttons_frame.grid(row = 3, column = 4, padx = 20, pady = 3, columnspan = 4)
 
         # Sparql_Query button
         self.sparql_query_button = Button(self.sparqlbuttons_frame)
@@ -858,7 +869,7 @@ class Application(Frame):
 
         # Notification frame
         self.notification_frame = LabelFrame(self.rdfsparql_frame)
-        self.notification_frame.grid(row = 5, column = 0, columnspan = 7, sticky = E+W)
+        self.notification_frame.grid(row = 5, column = 0, columnspan = 8, sticky = E+W)
         self.notification_frame.config(relief = SUNKEN)
 
         # Notification Label
