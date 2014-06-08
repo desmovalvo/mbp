@@ -68,9 +68,11 @@ class Application(Frame):
             self.insert_button.config(state = DISABLED)
             self.remove_button.config(state = DISABLED)
             self.rdf_query_button.config(state = DISABLED)
+            self.rdf_query_all_button.config(state = DISABLED)
             self.rdf_subscription_button.config(state = DISABLED)
             self.rdf_unsubscription_button.config(state = DISABLED)
             self.sparql_query_button.config(state = DISABLED)
+            self.sparql_query_all_button.config(state = DISABLED)
             self.sparql_subscription_button.config(state = DISABLED)
             self.sparql_unsubscription_button.config(state = DISABLED)
             self.joinleave_button["text"] = "Join"
@@ -124,9 +126,11 @@ class Application(Frame):
                 self.insert_button.config(state = NORMAL)
                 self.remove_button.config(state = NORMAL)
                 self.rdf_query_button.config(state = NORMAL)
+                self.rdf_query_all_button.config(state = NORMAL)
                 self.rdf_subscription_button.config(state = NORMAL)
                 self.rdf_unsubscription_button.config(state = NORMAL)
                 self.sparql_query_button.config(state = NORMAL)
+                self.sparql_query_all_button.config(state = NORMAL)
                 self.sparql_subscription_button.config(state = NORMAL)
                 self.sparql_unsubscription_button.config(state = NORMAL)
 
@@ -173,6 +177,43 @@ class Application(Frame):
 
         # build the Triple object
         t = Triple(subj, pred, obj)
+        print "RDF Query to " + str(t) + ":",
+
+        # query
+        try:
+            res = self.kp.execute_rdf_query(t)
+            s = ""
+            for t in res:
+                s = s + str(t[0]) + " " + str(t[1]) + " " + str(t[2]) + "\n"
+            
+            # update the result field
+            self.results_text.config(state = NORMAL)
+            self.results_text.delete(1.0, END)
+            self.results_text.insert(INSERT, s)
+            self.results_text.config(state = DISABLED)
+
+            # notify the success
+            self.notification_label["text"] = 'RDF query succesful!'
+            print "OK!"
+
+        except:
+
+            # notify the failure
+            self.notification_label["text"] = 'Error while querying the SIB'
+            print colored("failed!", "red", attrs=["bold"])
+            print sys.exc_info()
+
+
+    ########################################################
+    ##
+    ## RDF QUERY ALL
+    ##
+    ########################################################
+
+    def rdf_query_all(self):
+        
+        # build the Triple object
+        t = Triple(None, None, None)
         print "RDF Query to " + str(t) + ":",
 
         # query
@@ -318,6 +359,23 @@ class Application(Frame):
             self.rdf_subscriptions[s.sub_id] = s
             self.rdf_active_subs_label["text"] = "RDF Active subs (" + str(len(self.rdf_subscriptions)) + ")"
 
+            # initial results
+            ir = self.kp.rdf_initial_results()
+
+            # enable and clear the text area
+            self.results_text.config(state = NORMAL)
+            self.results_text.delete(1.0, END)
+        
+            # notify the initial results
+            self.results_text.insert(INSERT, "Initial results:\n")
+            i = ""
+            for t in ir:
+                i = i + str(t[0]) + " " + str(t[1]) + " " + str(t[2]) + "\n" 
+            self.results_text.insert(INSERT, i + "\n")
+
+            # disable the text area
+            self.results_text.config(state = DISABLED)            
+
             # notification
             print "OK!"
             self.notification_label["text"] = 'Subscribe request successful!'
@@ -361,6 +419,13 @@ class Application(Frame):
             self.rdf_active_subs_combobox_var.set('')
             self.rdf_active_subs_label["text"] = "RDF Active subs (" + str(len(self.rdf_subscriptions)) + ")"
 
+            # enable and clear the text area
+            self.results_text.config(state = NORMAL)
+            self.results_text.delete(1.0, END)
+
+            # disable the text area
+            self.results_text.config(state = DISABLED)            
+
             # notification
             print "OK"
             self.notification_label["text"] = 'Unsubscribe request successful!'
@@ -384,6 +449,9 @@ class Application(Frame):
         # get the sparql query
         q = self.sparql_text.get(1.0, END)
         cmd = q.split()[0]
+
+        # notification
+        print "SPARQL query: ",
         
         # execute the query
         try:
@@ -400,13 +468,54 @@ class Application(Frame):
                 self.results_text.insert(INSERT, s)
                 self.results_text.config(state = DISABLED)
 
-            # update the notification area
+            # notification
             self.notification_label["text"] = 'SPARQL ' + cmd.lower() + ' succesful'
+            print "OK!"
 
         except:
+
+            # notify the failure
             self.notification_label["text"] = 'Error with SPARQL ' + cmd.lower()
+            print colored("failed!", "red", attrs=["bold"])
             print sys.exc_info()
-            print colored("Error> ", "red", attrs=["bold"]) + " SPARQL " + cmd.lower() + " failed"
+        
+
+    ########################################################
+    ##
+    ## SPARQL QUERY ALL
+    ##
+    ########################################################
+
+    def sparql_query_all(self):
+        
+        # get the sparql query
+        q = """SELECT ?s ?p ?o WHERE { ?s ?p ?o }"""
+        print "SPARQL query: ",
+        
+        # execute the query
+        try:
+            res = self.kp.execute_sparql_query(q)
+
+            s = ""
+            for t in res:
+                s = s + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n"
+                
+            # update the result field
+            self.results_text.config(state = NORMAL)
+            self.results_text.delete(1.0, END)
+            self.results_text.insert(INSERT, s)
+            self.results_text.config(state = DISABLED)
+
+            # notification
+            self.notification_label["text"] = 'SPARQL query succesful'
+            print "OK!"
+
+        except:
+            
+            # notify the failure
+            self.notification_label["text"] = 'Error with SPARQL query'
+            print colored("failed!", "red", attrs=["bold"])
+            print sys.exc_info()
         
 
     def createWidgets(self):
@@ -517,7 +626,14 @@ class Application(Frame):
         self.rdf_query_button.config( state = DISABLED )
         self.rdf_query_button.pack( side = LEFT)
 
-        # RDF query button
+        # RDF query all button
+        self.rdf_query_all_button = Button(self.rdf_actions_frame)
+        self.rdf_query_all_button["text"] = "RDF Query *"
+        self.rdf_query_all_button["command"] =  self.rdf_query_all
+        self.rdf_query_all_button.config( state = DISABLED )
+        self.rdf_query_all_button.pack( side = LEFT)
+
+        # RDF subscription button
         self.rdf_subscription_button = Button(self.rdf_actions_frame)
         self.rdf_subscription_button["text"] = "RDF Subscription"
         self.rdf_subscription_button["command"] =  self.rdf_subscription
@@ -538,7 +654,6 @@ class Application(Frame):
         self.rdf_active_subs_combobox = OptionMenu(self.rdf_active_subs_frame, self.rdf_active_subs_combobox_var, self.rdf_active_subs_combobox_items)
         self.rdf_active_subs_combobox.config( state = DISABLED, width = 20 )
         self.rdf_active_subs_combobox.pack(side = LEFT)
-        # self.rdf_active_subs_combobox_var.set('Select a subscription')
 
         # Rdf_Unsubscription button
         self.rdf_unsubscription_button = Button(self.rdf_active_subs_frame)
@@ -571,6 +686,13 @@ class Application(Frame):
         self.sparql_query_button["command"] =  self.sparql_query
         self.sparql_query_button.config( state = DISABLED )
         self.sparql_query_button.pack( side = LEFT)
+
+        # Sparql_Query button
+        self.sparql_query_all_button = Button(self.sparql_actions_frame)
+        self.sparql_query_all_button["text"] = "SPARQL Query *"
+        self.sparql_query_all_button["command"] =  self.sparql_query_all
+        self.sparql_query_all_button.config( state = DISABLED )
+        self.sparql_query_all_button.pack( side = LEFT)
 
         # Sparql_Subscription button
         self.sparql_subscription_button = Button(self.sparql_actions_frame)
