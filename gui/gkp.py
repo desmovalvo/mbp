@@ -519,6 +519,9 @@ class Application(Frame):
         
 
     def createWidgets(self):
+        
+        # Font
+        section_font = tkFont.Font(family="Helvetica",size=14,weight="bold")
 
         # Connection frame
         self.connection_frame = Frame(self)
@@ -557,164 +560,157 @@ class Application(Frame):
         self.results_text = Text(self.results_frame)
         self.results_text.pack()
         self.results_text.config(state = DISABLED)
-        self.results_text.config(height = 8)
+        self.results_text.config(height = 20, width=200)
 
-        # RDF Frame
-        self.rdf_frame = Frame(self)
-        self.rdf_frame.pack(padx = 10, pady = 10)
+        # RDFSPARQL frame
+        self.rdfsparql_frame = Frame(self)
+        self.rdfsparql_frame.pack(padx = 10, pady = 10)
         
         # RDF Label
-        self.rdf_label = Label(self.rdf_frame, text="RDF Interaction")
-        self.rdf_label.pack(side = TOP, padx = 3, pady = 3)
+        self.rdf_label = Label(self.rdfsparql_frame, text="RDF Interaction", font = section_font)
+        self.rdf_label.grid( row = 0, sticky = NW, columnspan = 3, padx = 20, pady = 3)
         
-        # Triple frame
-        self.triple_frame = Frame(self.rdf_frame)
-        self.triple_frame.pack(padx = 10, pady = 10)
-
         # Subject Label
-        self.subject_label = Label(self.triple_frame, text="Subject")
-        self.subject_label.pack(side = LEFT)
+        self.subject_label = Label(self.rdfsparql_frame, text="Subject")
+        self.subject_label.grid(row = 1, column = 0, sticky = SW, padx = 20, pady = 3)
 
         # Subject Entry
-        self.subject_entry = Entry(self.triple_frame)
-        self.subject_entry.pack(side = LEFT)
+        self.subject_entry = Entry(self.rdfsparql_frame)
+        self.subject_entry.grid(row = 2, column = 0, sticky = W+N+E, padx = 20, pady = 3)
         self.subject_entry.insert(0, "http://ns#")
         self.subject_entry.config(state = DISABLED)
 
         # Predicate Label
-        self.predicate_label = Label(self.triple_frame, text="Predicate")
-        self.predicate_label.pack(side = LEFT)
+        self.predicate_label = Label(self.rdfsparql_frame, text="Predicate")
+        self.predicate_label.grid(row = 1, column = 1, sticky = SW, padx = 20, pady = 3)
 
         # Predicate Entry
-        self.predicate_entry = Entry(self.triple_frame)
-        self.predicate_entry.pack(side = LEFT)
+        self.predicate_entry = Entry(self.rdfsparql_frame)
+        self.predicate_entry.grid(row = 2, column = 1, sticky = W+E+N, padx = 20, pady = 3)
         self.predicate_entry.insert(0, "http://ns#")
         self.predicate_entry.config(state = DISABLED)
 
         # Object Label
-        self.object_label = Label(self.triple_frame, text="Object")
-        self.object_label.pack(side = LEFT)
+        self.object_label = Label(self.rdfsparql_frame, text="Object")
+        self.object_label.grid(row = 1, column = 2, sticky = SW, padx = 20, pady = 3)
 
         # Object Entry
-        self.object_entry = Entry(self.triple_frame)
-        self.object_entry.pack(side = LEFT)
+        self.object_entry = Entry(self.rdfsparql_frame)
+        self.object_entry.grid(row = 2, column = 2, sticky = W+E+N, padx = 20, pady = 3)
         self.object_entry.insert(0, "http://ns#")
         self.object_entry.config(state = DISABLED)
 
-        # Actions frame
-        self.rdf_actions_frame = Frame(self.rdf_frame)
-        self.rdf_actions_frame.pack() #padx = 10, pady = 10)
+        # Buttons' Frame
+        self.rdfbuttons_frame = Frame(self.rdfsparql_frame)
+        self.rdfbuttons_frame.grid(row = 3, column = 0, columnspan = 3, padx = 20, pady = 3)
 
         # Insert button
-        self.insert_button = Button(self.rdf_actions_frame)
+        self.insert_button = Button(self.rdfbuttons_frame)
         self.insert_button["text"] = "Insert"
         self.insert_button["command"] =  self.insert
         self.insert_button.config( state = DISABLED )
-        self.insert_button.pack( side = LEFT)        
+        self.insert_button.grid(row = 0, column = 0)
         
         # Remove button
-        self.remove_button = Button(self.rdf_actions_frame)
+        self.remove_button = Button(self.rdfbuttons_frame)
         self.remove_button["text"] = "Remove"
         self.remove_button["command"] =  self.remove
         self.remove_button.config( state = DISABLED )
-        self.remove_button.pack( side = LEFT)
+        self.remove_button.grid(row = 0, column = 1)
 
         # RDF query button
-        self.rdf_query_button = Button(self.rdf_actions_frame)
+        self.rdf_query_button = Button(self.rdfbuttons_frame)
         self.rdf_query_button["text"] = "RDF Query"
         self.rdf_query_button["command"] =  self.rdf_query
         self.rdf_query_button.config( state = DISABLED )
-        self.rdf_query_button.pack( side = LEFT)
+        self.rdf_query_button.grid(row = 0, column = 2)
 
         # RDF query all button
-        self.rdf_query_all_button = Button(self.rdf_actions_frame)
+        self.rdf_query_all_button = Button(self.rdfbuttons_frame)
         self.rdf_query_all_button["text"] = "RDF Query *"
         self.rdf_query_all_button["command"] =  self.rdf_query_all
         self.rdf_query_all_button.config( state = DISABLED )
-        self.rdf_query_all_button.pack( side = LEFT)
+        self.rdf_query_all_button.grid(row = 0, column = 3)
 
         # RDF subscription button
-        self.rdf_subscription_button = Button(self.rdf_actions_frame)
+        self.rdf_subscription_button = Button(self.rdfbuttons_frame)
         self.rdf_subscription_button["text"] = "RDF Subscription"
         self.rdf_subscription_button["command"] =  self.rdf_subscription
         self.rdf_subscription_button.config( state = DISABLED )
-        self.rdf_subscription_button.pack( side = LEFT)
-
-        # RDF active_subs
-        self.rdf_active_subs_frame = Frame(self.rdf_frame)
-        self.rdf_active_subs_frame.pack(padx = 3, pady = 3)
+        self.rdf_subscription_button.grid(row = 0, column = 4)
 
         # Rdf_Active_Subs_Label Label
-        self.rdf_active_subs_label = Label(self.rdf_active_subs_frame, text="RDF Active subs (0)")
-        self.rdf_active_subs_label.pack(side = LEFT)
+        self.rdf_active_subs_label = Label(self.rdfsparql_frame, text="RDF Active subs (0)")
+        self.rdf_active_subs_label.grid(row = 4, column = 0)
 
         # RDF active subscriptions combobox
-        self.rdf_active_subs_combobox_var = StringVar(self.rdf_active_subs_frame)
+        self.rdf_active_subs_combobox_var = StringVar(self.rdfsparql_frame)
         self.rdf_active_subs_combobox_items = ()
-        self.rdf_active_subs_combobox = OptionMenu(self.rdf_active_subs_frame, self.rdf_active_subs_combobox_var, self.rdf_active_subs_combobox_items)
+        self.rdf_active_subs_combobox = OptionMenu(self.rdfsparql_frame, self.rdf_active_subs_combobox_var, self.rdf_active_subs_combobox_items)
         self.rdf_active_subs_combobox.config( state = DISABLED, width = 20 )
-        self.rdf_active_subs_combobox.pack(side = LEFT)
+        self.rdf_active_subs_combobox.grid(row = 4, column = 1)
 
         # Rdf_Unsubscription button
-        self.rdf_unsubscription_button = Button(self.rdf_active_subs_frame)
+        self.rdf_unsubscription_button = Button(self.rdfsparql_frame)
         self.rdf_unsubscription_button["text"] = "RDF Unsubscription"
         self.rdf_unsubscription_button["command"] =  self.rdf_unsubscription
         self.rdf_unsubscription_button.config( state = DISABLED )
-        self.rdf_unsubscription_button.pack( side = LEFT)
-
-        # SPARQL interaction
-        self.sparql_frame = Frame(self)
-        self.sparql_frame.pack(padx = 3, pady = 3)
+        self.rdf_unsubscription_button.grid(row = 4, column = 2)
         
+        # Separator
+#        self.sep = Separator(self.rdfsparql_frame, orient = VERTICAL)
+        self.sep = Frame(self.rdfsparql_frame, height = 250, relief=SUNKEN)
+        self.sep.grid(row = 0, column = 3, rowspan = 5)
+
         # SPARQL Label
-        self.sparql_label = Label(self.sparql_frame, text="SPARQL Interaction")
-        self.sparql_label.pack(side = TOP, padx = 10, pady = 10)
+        self.sparql_label = Label(self.rdfsparql_frame, text="SPARQL Interaction", font = section_font)
+        self.sparql_label.grid(row = 0, column = 4, sticky = NW, padx = 20, pady = 3)
 
         # Sparql Text
-        self.sparql_text = Text(self.sparql_frame)
-        self.sparql_text.pack(side = TOP, padx = 10, pady = 10)
+        self.sparql_text = Text(self.rdfsparql_frame)
+        self.sparql_text.grid(row = 1, column = 4, rowspan = 2, padx = 20, pady = 3)
         self.sparql_text.config(height = 8, state = DISABLED)
         self.sparql_text.insert(INSERT, general_sparql_query)
 
-        # Sparql Actions Entry
-        self.sparql_actions_frame = Frame(self.sparql_frame)
-        self.sparql_actions_frame.pack() #padx = 10, pady = 10)
+        # Sparql buttons' frame
+        self.sparqlbuttons_frame = Frame(self.rdfsparql_frame)
+        self.sparqlbuttons_frame.grid(row = 3, column = 4, padx = 20, pady = 3)
 
         # Sparql_Query button
-        self.sparql_query_button = Button(self.sparql_actions_frame)
+        self.sparql_query_button = Button(self.sparqlbuttons_frame)
         self.sparql_query_button["text"] = "SPARQL Query"
         self.sparql_query_button["command"] =  self.sparql_query
         self.sparql_query_button.config( state = DISABLED )
-        self.sparql_query_button.pack( side = LEFT)
+        self.sparql_query_button.grid(row = 0, column = 0)
 
         # Sparql_Query button
-        self.sparql_query_all_button = Button(self.sparql_actions_frame)
+        self.sparql_query_all_button = Button(self.sparqlbuttons_frame)
         self.sparql_query_all_button["text"] = "SPARQL Query *"
         self.sparql_query_all_button["command"] =  self.sparql_query_all
         self.sparql_query_all_button.config( state = DISABLED )
-        self.sparql_query_all_button.pack( side = LEFT)
+        self.sparql_query_all_button.grid(row = 0, column = 1)
 
         # Sparql_Subscription button
-        self.sparql_subscription_button = Button(self.sparql_actions_frame)
+        self.sparql_subscription_button = Button(self.sparqlbuttons_frame)
         self.sparql_subscription_button["text"] = "SPARQL Subscription"
         self.sparql_subscription_button["command"] =  None
         self.sparql_subscription_button.config( state = DISABLED )
-        self.sparql_subscription_button.pack( side = LEFT)
+        self.sparql_subscription_button.grid(row = 0, column = 2)
 
         # Sparql_Unsubscription button
-        self.sparql_unsubscription_button = Button(self.sparql_actions_frame)
+        self.sparql_unsubscription_button = Button(self.sparqlbuttons_frame)
         self.sparql_unsubscription_button["text"] = "SPARQL Unsubscription"
         self.sparql_unsubscription_button["command"] =  None
         self.sparql_unsubscription_button.config( state = DISABLED )
-        self.sparql_unsubscription_button.pack( side = LEFT)        
+        self.sparql_unsubscription_button.grid(row = 0, column = 3)
 
-        # Notification frame
-        self.notification_frame = Frame(self)
-        self.notification_frame.pack(padx = 10, pady = 10)
+        # # Notification frame
+        # self.notification_frame = Frame(self)
+        # self.notification_frame.pack(padx = 10, pady = 10)
 
-        # Notification Label
-        self.notification_label = Label(self.sparql_frame, text="Waiting for commands...")
-        self.notification_label.pack(side = TOP, padx = 10, pady = 10)
+        # # Notification Label
+        # self.notification_label = Label(self.sparql_frame, text="Waiting for commands...")
+        # self.notification_label.pack(side = BOTTOM, padx = 10, pady = 10)
 
     # Constructor
     def __init__(self, master=None):
@@ -736,6 +732,8 @@ class Application(Frame):
 
 # main loop
 root = Tk()
+w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+root.geometry("%dx%d+0+0" % (w, h))
 app = Application(master=root)
 app.mainloop()
 
