@@ -187,6 +187,9 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
  
                     # RDF/SPARQL SUBSCRIBE CONFIRM
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": 
+
+                        sib["timer"] = datetime.datetime.now()
+
                         # debug info
 #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
                         # logger.info("SUBSCRIBE CONFIRM handled")
@@ -235,6 +238,9 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 
                     # RDF/SPARQL UNSUBSCRIBE CONFIRM
                     elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
+
+                        sib["timer"] = datetime.datetime.now()
+
                         # debug info
 #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
                         # logger.info("UNSUBSCRIBE CONFIRM handled")
@@ -257,6 +263,9 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         
                     # RDF/SPARQL SUBSCRIBE INDICATION
                     elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
+
+                        sib["timer"] = datetime.datetime.now()
+
                         # debug info
 #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " indication handled"
                         # logger.info("SUBSCRIBE INDICATION handled")                
@@ -306,6 +315,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     ### OTHER CONFIRMS
         
                     elif info["message_type"] == "CONFIRM":
+
+                        sib["timer"] = datetime.datetime.now()
 
                         # debug info
 #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"

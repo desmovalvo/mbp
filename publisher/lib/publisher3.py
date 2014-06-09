@@ -92,7 +92,7 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_po
 
                 except:
                     print colored("publisher> ", "red", attrs=["bold"]) + "Connection failed"
-                                    
+                    
    
         # MAIN LOOP
         for sock in read_sockets:
@@ -105,7 +105,7 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_po
 
                 # check if it's a ping; if so send it back to the virtualiser
                 if len(ssap_msg) == 1 and ssap_msg == " ":
-                    vs.send(" ")                                       
+                    vs.send(" ")     
                     
                 # if it's not a ping...
                 else:

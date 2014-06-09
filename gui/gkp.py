@@ -83,6 +83,15 @@ class SPARQLIndicationHandler:
 # main class
 class Application(Frame):
 
+    def select_all(self, event):
+        print event.widget.get(1.0, END)
+        event.widget.focus_set()
+        event.widget.tag_add(SEL, 0.0, END)
+        event.widget.select_from(0.0)
+        event.widget.select_to(END)
+        event.widget.see(SEL)
+        event.widget.focus_set()
+
     ########################################################
     ##
     ## JOIN or LEAVE
@@ -215,6 +224,7 @@ class Application(Frame):
         try:
             res = self.kp.execute_rdf_query(t)
             s = ""
+            s = str(len(res)) + " Triples\n"
             for t in res:
                 s = s + str(t[0]) + " " + str(t[1]) + " " + str(t[2]) + "\n"
             
@@ -252,6 +262,7 @@ class Application(Frame):
         try:
             res = self.kp.execute_rdf_query(t)
             s = ""
+            s = str(len(res)) + " Triples\n"
             for t in res:
                 s = s + str(t[0]) + " " + str(t[1]) + " " + str(t[2]) + "\n"
             
@@ -340,7 +351,7 @@ class Application(Frame):
 
         try:
             # remove the triple
-            self.kp.remove()
+            self.kp.remove(t)
 
             # notification
             self.notification_label["text"] = 'RDF remove succesful'
@@ -490,10 +501,11 @@ class Application(Frame):
             res = self.kp.execute_sparql_query(q)
 
             if cmd == "SELECT":
-                s = ""
-                for t in res:
-                    s = s + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n"
-            
+                # s = ""
+                # for t in res:
+                #     s = s + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n"
+                s = str(res)
+                
                 # update the result field
                 self.results_text.config(state = NORMAL)
                 self.results_text.delete(1.0, END)
@@ -817,6 +829,7 @@ class Application(Frame):
         self.sparql_text.grid(row = 1, column = 4, rowspan = 2, padx = (20,0), pady = 3, columnspan = 3)
         self.sparql_text.config(height = 8, state = DISABLED)
         self.sparql_text.insert(INSERT, general_sparql_query)
+        self.sparql_text.bind("<Control-Key-a>", self.select_all)
 
         # Sparql scrollbar
         self.sparql_scrollbar = Scrollbar(self.rdfsparql_frame)
@@ -885,7 +898,7 @@ class Application(Frame):
         self.createWidgets()
         self.joined = False
         self.kp = None
-        
+
         # active subscriptions
         self.rdf_subscriptions = {}
         self.sparql_subscriptions = {}
