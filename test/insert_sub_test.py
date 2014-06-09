@@ -1,7 +1,7 @@
 import sys
 import timeit
 import pygal
-from SIBLib import *
+from lib.SIBLib import *
 from termcolor import *
 from smart_m3.m3_kp_api import *
 
