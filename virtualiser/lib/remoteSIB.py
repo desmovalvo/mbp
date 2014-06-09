@@ -170,6 +170,8 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             
                             print colored("remoteSIB> ", "blue", attrs=["bold"]) + "Subscribed kp observer started for socket " + str(newsub.conn)
 
+                        except AttributeError:
+                            clientsock.close()
 
                         except socket.error:
                             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
@@ -221,6 +223,9 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                     s.conn.send(err_msg)
                                         
                                     logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
+                                
+                                except AttributeError:
+                                    clientsock.send()
 
                                 break
                                 
@@ -240,6 +245,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 
                                 try:
                                     s.conn.send(ssap_msg)
+                                    s.conn.close()
                                 except socket.error:
                                     pass
                                                                         
@@ -292,6 +298,9 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             # del kp_list[info["node_id"]]
                             del kp_list[info["node_id"] + "_" + info["transaction_id"]]
                             logger.error(info["transaction_type"] + " REQUEST forwarding failed")
+
+                        except AttributeError:
+                            clientsock.close()
 
 
                     ### OTHER CONFIRMS
