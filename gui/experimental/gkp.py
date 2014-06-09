@@ -11,8 +11,6 @@ from ttk import *
 from SIBLib import *
 from termcolor import *
 import sys
-from RDFIndicationHandler import *
-from SPARQLIndicationHandler import *
 
 # font
 TITLE_FONT = ("Helvetica", 18, "bold")
@@ -28,7 +26,6 @@ WHERE { ?s ?p ?o }"""
 
 # main class
 class Application(Tkinter.Tk):
-
 
     # Constructor
     def __init__(self, *args, **kwargs): 
@@ -50,25 +47,19 @@ class Application(Tkinter.Tk):
             frame.grid(row=0, column=0, sticky="nsew")
 
     # This function puts on top the frame of the given class
-    def show_frame(self, c):
+    def show_frame(self, c, sib_addr = None, sib_port = None):
         frame = self.frames[c]
         frame.tkraise()
-
-        # self.s = Style()
-        # self.s.theme_use('clam')
-        # self.createWidgets()
-
-        self.joined = False
-        self.kp = None
-
-        # active subscriptions
-        self.container.rdf_subscriptions = {}
-        self.container.sparql_subscriptions = {}
         
+        if str(c) == "__main__.SibInteraction":
+            frame.set_connection_fields(sib_addr, sib_port)
+        
+
     # Destroyer!
     def destroy(self):
         print "Bye!"
         sys.exit()
+
 
 # This is the main interface
 class StartPage(Tkinter.Frame):
@@ -86,7 +77,6 @@ class StartPage(Tkinter.Frame):
         button2.pack()
 
 
-
 ########################################################
 ##
 ## SibSearch Class
@@ -94,39 +84,26 @@ class StartPage(Tkinter.Frame):
 ########################################################
 
 class SibSearch(Tkinter.Frame):
+    
+    def refresh(self):
 
-    # connect method
-    def connect(self):
+        # manager connection
+        manager_ip ="10.143.250.58"
+        manager_port = 17714
+        manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try :
+            manager_socket.connect((manager_ip, manager_port))
+        except :
+            print colored("client_process> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
+            sys.exit()        
+            
+        # discovery request
+        msg = {"command":"DiscoveryAll"}
+        request = json.dumps(msg)
+        manager_socket.send(request)
 
-        # get the list of selected SIBs
-        # if there is only one SIB selected, then recall the other frame
-        # otherwise request the creation of a multisib, and then call the other frame
-
-
-    # reload method
-
-    # quit method
-    def destroy(self):
-        sys.exit()
-
-    # constructor
-    def __init__(self, parent, controller):
-
-        # Tkinter.Frame constructor
-        Tkinter.Frame.__init__(self, parent) 
-
-        # Discovery message
-        discovery_msg = {"command":"DiscoveryAll"}
-
-        # Manager instance
-        manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-        manager_socket.connect(("10.143.250.58", 17714))
-        manager_socket.send(json.dumps(discovery_msg))
-
-        # wait for a reply from the manager
+        # discovery reply
         while 1:
-
-            # receive a message
             msg = manager_socket.recv(4096)
             if msg:
                 print colored("client_process> ", "blue", attrs=["bold"]) + 'Received the following message:'
@@ -134,59 +111,95 @@ class SibSearch(Tkinter.Frame):
                 manager_socket.close()
                 break
 
-        # parsing the reply
+        # was it a success?
         parsed_msg = json.loads(msg)
-        
-        # the reply contains a failure
         if parsed_msg["return"] == "fail":
             print colored("client_process> ", "red", attrs=["bold"]) + 'Request failed!' + parsed_msg["cause"]
             
-        # the reply represents a success
         elif parsed_msg["return"] == "ok":
             virtual_sib_list = parsed_msg["virtual_sib_list"]
 
-            i = 1
-            vsib = []
-            for vs in virtual_sib_list:
-                sib_info = "[" + str(i) + "] sib_id: " + vs + " (ip: " + virtual_sib_list[vs]['ip'] + ", port: " + virtual_sib_list[vs]['port'] + ")" 
-                vsib.append(sib_info)
-                i += 1
-
-        # Sib Selection Label
-        self.sib_selection_label = Label(self, text = "Select one or more SIB to connect to:")
-        self.sib_selection_label.grid(row = 0, column = 0, padx = 30, pady = 10, sticky = E + W)
-        
-        # Sib Selection ListBox
-        self.sib_selection_listbox = Listbox(self)
-        self.sib_selection_listbox.config(selectmode = MULTIPLE, width = 150)    
+            # remove everything from the listbox
+            self.sib_listbox.delete(0, END)
+      
+        # parsing the reply
+        self.vsib_list = []
         i = 0
-        for s in vsib:
+        for vs in virtual_sib_list:
+
+            # built a dict
+            sib_dict = {}
+            sib_dict["ip"] = virtual_sib_list[vs]["ip"]
+            sib_dict["port"] = virtual_sib_list[vs]["port"]
+            sib_dict["id"] = vs
+            self.vsib_list.append(sib_dict)
+            
+            # filling the listbox
+            self.sib_listbox.insert(i, str(sib_dict))
+            
+            # increment the counter
             i += 1
-            self.sib_selection_listbox.insert(i, s)
-        self.sib_selection_listbox.grid(row = 1, column = 0, padx = 30, pady = 10, sticky = E + W)
 
-        # Buttons Frame
+
+    def connect(self):
+        
+        # get the list of selected sibs
+        selected = self.sib_listbox.curselection()
+        
+        # zero sibs
+        if len(selected) == 0:
+            pass
+        
+        # only one sib
+        elif len(selected) == 1:
+            
+            ss = self.vsib_list[int(selected[0])]
+            self.controller.show_frame(SibInteraction, str(ss['ip']), str(ss['port']))
+            
+
+        # more than one sib
+
+        
+
+    def __init__(self, parent, controller):
+
+        self.controller = controller
+
+        # Frame constructor
+        Tkinter.Frame.__init__(self, parent) 
+
+        # Sib Label
+        self.sib_label = Label(self)
+        self.sib_label["text"] = "Select one or more SIB(s)"
+        self.sib_label.pack()
+
+        # ListBox
+        self.sib_listbox = Listbox(self)
+        self.sib_listbox.config(width = 140, selectmode = MULTIPLE)
+        self.sib_listbox.pack()
+
+        # Buttons frame
         self.buttons_frame = Frame(self)
-        self.buttons_frame.grid(row = 2, column = 0)
+        self.buttons_frame.pack()
 
-        # Back Button
+        # Buttons
         self.back_button = Tkinter.Button(self.buttons_frame, text="Back", command=lambda: controller.show_frame(StartPage))
         self.back_button.pack(side = LEFT)
 
-        # Connect Button
         self.connect_button = Tkinter.Button(self.buttons_frame, text="Connect")
-        self.connect_button.pack(side = LEFT)
+        self.connect_button.pack(side = LEFT)        
         self.connect_button["command"] = self.connect
 
-        # Refresh Button
         self.refresh_button = Tkinter.Button(self.buttons_frame, text="Refresh")
         self.refresh_button.pack(side = LEFT)
+        self.refresh_button["command"] = self.refresh
 
-        # Quit button
         self.quit_button = Tkinter.Button(self.buttons_frame, text="Quit")
-        self.quit_button["command"] = self.destroy
         self.quit_button.pack(side = LEFT)
+        self.quit_button["command"] = sys.exit
 
+        # call the refresh method to fill the listbox
+        self.refresh()
 
 
 ########################################################
@@ -196,6 +209,15 @@ class SibSearch(Tkinter.Frame):
 ########################################################
 
 class SibInteraction(Tkinter.Frame):
+
+    def set_connection_fields(self, sib_ip = None, sib_port = None):
+
+        if sib_port and sib_ip:
+            self.sib_address_entry.delete(0, END)
+            self.sib_port_entry.delete(0, END)
+            self.sib_address_entry.insert(0, sib_ip)
+            self.sib_port_entry.insert(0, sib_port)
+
 
     ########################################################
     ##
