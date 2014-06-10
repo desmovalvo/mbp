@@ -67,6 +67,10 @@ class StartPage(Tkinter.Frame):
     def __init__(self, parent, controller):
         
         Tkinter.Frame.__init__(self, parent) 
+
+        self.s = Style()
+        self.s.theme_use('clam')
+
         label = Tkinter.Label(self, text="Welcome to the MultiSIB client", font=TITLE_FONT)
         label.pack(side="top", fill="x", pady=10)
 
@@ -893,12 +897,24 @@ class SibInteraction(Tkinter.Frame):
         # Notification frame
         self.notification_frame = LabelFrame(self.rdfsparql_frame)
         self.notification_frame.grid(row = 5, column = 0, columnspan = 8, sticky = E+W)
-        self.notification_frame.config(relief = SUNKEN)
 
         # Notification Label
         self.notification_label = Label(self.notification_frame, text="Waiting for commands...")
-        self.notification_label.pack(side = BOTTOM, padx = 10, pady = 10)
+        self.notification_label.pack(side = BOTTOM, padx = 10, pady = 2)
 
+        # End buttons frame
+        self.end_buttons_frame = Frame(self.rdfsparql_frame)
+        self.end_buttons_frame.grid(row = 6, column = 0, columnspan = 8, sticky = E)
+        
+        # Quit button
+        self.quit_button = Button(self.end_buttons_frame, text = "Quit")
+        self.quit_button.pack(side = RIGHT)
+        self.quit_button["command"] = sys.exit
+
+        # Back button
+        self.back_button = Button(self.end_buttons_frame, text = "Back", command=lambda: controller.show_frame(StartPage))
+        self.back_button.pack(side = RIGHT)
+        
 
 ########################################################
 ##
@@ -1040,9 +1056,16 @@ class SibSearch(Tkinter.Frame):
 
         self.controller = controller
 
+        # Open the configuration file to read ip and port of the manager server
+        conf_file = open("gkp.conf", "r")
+        conf = json.load(conf_file)
+
         # Manager parameters
-        self.manager_ip ="192.168.1.102"
-        self.manager_port = 17714
+        self.manager_ip = conf["manager"]["ip"]
+        self.manager_port = conf["manager"]["port"]
+
+        # Closing the configuration file
+        conf_file.close()
 
         # Frame constructor
         Tkinter.Frame.__init__(self, parent) 
