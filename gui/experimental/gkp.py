@@ -74,12 +74,24 @@ class StartPage(Tkinter.Frame):
         label = Tkinter.Label(self, text="Welcome to the MultiSIB client", font=TITLE_FONT)
         label.pack(side="top", fill="x", pady=10)
 
-        button1 = Tkinter.Button(self, text="Look for a SIB", 
-                            command=lambda: controller.show_frame(SibSearch))
-        button2 = Tkinter.Button(self, text="Connect to a known SIB",
-                            command=lambda: controller.show_frame(SibInteraction))
-        button1.pack()
-        button2.pack()
+        # buttons frame
+        buttons_frame = Frame(self)
+        buttons_frame.pack()
+
+        # sibsearch button
+        sibsearch_button = Tkinter.Button(buttons_frame, text="Look for a SIB")
+        sibsearch_button["command"] = lambda: controller.show_frame(SibSearch)
+        sibsearch_button.pack(side = LEFT)
+
+        # sibinteraction button
+        sibinteraction_button = Tkinter.Button(buttons_frame, text="Connect to a known SIB")
+        sibinteraction_button["command"] = lambda: controller.show_frame(SibInteraction)
+        sibinteraction_button.pack(side = LEFT)
+
+        # quit button
+        quit_button = Tkinter.Button(buttons_frame, text="Quit")
+        quit_button["command"] = sys.exit
+        quit_button.pack(side = LEFT)
 
 
 ########################################################
@@ -497,7 +509,6 @@ class SibInteraction(Tkinter.Frame):
         
         # get the sparql query
         q = self.sparql_text.get(1.0, END)
-        cmd = q.split()[0]
 
         # notification
         print "SPARQL query: ",
@@ -506,10 +517,7 @@ class SibInteraction(Tkinter.Frame):
         try:
             res = self.kp.execute_sparql_query(q)
 
-            if cmd == "SELECT":
-                # s = ""
-                # for t in res:
-                #     s = s + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n"
+            if "SELECT" in q: # TODO - this is not always right...
                 s = str(res)
                 
                 # update the result field
@@ -519,13 +527,13 @@ class SibInteraction(Tkinter.Frame):
                 self.results_text.config(state = DISABLED)
 
             # notification
-            self.notification_label["text"] = 'SPARQL ' + cmd.lower() + ' succesful'
+            self.notification_label["text"] = 'SPARQL query succesful'
             print "OK!"
 
         except:
 
             # notify the failure
-            self.notification_label["text"] = 'Error with SPARQL ' + cmd.lower()
+            self.notification_label["text"] = 'Error with SPARQL query'
             print colored("failed!", "red", attrs=["bold"])
             print sys.exc_info()
         
@@ -674,6 +682,45 @@ class SibInteraction(Tkinter.Frame):
 
     ########################################################
     ##
+    ## BACK
+    ##
+    ########################################################
+
+    def back(self):
+        
+        # closing rdf subscriptions
+        for sub in self.rdf_subscriptions:
+            try:
+                print "Unsubscribe request:",
+                self.kp.unsubscribe(self.rdf_subscriptions[sub])
+                print "OK!"
+            except:
+                print colored("failed!", "red", attrs=["bold"])
+
+        # closing sparql subscriptions
+        for sub in self.sparql_subscriptions:
+            try:
+                print "Unsubscribe request:",
+                self.kp.unsubscribe(self.sparql_subscriptions[sub])
+                print "OK!"
+            except:
+                print colored("failed!", "red", attrs=["bold"])
+
+        # leave
+        if self.joined:
+            try:
+                print "Leave request:",
+                self.kp.leave_sib()                
+                print "OK!"
+            except:
+                print colored("failed!", "red", attrs=["bold"])
+
+        # changing frame
+        self.controller.show_frame(StartPage)
+
+
+    ########################################################
+    ##
     ## INIT
     ##
     ########################################################
@@ -688,6 +735,7 @@ class SibInteraction(Tkinter.Frame):
         self.kp = None
         self.rdf_subscriptions = {}
         self.sparql_subscriptions = {}
+        self.controller = controller
 
         # Font
         section_font = tkFont.Font(family="Helvetica", size=14, weight="bold")
@@ -912,8 +960,9 @@ class SibInteraction(Tkinter.Frame):
         self.quit_button["command"] = sys.exit
 
         # Back button
-        self.back_button = Button(self.end_buttons_frame, text = "Back", command=lambda: controller.show_frame(StartPage))
+        self.back_button = Button(self.end_buttons_frame, text = "Back") #, command=lambda: controller.show_frame(StartPage))
         self.back_button.pack(side = RIGHT)
+        self.back_button["command"] = self.back
         
 
 ########################################################
@@ -930,6 +979,41 @@ class SibSearch(Tkinter.Frame):
     #
     ###################################################
     
+    def select_all(self):
+
+        """This method is used to select/deselect all the items
+        into the listbox"""
+
+        if self.sflag:
+
+            # toggle flag
+            self.sflag = False
+
+            # select all the items
+            items = self.sib_listbox.get(0, END)
+            for i in range(len(items)):
+                self.sib_listbox.selection_set(i)
+
+            # update the text in the button
+            self.selectall_button["text"] = "Deselect all"
+
+        else:
+            
+            # toggle flag
+            self.sflag = True
+
+            # deselect all the items
+            self.sib_listbox.selection_clear(0, END)
+
+            # update the text in the button
+            self.selectall_button["text"] = "Select all"
+
+    ###################################################
+    #
+    # refresh
+    #
+    ###################################################
+    
     def refresh(self):
 
         """This method is used to fetch the list of registered SIBs"""
@@ -937,31 +1021,33 @@ class SibSearch(Tkinter.Frame):
         # manager connection
         manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try :
+            print "Connecting to the manager:",
             manager_socket.connect((self.manager_ip, self.manager_port))
+            print "OK!"
         except :
-            print colored("client_process> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
+            print colored("failed!", "red", attrs=['bold'])
             sys.exit()        
             
         # discovery request
+        print "Sending DiscoveryAll request to the manager:",
         msg = {"command":"DiscoveryAll"}
         request = json.dumps(msg)
         manager_socket.send(request)
-
+        
         # discovery reply
         while 1:
             msg = manager_socket.recv(4096)
             if msg:
-                print colored("client_process> ", "blue", attrs=["bold"]) + 'Received the following message:'
-                print msg
                 manager_socket.close()
                 break
 
         # was it a success?
         parsed_msg = json.loads(msg)
         if parsed_msg["return"] == "fail":
-            print colored("client_process> ", "red", attrs=["bold"]) + 'Request failed!' + parsed_msg["cause"]
+            print colored("failed!", "red", attrs=["bold"])  + "(" + parsed_msg["cause"] +")"
             
         elif parsed_msg["return"] == "ok":
+            print "OK!"
             virtual_sib_list = parsed_msg["virtual_sib_list"]
 
             # remove everything from the listbox
@@ -1014,7 +1100,6 @@ class SibSearch(Tkinter.Frame):
         else:
             
             # find the selected SIBs
-            print "these are the selected SIBs:"
             id_list = []
             for s in selected:
                 print self.vsib_list[int(s)]['id']
@@ -1023,29 +1108,29 @@ class SibSearch(Tkinter.Frame):
             # Send the NewVirtualMultiSIB request
             msg = {'command':'NewVirtualMultiSIB','sib_list': id_list}
             request = json.dumps(msg)
-            manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)            
             try :
+                print "Sending NewVirtualMultiSIB request to the manager:", 
                 manager_socket.connect((self.manager_ip, self.manager_port))
                 manager_socket.send(request)
-            except :
-                print colored("client_process> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
+            except :                
+                print colored("failed!", "red", attrs=['bold'])
                 sys.exit()        
 
             # wait for a reply            
             while 1:
                 msg = manager_socket.recv(4096)
                 if msg:
-                    print colored("client_process> ", "blue", attrs=["bold"]) + 'Received the following message:'
-                    print msg
                     manager_socket.close()
                     parsed_msg = json.loads(msg)
                     break
                 
             # parse the reply
             if parsed_msg["return"] == "fail":
-                print colored("client_process> ", "red", attrs=["bold"]) + 'Request failed!' + parsed_msg["cause"]
+                print colored("failed!", "red", attrs=["bold"]) + "(" + parsed_msg["cause"] +")"
             
             elif parsed_msg["return"] == "ok":
+                print "OK!"
                 vmsib_id = parsed_msg["virtual_multi_sib_info"]["virtual_multi_sib_id"]
                 ip = parsed_msg["virtual_multi_sib_info"]["virtual_multi_sib_ip"]
                 port = parsed_msg["virtual_multi_sib_info"]["virtual_multi_sib_kp_port"]
@@ -1055,7 +1140,8 @@ class SibSearch(Tkinter.Frame):
     def __init__(self, parent, controller):
 
         self.controller = controller
-
+        self.sflag = True
+        
         # Open the configuration file to read ip and port of the manager server
         conf_file = open("gkp.conf", "r")
         conf = json.load(conf_file)
@@ -1075,10 +1161,18 @@ class SibSearch(Tkinter.Frame):
         self.sib_label["text"] = "Select one or more SIB(s)"
         self.sib_label.pack()
 
+        # Listbox frame
+        self.sib_listbox_frame = Frame(self)
+        self.sib_listbox_frame.pack()
+
+        # Scrollbar
+        self.sib_scrollbar = Scrollbar(self.sib_listbox_frame)
+        self.sib_scrollbar.grid(row = 0, column = 1, sticky = S + N)
+
         # ListBox
-        self.sib_listbox = Listbox(self)
-        self.sib_listbox.config(width = 140, selectmode = MULTIPLE)
-        self.sib_listbox.pack()
+        self.sib_listbox = Listbox(self.sib_listbox_frame, yscrollcommand=self.sib_scrollbar.set)
+        self.sib_listbox.config(width = 140, selectmode = MULTIPLE, height = 30)
+        self.sib_listbox.grid(row = 0, column = 0)
 
         # Buttons frame
         self.buttons_frame = Frame(self)
@@ -1091,6 +1185,10 @@ class SibSearch(Tkinter.Frame):
         self.connect_button = Tkinter.Button(self.buttons_frame, text="Connect")
         self.connect_button.pack(side = LEFT)        
         self.connect_button["command"] = self.connect
+
+        self.selectall_button = Tkinter.Button(self.buttons_frame, text="Select All")
+        self.selectall_button.pack(side = LEFT)
+        self.selectall_button["command"] = self.select_all
 
         self.refresh_button = Tkinter.Button(self.buttons_frame, text="Refresh")
         self.refresh_button.pack(side = LEFT)
