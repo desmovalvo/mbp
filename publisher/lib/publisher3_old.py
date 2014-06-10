@@ -14,7 +14,6 @@ from xml.sax import make_parser
 import time
 import datetime
 from message_helpers import *
-import traceback
 
 def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port):
 
@@ -45,7 +44,6 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_po
 
     except socket.error:
         print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the virtual SIB'
-        print sys.exc_info() + "\n" + traceback.print_exc()
         sys.exit()    
 
     socket_list = [vs]
@@ -190,7 +188,6 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
 
             except socket.error:
                 print colored("publisher3> ", "red", attrs=["bold"]) + "Socket error"
-                print sys.exc_info() + "\n" + traceback.print_exc()
 
         else:
             rs.close()
@@ -208,7 +205,7 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
 
     # we open a socket for each subscription
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #tvs.settimeout(2)
+    tvs.settimeout(2)
     tvs.connect((vsib_host, vsib_port))
 
     # wait for messages and examinate them!
@@ -230,7 +227,7 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
 
             except socket.error:
                 print colored("tpublisher " + str(tn) + ">", "red", attrs=["bold"]) + "Socket error"
-                print sys.exc_info() + "\n" + traceback.print_exc()
+                
 
     # close thread
 #    print colored("publisher3> ", "red", attrs=[]) + "Closing thread subscription_handler"
