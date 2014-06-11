@@ -88,7 +88,7 @@ class SibSearch(Tkinter.Frame):
     def refresh(self):
 
         # manager connection
-        manager_ip ="10.143.250.58"
+        manager_ip ="10.143.250.250"
         manager_port = 17714
         manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try :

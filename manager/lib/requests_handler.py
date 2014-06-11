@@ -15,12 +15,59 @@ import socket, select, string, sys
 
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"
+rdf ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
 PREFIXES = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <""" + ns + ">"
+
+
+
+
+#functions
+def RegisterPublicSIB(ancillary_ip, ancillary_port, owner, sib_ip, sib_port):
+    # debug print
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("RegisterPublicSIB", "cyan", attrs=["bold"])
+    
+    # sib id
+    sib_id = str(uuid.uuid4())
+
+
+    # insert information in the ancillary SIB
+    try:
+        a = SibLib(ancillary_ip, ancillary_port)
+        # in realta' non e' una remote sib 
+        t = [Triple(URI(ns + str(sib_id)), URI(rdf + "type"), URI(ns + "remoteSib"))]
+        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(sib_ip) + "-" + str(sib_port))))
+        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
+        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
+        a.insert(t)
+        
+        sib_info = {}
+        sib_info["return"] = "ok"
+        sib_info["sib_id"] = str(sib_id)
+        sib_info["sib_ip"] = str(sib_ip)
+        sib_info["sib_port"] = sib_port
+        sib_info["sib_owner"] = str(owner)
+
+        # return sib info
+        return sib_info
+
+    except socket.error:
+        sib_info = {}
+        sib_info["return"] = "fail"
+        sib_info["cause"] = "Connection to Ancillary Sib failed"
+        return sib_info
+    except Exception, e: #TODO catturare qui i sibError
+        print 'ECCEZIONE: ' + str(e)
+        sib_info = {}
+        sib_info["return"] = "fail"
+        sib_info["cause"] = "Sib Error"
+        return sib_info
+
+
 
 #functions
 def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
@@ -98,6 +145,49 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
         confirm = {'return':'fail', 'cause':' No virtualisers available.'}
         virtualiser.close()
         return confirm
+
+def DeleteSIB(ancillary_ip, ancillary_port, sib_id):
+    # debug print
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("DeleteSIB", "cyan", attrs=["bold"])
+    
+    # query to the ancillary SIB 
+    a = SibLib(ancillary_ip, ancillary_port)
+
+
+    # remove information from the ancillary SIB
+    try:
+#####################
+        # check if the remote SIB is part of a virtual multi SIB
+        t = Triple(None, URI(ns + "composedBy"), URI(ns + sib_id))
+        result = a.execute_rdf_query(t)
+        a.remove(result)
+        
+        # check if we have to set the multi SIBs offline
+        for vmsib in result:
+            t2 = Triple(URI(vmsib[0]), URI(ns + "composedBy"), None)
+            r = a.execute_rdf_query(t2)
+            if len(r) == 0:
+                t3 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), None)
+                t4 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), URI(ns + "offline"))
+                r = a.execute_rdf_query(t3)
+                a.remove(r)
+                a.insert(t4)
+
+        # remove the triples related to the remote SIB
+        t = Triple(URI(ns + sib_id), None, None)
+        result = a.execute_rdf_query(t)  
+        #print result
+        a.remove(result)
+
+        confirm = {'return':'ok'}
+        
+    except socket.error:
+        print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
+        confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
+
+    return confirm
+                                        
+
 
 def DeleteRemoteSIB(ancillary_ip, ancillary_port, virtual_sib_id):
     # debug print

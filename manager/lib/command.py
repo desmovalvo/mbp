@@ -4,11 +4,13 @@
 import json
 
 COMMANDS = {
+    "RegisterPublicSIB": ["owner", "ip", "port"],
     "NewRemoteSIB" : ["owner"],
     "NewVirtualMultiSIB": ["sib_list"],
     "DiscoveryAll" : [],
     "DiscoveryWhere" : ["sib_profile"],
-    "DeleteRemoteSIB" : ["virtual_sib_id"]
+    "DeleteRemoteSIB" : ["virtual_sib_id"],
+    "DeleteSIB" : ["sib_id"]
     }
 
 # class
