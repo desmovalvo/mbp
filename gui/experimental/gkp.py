@@ -66,6 +66,9 @@ class Application(Tkinter.Tk):
 class StartPage(Tkinter.Frame):
     def __init__(self, parent, controller):
         
+        self.s = Style()
+        self.s.theme_use('clam')
+
         Tkinter.Frame.__init__(self, parent) 
 
         self.s = Style()
@@ -79,17 +82,17 @@ class StartPage(Tkinter.Frame):
         buttons_frame.pack()
 
         # sibsearch button
-        sibsearch_button = Tkinter.Button(buttons_frame, text="Look for a SIB")
+        sibsearch_button = Button(buttons_frame, text="Look for a SIB")
         sibsearch_button["command"] = lambda: controller.show_frame(SibSearch)
         sibsearch_button.pack(side = LEFT)
 
         # sibinteraction button
-        sibinteraction_button = Tkinter.Button(buttons_frame, text="Connect to a known SIB")
+        sibinteraction_button = Button(buttons_frame, text="Connect to a known SIB")
         sibinteraction_button["command"] = lambda: controller.show_frame(SibInteraction)
         sibinteraction_button.pack(side = LEFT)
 
         # quit button
-        quit_button = Tkinter.Button(buttons_frame, text="Quit")
+        quit_button = Button(buttons_frame, text="Quit")
         quit_button["command"] = sys.exit
         quit_button.pack(side = LEFT)
 
@@ -727,6 +730,9 @@ class SibInteraction(Tkinter.Frame):
 
     def __init__(self, parent, controller):
 
+        self.s = Style()
+        self.s.theme_use('clam')
+
         # Frame
         Tkinter.Frame.__init__(self, parent) 
 
@@ -1139,6 +1145,12 @@ class SibSearch(Tkinter.Frame):
 
     def __init__(self, parent, controller):
 
+        self.s = Style()
+        self.s.theme_use('clam')
+
+        # Frame constructor
+        Tkinter.Frame.__init__(self, parent) 
+
         self.controller = controller
         self.sflag = True
         
@@ -1152,9 +1164,6 @@ class SibSearch(Tkinter.Frame):
 
         # Closing the configuration file
         conf_file.close()
-
-        # Frame constructor
-        Tkinter.Frame.__init__(self, parent) 
 
         # Sib Label
         self.sib_label = Label(self)
@@ -1179,22 +1188,22 @@ class SibSearch(Tkinter.Frame):
         self.buttons_frame.pack()
 
         # Buttons
-        self.back_button = Tkinter.Button(self.buttons_frame, text="Back", command=lambda: controller.show_frame(StartPage))
+        self.back_button = Button(self.buttons_frame, text="Back", command=lambda: controller.show_frame(StartPage))
         self.back_button.pack(side = LEFT)
 
-        self.connect_button = Tkinter.Button(self.buttons_frame, text="Connect")
+        self.connect_button = Button(self.buttons_frame, text="Connect")
         self.connect_button.pack(side = LEFT)        
         self.connect_button["command"] = self.connect
 
-        self.selectall_button = Tkinter.Button(self.buttons_frame, text="Select All")
+        self.selectall_button = Button(self.buttons_frame, text="Select All")
         self.selectall_button.pack(side = LEFT)
         self.selectall_button["command"] = self.select_all
 
-        self.refresh_button = Tkinter.Button(self.buttons_frame, text="Refresh")
+        self.refresh_button = Button(self.buttons_frame, text="Refresh")
         self.refresh_button.pack(side = LEFT)
         self.refresh_button["command"] = self.refresh
 
-        self.quit_button = Tkinter.Button(self.buttons_frame, text="Quit")
+        self.quit_button = Button(self.buttons_frame, text="Quit")
         self.quit_button.pack(side = LEFT)
         self.quit_button["command"] = sys.exit
 
