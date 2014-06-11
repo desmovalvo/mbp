@@ -1030,52 +1030,60 @@ class SibSearch(Tkinter.Frame):
             print "Connecting to the manager:",
             manager_socket.connect((self.manager_ip, self.manager_port))
             print "OK!"
-        except :
-            print colored("failed!", "red", attrs=['bold'])
             
-        # discovery request
-        print "Sending DiscoveryAll request to the manager:",
-        msg = {"command":"DiscoveryAll"}
-        request = json.dumps(msg)
-        manager_socket.send(request)
+            # discovery request
+            print "Sending DiscoveryAll request to the manager:",
+            msg = {"command":"DiscoveryAll"}
+            request = json.dumps(msg)
+            manager_socket.send(request)
         
-        # discovery reply
-        while 1:
-            msg = manager_socket.recv(4096)
-            if msg:
-                manager_socket.close()
-                break
+            # discovery reply
+            while 1:
+                msg = manager_socket.recv(4096)
+                if msg:
+                    manager_socket.close()
+                    break
+    
+            # was it a success?
+            parsed_msg = json.loads(msg)
+            if parsed_msg["return"] == "fail":
+                print colored("failed!", "red", attrs=["bold"])  + "(" + parsed_msg["cause"] +")"
+                self.notification_label["text"] = "DiscoveryAll failed"
+                
+            elif parsed_msg["return"] == "ok":
+                print "OK!"
+                virtual_sib_list = parsed_msg["virtual_sib_list"]
+    
+                # remove everything from the listbox
+                self.sib_listbox.delete(0, END)
+          
+            # parsing the reply
+            self.vsib_list = []
+            i = 0
+            for vs in virtual_sib_list:
+    
+                # built a dict
+                sib_dict = {}
+                sib_dict["ip"] = virtual_sib_list[vs]["ip"]
+                sib_dict["port"] = virtual_sib_list[vs]["port"]
+                sib_dict["id"] = vs
+                self.vsib_list.append(sib_dict)
+                
+                # filling the listbox
+                self.sib_listbox.insert(i, str(sib_dict))
+                
+                # increment the counter
+                i += 1
 
-        # was it a success?
-        parsed_msg = json.loads(msg)
-        if parsed_msg["return"] == "fail":
-            print colored("failed!", "red", attrs=["bold"])  + "(" + parsed_msg["cause"] +")"
-            
-        elif parsed_msg["return"] == "ok":
-            print "OK!"
-            virtual_sib_list = parsed_msg["virtual_sib_list"]
-
-            # remove everything from the listbox
-            self.sib_listbox.delete(0, END)
-      
-        # parsing the reply
-        self.vsib_list = []
-        i = 0
-        for vs in virtual_sib_list:
-
-            # built a dict
-            sib_dict = {}
-            sib_dict["ip"] = virtual_sib_list[vs]["ip"]
-            sib_dict["port"] = virtual_sib_list[vs]["port"]
-            sib_dict["id"] = vs
-            self.vsib_list.append(sib_dict)
-            
-            # filling the listbox
-            self.sib_listbox.insert(i, str(sib_dict))
-            
-            # increment the counter
-            i += 1
-
+            self.connect_button.config(state = NORMAL)
+            self.selectall_button.config(state = NORMAL)
+            self.notification_label["text"] = "Connected to the manager"
+    
+        except:
+            print colored("failed!", "red", attrs=['bold'])
+            self.notification_label["text"] = "Connection to the manager failed"
+            self.connect_button.config(state = DISABLED)
+            self.selectall_button.config(state = DISABLED)
 
     ###################################################
     #
@@ -1205,8 +1213,12 @@ class SibSearch(Tkinter.Frame):
         self.quit_button.pack(side = LEFT)
         self.quit_button["command"] = sys.exit
 
+        self.notification_label = Label(self)
+        self.notification_label.pack(side = BOTTOM)
+        
         # call the refresh method to fill the listbox
         self.refresh()
+
 
 
 
