@@ -519,9 +519,15 @@ class SibInteraction(Tkinter.Frame):
         # execute the query
         try:
             res = self.kp.execute_sparql_query(q)
-
+            
             if "SELECT" in q: # TODO - this is not always right...
-                s = str(res)
+#                s = str(res)
+                s = ""
+                s = str(len(res)) + " Triples\n"
+
+                for t in res:
+                    s = s + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n"
+           
                 
                 # update the result field
                 self.results_text.config(state = NORMAL)
@@ -558,9 +564,12 @@ class SibInteraction(Tkinter.Frame):
             res = self.kp.execute_sparql_query(q)
 
             s = ""
+            s = str(len(res)) + " Triples\n"
+
             for t in res:
                 s = s + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n"
-                
+
+                            
             # update the result field
             self.results_text.config(state = NORMAL)
             self.results_text.delete(1.0, END)
