@@ -11,7 +11,8 @@ from ttk import *
 from SIBLib import *
 from termcolor import *
 import sys
-
+from RDFIndicationHandler import *
+from SPARQLIndicationHandler import *
 
 # font
 TITLE_FONT = ("Helvetica", 18, "bold")

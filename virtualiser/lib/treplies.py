@@ -611,7 +611,7 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
 
 
 # RDF SUBSCRIBE CONFIRM
-def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initial_results, active_subscriptions, clientsock, val_subscriptions, newsub):
+def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initial_results, active_subscriptions, clientsock, val_subscriptions, newsub, query_type):
     """This method is used to manage rdf SUBSCRIBE CONFIRM received. """
 
     global mutex
@@ -652,9 +652,9 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                 if info["transaction_type"] == "SUBSCRIBE":
 
                     if info["message_type"] == "CONFIRM":
-                        # debug info
-                        print treplies_print(True) + " handle_rdf_subscribe_confirm"
-                        logger.info("RDF SUBSCRIBE CONFIRM handled by handle_rdf_subscribe_confirm")
+                        # debug info                        
+                        print treplies_print(True) + " handle_subscribe_confirm"
+                        logger.info(query_type + " SUBSCRIBE CONFIRM handled by handle_subscribe_confirm")
                         
                         # check if we already received a failure
                         mutex.acquire()
@@ -680,7 +680,10 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                                             parser.parse(StringIO(ssap_msg))
                                 
                                             # extract triples from ssap reply
-                                            triple_list = parse_M3RDF(ssap_msg_dict["results"])
+                                            if query_type == "RDF-M3":
+                                                triple_list = parse_M3RDF(ssap_msg_dict["results"])
+                                            else:
+                                                triple_list = parse_sparql(ssap_msg_dict["results"])
                                               
                                             for triple in triple_list:
                                                 initial_results[info["node_id"]].append(triple)
@@ -732,8 +735,8 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                 elif info["transaction_type"] == "UNSUBSCRIBE":
                     # TODO qui bisogna anche eliminare l'istanza della subscription!
                     # debug info
-                    print treplies_print(True) + " handle_rdf_unsubscribe_confirm"
-                    logger.info("RDF UNSUBSCRIBE CONFIRM handled by handle_rdf_unsubscribe_confirm")
+                    print treplies_print(True) + " handle_unsubscribe_confirm"
+                    logger.info(query_type + " UNSUBSCRIBE CONFIRM handled by handle_unsubscribe_confirm")
                     
                     # check if we already received a failure
                     mutex.acquire()
@@ -1047,7 +1050,8 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num
              
         n = str(uuid.uuid4())
         t[n] = n
-        thread.start_new_thread(rdf_subscribe_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, initial_results, active_subscriptions, clientsock, val_subscriptions, newsub))
+        query_type = info["parameter_type"]
+        thread.start_new_thread(rdf_subscribe_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, initial_results, active_subscriptions, clientsock, val_subscriptions, newsub, query_type))
 
 
 

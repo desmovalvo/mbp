@@ -106,8 +106,8 @@ def handler(clientsock, addr, port, sibs_info):
                     # call the method that handles the request and wait for confirms
                     handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], query_results)
     
-                # RDF SUBSCRIBE REQUEST
-                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE" and info["parameter_type"] == "RDF-M3":
+                # RDF and SPARQL SUBSCRIBE REQUEST
+                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE":# and info["parameter_type"] == "RDF-M3":
     
                     # how many confirms should we wait? 
                     confirms[info["node_id"]] = len(sibs_info)
