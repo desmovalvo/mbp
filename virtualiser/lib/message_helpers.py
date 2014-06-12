@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import time
 
 START_TAG = "<SSAP_message>"
 END_TAG = "</SSAP_message>"
@@ -8,8 +9,9 @@ def complete_message_present(ssap_message):
 
     """This function verifies if ssap_message contains a
     complete message"""
-
-    if (ssap_message.find(START_TAG) >= 0) and (ssap_message.find(END_TAG) > 0):
+    
+    if (START_TAG in ssap_message) and (END_TAG in ssap_message):
+    #if (ssap_message.find(START_TAG) >= 0) and (ssap_message.find(END_TAG) > 0):
         return True
     else:
         return False
@@ -21,9 +23,13 @@ def extract_first_message(ssap_message):
     followed by the remaining part"""
 
     # position of the first and the last chars
+    
+    start = time.time()
     start_msg = ssap_message.find(START_TAG)
     end_msg = ssap_message.find(END_TAG) + len(END_TAG)
-
+    end = time.time() - start
+    print "Tempo find " + str(end) + " --- Lunghezza: " + str(len(ssap_message)) 
+    
     # the first message is...
     first_msg = ssap_message[start_msg:end_msg]
 

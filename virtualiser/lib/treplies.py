@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+import random
 import uuid
 import thread
 import threading
@@ -13,7 +14,9 @@ from termcolor import colored
 from xml.sax import make_parser
 from threading import Thread, Lock
 from xml.etree import ElementTree as ET
-
+import time
+from message_helpers import *
+import sys
 
 BUFSIZ = 1024
 
@@ -31,6 +34,9 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
     global mutex
     global num_confirms
+
+    ddd = random.randint(0,1000)
+    print "JOIN HANDLER"
     
     ###############################################
     ## ricezione e riunificazione del messaggio  ##
@@ -38,6 +44,7 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
     complete_ssap_msg = ""
     while 1:
         try:
+            
             ssap_msg = sib_sock.recv(BUFSIZ)
  
             # check whether we received a blank message
@@ -65,6 +72,9 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                     info[k] = child.text
 
                 if info["transaction_type"] == "JOIN":
+
+                    print "IF 4" + str(ddd)
+
                     # debug info
                     print treplies_print(True) + " handle_join_confirm"
                     logger.info("JOIN CONFIRM handled by handle_join_confirm")
@@ -104,6 +114,7 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
 
             except ET.ParseError:
+                print "PARSE "  + str(ddd)
                 #print treplies_print(False) + " ParseError"
                 pass
 
@@ -396,104 +407,119 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
         try:
             ssap_msg = sib_sock.recv(BUFSIZ)
  
+            if ssap_msg != None:
+                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+
             # check whether we received a blank message
             if not ssap_msg and not complete_ssap_msg:
                 break
 
-            if ssap_msg != None:
-                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+            else:
+                #extract all the messages and let the remaining part into the complete_ssap_msg variable
+                messages, complete_ssap_msg = extract_complete_messages(complete_ssap_msg)
 
-            if "</SSAP_message>" in complete_ssap_msg:
-                ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
-                complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
+                for ssap_msg in messages:
                 
-            # try to decode the message
-            try:
-                    
-                # parse the ssap message
-                root = ET.fromstring(ssap_msg)           
-                info = {}
-                for child in root:
-                    if child.attrib.has_key("name"):
-                        k = child.tag + "_" + str(child.attrib["name"])
-                    else:
-                        k = child.tag
-                    info[k] = child.text
+                    # try to decode the message
+                    try:
 
-                if info["transaction_type"] == "QUERY" and "sparql" in ssap_msg:
+                        # convert ssap_msg to dict
+                        ssap_msg_dict = {}
+                        parser = make_parser()
+                        ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+                        parser.setContentHandler(ssap_mh)
+                        parser.parse(StringIO(ssap_msg))
+                                                                                                    
+                        if ssap_msg_dict["transaction_type"] == "QUERY":
+        
+                            # debug message
+                            print treplies_print(True) + " handle_sparql_query_confirm"
+                            logger.info("SPARQL QUERY CONFIRM handled by handle_sparql_query_confirm")
+                                    
+                            # check if we already received a failure
+                            mutex.acquire()
+                            if not num_confirms[ssap_msg_dict["node_id"]] == None:
 
-                    # debug message
-                    print treplies_print(True) + " handle_sparql_query_confirm"
-                    logger.info("SPARQL QUERY CONFIRM handled by handle_sparql_query_confirm")
-                            
-                    # check if we already received a failure
-                    mutex.acquire()
-                    if not num_confirms[info["node_id"]] == None:
-                        try:
-                            # check if the current message represent a successful insertion
-                            if info["parameter_status"] == "m3:Success":
-                                num_confirms[info["node_id"]] -= 1
-                                
-                                # convert ssap_msg to dict
-                                ssap_msg_dict = {}
-                                parser = make_parser()
-                                ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                                parser.setContentHandler(ssap_mh)
-                                parser.parse(StringIO(ssap_msg))
-                    
-                                # extract triples from ssap reply
-                                triple_list = parse_sparql(ssap_msg_dict["results"])
-                                  
-                                for triple in triple_list:
-                                    query_results[info["node_id"]].append(triple)
-                                
-                                # remove duplicates
-                                result = []
-                                for triple in query_results[info["node_id"]]:
-                                    if not triple in result:
-                                        result.append(triple)
+                                try:
+
+                                    # check if the current message represent a successful insertion
+                                    if ssap_msg_dict["status"] == "m3:Success":
+
+                                        num_confirms[ssap_msg_dict["node_id"]] -= 1
                                         
-                                query_results[info["node_id"]] = result
-                    
-                                if num_confirms[info["node_id"]] == 0:    
-                                    # build ssap reply
-                                    ssap_reply = reply_to_sparql_query(ssap_msg_dict["node_id"],
-                                                          ssap_msg_dict["space_id"],
-                                                          ssap_msg_dict["transaction_id"],
-                                                          result)
-                    
-                                    kp_list[info["node_id"]].send(ssap_reply)
-                                    kp_list[info["node_id"]].close()
-                    
-                    
-                            # if the current message represent a failure...
-                            else:
-                                
-                                num_confirms[info["node_id"]] = None
-                                # send SSAP ERROR MESSAGE
-                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                 info["space_id"],
-                                                                 "QUERY",
-                                                                 info["transaction_id"],
-                                                                 '<parameter name="status">m3:Error</parameter>')
-                                kp_list[info["node_id"]].send(err_msg)
-                                kp_list[info["node_id"]].close()
-                                logger.error("SPARQL CONFIRM forwarding failed")
-                    
-                        except socket.error:
-                            print treplies_print(False) + " socket.error: break!"
-
-                
-                    mutex.release()
+                                        start = time.time()
+                                                                    
+                                        # extract triples from ssap reply
+                                        triple_list = parse_sparql(ssap_msg_dict["results"])
+                                          
+                                        end = time.time() - start
+                                        
+                                        print "Tempo parsing loro: " + str(end)
 
 
-            except ET.ParseError:
-                #print treplies_print(False) + " ParseError"
-                pass
+                                        # duplicates removal
+                                        start = time.time()
+                                        lista = query_results[ssap_msg_dict["node_id"]] + triple_list
+                                        seen = set()
+                                        new_list = []
+                                        for triple in lista:
+                                            if str(triple) in seen:
+                                                continue
+                                            else:
+                                                seen.add(str(triple))
+                                                new_list.append(triple)
 
+                                        end = time.time() - start
+                                        print "tempo rimozione duplicati " + str(end) 
+                            
+                                        if num_confirms[ssap_msg_dict["node_id"]] == 0:    
+
+                                            print "IF 4"
+                                            
+                                            # build ssap reply
+                                            print "sto costruendo il messaggio..."
+                                            start = time.time()
+                                            ssap_reply = reply_to_sparql_query(ssap_msg_dict["node_id"],
+                                                                  ssap_msg_dict["space_id"],
+                                                                  ssap_msg_dict["transaction_id"],
+#                                                                  query_results[ssap_msg_dict["node_id"]])
+                                                                  new_list)
+                                            end = time.time() - start 
+                                            print "Tempo di costruzione mex " + str(end) 
+                                            
+                                            kp_list[ssap_msg_dict["node_id"]].send(ssap_reply)
+                                            kp_list[ssap_msg_dict["node_id"]].close()
+                            
+                            
+                                    # if the current message represent a failure...
+                                    else:
+                                        
+                                        num_confirms[ssap_msg_dict["node_id"]] = None
+                                        # send SSAP ERROR MESSAGE
+                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                         ssap_msg_dict["space_id"],
+                                                                         "QUERY",
+                                                                         ssap_msg_dict["transaction_id"],
+                                                                         '<parameter name="status">m3:Error</parameter>')
+                                        kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+                                        kp_list[ssap_msg_dict["node_id"]].close()
+                                        logger.error("SPARQL CONFIRM forwarding failed")
+                            
+                                except socket.error:
+                                    print treplies_print(False) + " socket.error: break!"
+        
+                        
+                            mutex.release()
+        
+        
+                    except ET.ParseError:
+                        print treplies_print(False) + " ParseError"
+                        pass
+        
         except socket.error:
             print treplies_print(False) + " socket.error"
                     
+
 # RDF QUERY CONFIRM
 def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_results):
     """This method is used to manage rdf QUERY CONFIRM received. """
@@ -501,109 +527,126 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
     global mutex
     global num_confirms
 
-
     ###############################################
     ## ricezione e riunificazione del messaggio  ##
     ###############################################
     complete_ssap_msg = ""
     while 1:
+
+
         try:
             ssap_msg = sib_sock.recv(BUFSIZ)
  
+            if ssap_msg != None:
+                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+
             # check whether we received a blank message
             if not ssap_msg and not complete_ssap_msg:
                 break
 
-            if ssap_msg != None:
-                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
+            else:
+                #extract all the messages and let the remaining part into the complete_ssap_msg variable
+                messages, complete_ssap_msg = extract_complete_messages(complete_ssap_msg)
 
-            if "</SSAP_message>" in complete_ssap_msg:
-                ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
-                complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
+                for ssap_msg in messages:
                 
-            # try to decode the message
-            try:
-                    
-                # parse the ssap message
-                root = ET.fromstring(ssap_msg)           
-                info = {}
-                for child in root:
-                    if child.attrib.has_key("name"):
-                        k = child.tag + "_" + str(child.attrib["name"])
-                    else:
-                        k = child.tag
-                    info[k] = child.text
+                    # try to decode the message
+                    try:
 
-                if info["transaction_type"] == "QUERY" and not "sparql" in ssap_msg:
+                        # convert ssap_msg to dict
+                        ssap_msg_dict = {}
+                        parser = make_parser()
+                        ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+                        parser.setContentHandler(ssap_mh)
+                        parser.parse(StringIO(ssap_msg))
+                                                                            
+                        if ssap_msg_dict["transaction_type"] == "QUERY":
 
-                    # debug info
-                    print treplies_print(True) + " handle_rdf_query_confirm"
-                    logger.info("RDF QUERY CONFIRM handled by handle_rdf_query_confirm")
-                    
-                    # check if we already received a failure
-                    mutex.acquire()
-                    if not num_confirms[info["node_id"]] == None:
-                        try:
-                            # check if the current message represent a successful insertion
-                            if info["parameter_status"] == "m3:Success":
-                                num_confirms[info["node_id"]] -= 1
-                                
-                                # convert ssap_msg to dict
-                                ssap_msg_dict = {}
-                                parser = make_parser()
-                                ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                                parser.setContentHandler(ssap_mh)
-                                parser.parse(StringIO(ssap_msg))
-                    
-                                # extract triples from ssap reply
-                                triple_list = parse_M3RDF(ssap_msg_dict["results"])
-                                  
-                                for triple in triple_list:
-                                    query_results[info["node_id"]].append(triple)
-                                
-                                # remove duplicates
-                                result = []
-                                for triple in query_results[info["node_id"]]:
-                                    if not triple in result:
-                                        result.append(triple)
+                            # debug info
+                            print treplies_print(True) + " handle_rdf_query_confirm"
+                            logger.info("RDF QUERY CONFIRM handled by handle_rdf_query_confirm")
+                            
+                            # check if we already received a failure
+                            mutex.acquire()
+                            if not num_confirms[ssap_msg_dict["node_id"]] == None:
+
+                                try:
+                                    # check if the current message represent a successful insertion
+                                    if ssap_msg_dict["status"] == "m3:Success":
+                                        num_confirms[ssap_msg_dict["node_id"]] -= 1
                                         
-                                query_results[info["node_id"]] = result
-                    
-                                if num_confirms[info["node_id"]] == 0:    
-                                    # build ssap reply
-                                    ssap_reply = reply_to_rdf_query(ssap_msg_dict["node_id"],
-                                                          ssap_msg_dict["space_id"],
-                                                          ssap_msg_dict["transaction_id"],
-                                                          result)
-                    
-                                    kp_list[info["node_id"]].send(ssap_reply)
-                                    kp_list[info["node_id"]].close()
-                    
-                    
-                            # if the current message represent a failure...
-                            else:
-                                
-                                num_confirms[info["node_id"]] = None
-                                # send SSAP ERROR MESSAGE
-                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                 info["space_id"],
-                                                                 "QUERY",
-                                                                 info["transaction_id"],
-                                                                 '<parameter name="status">m3:Error</parameter>')
-                                kp_list[info["node_id"]].send(err_msg)
-                                kp_list[info["node_id"]].close()
-                                logger.error("RDF QUERY CONFIRM forwarding failed")
-                    
-                        except socket.error:
-                            print treplies_print(False) + " socket.error: break!"
+                                        # # convert ssap_msg to dict
+                                        # ssap_msg_dict = {}
+                                        # parser = make_parser()
+                                        # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
+                                        # parser.setContentHandler(ssap_mh)
+                                        # parser.parse(StringIO(ssap_msg))
+                            
+                                        # extract triples from ssap reply
+                                        start = time.time()
+                                        triple_list = parse_M3RDF(ssap_msg_dict["results"])
+                                        end = time.time() - start
+                                        print "tempo estrazione delle triple " + str(end) 
+                                          
+                                        # for triple in triple_list:
+                                        #     query_results[ssap_msg_dict["node_id"]].append(triple)
+                                        
+                                        # # remove duplicates
+                                        # result = []
+                                        # for triple in query_results[ssap_msg_dict["node_id"]]:
+                                        #     if not triple in result:
+                                        #         result.append(triple)
+                                                
+                                        
+                                        start = time.time()
+                                        lista = query_results[ssap_msg_dict["node_id"]] + triple_list
+                                        seen = set()
+                                        new_list = []
+                                        for triple in lista:
+                                            if str(triple) in seen:
+                                                continue
+                                            else:
+                                                seen.add(str(triple))
+                                                new_list.append(triple)
+
+                                        end = time.time() - start
+                                        print "tempo rimozione duplicati " + str(end) 
+                            
+                                        if num_confirms[ssap_msg_dict["node_id"]] == 0:    
+                                            # build ssap reply
+                                            ssap_reply = reply_to_rdf_query(ssap_msg_dict["node_id"],
+                                                                  ssap_msg_dict["space_id"],
+                                                                  ssap_msg_dict["transaction_id"],
+                                                                  new_list)
+                            
+                                            kp_list[ssap_msg_dict["node_id"]].send(ssap_reply)
+                                            kp_list[ssap_msg_dict["node_id"]].close()
+                            
+                            
+                                    # if the current message represent a failure...
+                                    else:
+                                        
+                                        num_confirms[ssap_msg_dict["node_id"]] = None
+                                        # send SSAP ERROR MESSAGE
+                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                         ssap_msg_dict["space_id"],
+                                                                         "QUERY",
+                                                                         ssap_msg_dict["transaction_id"],
+                                                                         '<parameter name="status">m3:Error</parameter>')
+                                        kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+                                        kp_list[ssap_msg_dict["node_id"]].close()
+                                        logger.error("RDF QUERY CONFIRM forwarding failed")
+                                        
+                                except socket.error:
+                                    print treplies_print(False) + " socket.error: break!"
 
                 
-                    mutex.release()
+                            mutex.release()
+                            
 
-
-            except ET.ParseError:
-                #print treplies_print(False) + " ParseError"
-                pass
+                    except ET.ParseError:
+                        #print treplies_print(False) + " ParseError"
+                        pass
 
         except socket.error:
             print treplies_print(False) + " socket.error"
@@ -804,6 +847,8 @@ def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
     # cycle through all the SIBs that compose the VMSIB
     for s in sibs_info:
 
+        print "SIB: " + str(s)
+
         # get connection parameters from the sibs_info dict
         ip = str(sibs_info[s]["ip"].split("#")[1])
         kp_port = sibs_info[s]["kp_port"]
@@ -818,7 +863,9 @@ def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
             sock.connect((ip, kp_port))
 
             try:
+                print 'Trying connection on ' + str(s)
                 sock.send(ssap_msg)
+                print 'Success on ' + str(s)
             except socket.error:
                 print treplies_print(False) + " Send failed"       
                
@@ -839,6 +886,7 @@ def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
         t[n] = n
 
         # spawning threads
+        print 'Start a thread for ' + str(s)
         func = globals()[info["transaction_type"].lower() + "_confirm_handler"]
         thread.start_new_thread(func, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
 
@@ -871,6 +919,7 @@ def handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, query_
             sock.connect((ip, kp_port))
 
             try:
+                print "SENDING MESSAGE TO SIB: " + str(s)
                 sock.send(ssap_msg)
             except socket.error:
                 print treplies_print(False) + " Send failed"       
@@ -891,6 +940,7 @@ def handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, query_
         t[n] = n
 
         if info["parameter_type"] == "sparql":
+            print "START A THREAD FOR " + str(s)
             thread.start_new_thread(sparql_query_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, query_results))
         else:
             thread.start_new_thread(rdf_query_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, query_results))
@@ -1114,24 +1164,41 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, n
 ##############################################################
 
 def reply_to_sparql_query(node_id, space_id, transaction_id, results):
-    # TODO: puo' dare problemi il fatto che piu' thread usano questa funzione?
+
+    start = time.time()
     # building HEAD part of the query results
     variable_list = []
+    head_template_list = []
     for triple in results:
         for element in triple:    
-            if not SSAP_VARIABLE_TEMPLATE%(str(element[0])) in variable_list:
-                variable_list.append(SSAP_VARIABLE_TEMPLATE%(str(element[0])))
-    head = SSAP_HEAD_TEMPLATE%(''.join(variable_list))
-    
+            
+    #         if not SSAP_VARIABLE_TEMPLATE%(str(element[0])) in variable_list:
+    #             variable_list.append(SSAP_VARIABLE_TEMPLATE%(str(element[0])))
+    # head = SSAP_HEAD_TEMPLATE%(''.join(variable_list))
+
+            if not element[0] in variable_list:
+                variable_list.append(element[0])
+                head_template_list.append( SSAP_VARIABLE_TEMPLATE % (str(element[0])) )
+
+    head = SSAP_HEAD_TEMPLATE%(''.join(head_template_list))
+
     # building RESULTS part of the query results
+    result_list = []
     result_string = ""
+
     for triple in results:
         binding_string = ""
+        binding_list = []
+
         for element in triple:    
-            binding_string = binding_string + SSAP_BINDING_TEMPLATE%(element[0], element[2])
-        result_string = result_string + SSAP_RESULT_TEMPLATE%(binding_string)
-    results_string = SSAP_RESULTS_TEMPLATE%(result_string)
+            binding_list.append(SSAP_BINDING_TEMPLATE%(element[0], element[2]))
+
+        result_list.append(SSAP_RESULT_TEMPLATE%(''.join(binding_list)))
+
+    results_string = SSAP_RESULTS_TEMPLATE%(''.join(result_list))
     body = SSAP_RESULTS_SPARQL_PARAM_TEMPLATE%(head + results_string)
+
+    start = time.time()
 
     # finalizing the reply
     reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(node_id, 
@@ -1145,9 +1212,11 @@ def reply_to_sparql_query(node_id, space_id, transaction_id, results):
 
 def reply_to_rdf_query(node_id, space_id, transaction_id, results):
 
-    tr = ""
+    start = time.time()
+    tr_list = []
     for el in results:
-        tr = tr + SSAP_TRIPLE_TEMPLATE%(el[0], el[1], el[2])
+        tr_list.append(SSAP_TRIPLE_TEMPLATE%(el[0], el[1], el[2]))
+    tr = ''.join(tr_list)
             
     body = SSAP_RESULTS_RDF_PARAM_TEMPLATE%(SSAP_TRIPLE_LIST_TEMPLATE%(tr))
     
@@ -1157,6 +1226,8 @@ def reply_to_rdf_query(node_id, space_id, transaction_id, results):
                                     "QUERY",
                                     transaction_id,
                                     body)
+    end = time.time() - start
+    print "TEMPO DI COSTRUZIONE MESSAGGIO: " + str(end)
     return reply
 
 
@@ -1173,5 +1244,4 @@ def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscript
                                     transaction_id,
                                     body)
     return reply
-
 

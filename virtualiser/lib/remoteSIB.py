@@ -70,8 +70,6 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     #extract all the messages and let the remaining part into the complete_ssap_msg variable
                     messages, complete_ssap_msg = extract_complete_messages(complete_ssap_msg)
 
-###########################    
-
                 for ssap_msg in messages:
                     # try to decode the message
                     try:

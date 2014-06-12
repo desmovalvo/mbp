@@ -11,6 +11,7 @@ from ttk import *
 from SIBLib import *
 from termcolor import *
 import sys
+import traceback
 from RDFIndicationHandler import *
 from SPARQLIndicationHandler import *
 
@@ -527,8 +528,9 @@ class SibInteraction(Tkinter.Frame):
                 s = str(len(res)) + " Triples\n"
 
                 for t in res:
-                    s = s + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n"
-           
+                    for el in t:
+                        s = s + str(el[2]) + " "
+                    s = s + "\n"
                 
                 # update the result field
                 self.results_text.config(state = NORMAL)
@@ -546,6 +548,7 @@ class SibInteraction(Tkinter.Frame):
             self.notification_label["text"] = 'Error with SPARQL query'
             print colored("failed!", "red", attrs=["bold"])
             print sys.exc_info()
+            print traceback.print_exc()
         
 
     ########################################################

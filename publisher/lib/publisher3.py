@@ -45,7 +45,7 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_po
 
     except socket.error:
         print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the virtual SIB'
-        print sys.exc_info() + "\n" + traceback.print_exc()
+        print str(sys.exc_info()) + "\n" + str(traceback.print_exc())
         sys.exit()    
 
     socket_list = [vs]
@@ -152,6 +152,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip,
     # forward the message to the real SIB
     if not "<transaction_type>REGISTER</transaction_type>" in ssap_msg:
         rs.send(ssap_msg)
+        print "Invio richiesta alla real sib"
         if ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
             # start a new thread to handle it
             thread.start_new_thread(subscription_handler, (rs, vs, vsib_host, vsib_port, subscriptions))
@@ -175,7 +176,7 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
         ssap_msg = rs.recv(4096)
         
         if ssap_msg:
-            #print colored("publisher3> ", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib, sending it to the Virtual Sib"
+            print colored("publisher3> ", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib, sending it to the Virtual Sib"
     
             # connect to remote host
             try :
