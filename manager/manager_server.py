@@ -18,11 +18,13 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 # this is a dictionary in which the keys are the available commands,
 # while the values are lists of available parameters for that command
 COMMANDS = {
+    "RegisterPublicSIB" : ["owner", "ip", "port"],
     "NewRemoteSIB" : ["owner"],
     "NewVirtualMultiSIB": ["sib_list"],
     "DiscoveryAll" : [],
     "DiscoveryWhere" : ["sib_profile"],
-    "DeleteRemoteSIB" : ["virtual_sib_id"]
+    "DeleteRemoteSIB" : ["virtual_sib_id"],
+    "DeleteSIB": ["sib_id"]
     }
 
 # classes
@@ -45,6 +47,22 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
             if cmd.valid:
                 print colored("SIBmanager> ", "blue", attrs=["bold"]) + "calling the proper method"
 
+                # RegisterPubliSIB request
+                if cmd.command == "RegisterPublicSIB":
+                    confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.owner, cmd.ip, cmd.port)
+
+                    # send a reply
+                    try:
+                        self.request.sendall(json.dumps(confirm))
+                    except:
+                        if confirm["return"] == "fail":
+                            # nothing to do
+                            print "Send Failed"
+                        else:
+                            # Send DeleteRemoteSIB request to the virtualiser to remove the virtual sib just created
+                            confirm = globals()["DeleteSIB"](confirm["sib_info"]["sib_id"])
+
+
                 # NewRemoteSIB request
                 if cmd.command == "NewRemoteSIB":
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.owner)
@@ -53,7 +71,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     try:
                         self.request.sendall(json.dumps(confirm))
                     except:
-                        if corfirm["return"] == "fail":
+                        if confirm["return"] == "fail":
                             # nothing to do
                             print "Send Failed"
                         else:
@@ -66,6 +84,14 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                                 
                     # send a reply
                     self.request.sendall(json.dumps(confirm))
+
+                # DeleteRemoteSIB request
+                elif data["command"] == "DeleteSIB":
+                    confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.sib_id)
+                                
+                    # send a reply
+                    self.request.sendall(json.dumps(confirm))
+
 
                 # DiscoveryAll request
                 elif data["command"] == "DiscoveryAll":

@@ -28,36 +28,36 @@ sub_at = sys.argv[8]
 
 class TestHandler:
      def __init__(self):
-         #print "Kp sottoscritto"
           pass
      def handle(self, added, removed):
-             #print "Ricevuta indication"
-             #print
          pass
 
 
+# create num_sub kps subscribed at the triple t_sub
 t_sub = Triple(None,None,None)
-
 print "Creating the subscriptions..."
-
 if sub_at == "virtualsib":
      ss = 0
      for i in range(0, num_sub):
-          kp_sub.append(SibLib(virtual_sib_ip, virtual_sib_port))
           try:
+               kp_sub.append(SibLib(virtual_sib_ip, virtual_sib_port))
                subs.append(kp_sub[i].create_rdf_subscription(t_sub, TestHandler()))
           except:
                print sys.exc_info()
                
           ss += 1
-     print "Avviate " + str(ss) + " sottoscrizioni"
+     print "Started " + str(ss) + " subscriptions"
+
 elif sub_at == "realsib":
      ss = 0
      for i in range(0, num_sub):
-          kp_sub.append(SibLib(sib_ip, sib_port))
-          subs.append(kp_sub[i].create_rdf_subscription(t_sub, TestHandler()))
+          try:
+               kp_sub.append(SibLib(sib_ip, sib_port))
+               subs.append(kp_sub[i].create_rdf_subscription(t_sub, TestHandler()))
+          except:
+               print sys.exc_info()
           ss += 1
-     print "Avviate " + str(ss) + " sottoscrizioni"
+     print "Started " + str(ss) + " subscriptions"
 
 #############################################################
 #
@@ -65,20 +65,22 @@ elif sub_at == "realsib":
 #
 #############################################################
 
-#kp = []
-rskp = SibLib(sib_ip, sib_port)
-print "Created a kp for the insertions into the real sib"
-#kp.append(rskp)
-#kp[0].remove(Triple(None, None, None))
-rskp.remove(Triple(None, None, None))
-print "Cleaned the real sib"
-vskp = SibLib(virtual_sib_ip, virtual_sib_port)
-print "Created a kp for the insertions into the virtual sib"
-#kp.append(SibLib(virtual_sib_ip, virtual_sib_port))
-#kp[1].remove(Triple(None, None, None))
-vskp.remove(Triple(None, None, None))
-print "Cleaned the virtual sib"
+kp = []
+try:
+     rskp = SibLib(sib_ip, sib_port)
+     print "Created a kp for the insertions into the real sib"
+     kp.append(rskp)
+     lt = rskp.execute_rdf_query(Triple(None, None, None))
+     for t in lt:
+          rskp.remove(t)
+     print "Cleaned the real sib"
 
+     vskp = SibLib(virtual_sib_ip, virtual_sib_port)
+     print "Created a kp for the insertions into the virtual sib"
+     kp.append(vskp)
+
+except:
+     print sys.exc_info()
 #############################################################
 #
 # INSERT
@@ -108,17 +110,23 @@ for client in [ rskp, vskp ]:
             t = []
             for k in range(((i+1)*step)):
                 tt = Triple(URI(ns + "subject" + str(it) + "_" + str(k)), URI(ns + "predicate" + str(it)), URI(ns + "object" + str(it)))
-                # print tt
                 t.append(tt)
     
             # insert the triples
-            end = timeit.timeit(lambda: client.insert(t), number=1)
-             # print "\tTriples at this step: " + str(len(client.execute_rdf_query(Triple(None, None, None))))
+            try:
+                 end = timeit.timeit(lambda: client.insert(t), number=1)
+            except:
+                 print sys.exc_info()
             
             tot.append(end)
     
             # clean sib
-            client.remove(Triple(None, None, None))
+            try:
+                 lt = client.execute_rdf_query(Triple(None, None, None))
+                 for t in lt:
+                      client.remove(t)
+            except:
+                 print sys.exc_info()
     
         # sort the array and pick the median value
         tot.sort()
@@ -138,7 +146,6 @@ for i in median_arrays:
 
 bar_chart = pygal.Bar(range=(0.0, 50.0))
 bar_chart.title = 'Insertion time with constant subscriptions varying the number of triples inserted'
-# chart = pygal.StackedLine(fill=True, interpolate='cubic', style=LightGreenStyle)
 bar_chart.add('Local SIB', median_arrays[0])
 bar_chart.add('Remote SIB', median_arrays[1])
 bar_chart.render_to_file('multiple_insert.svg')
@@ -154,15 +161,27 @@ print "NUM SUB: " + str(num_sub)
 
 ss = 0
 for i in range(0, num_sub):
-    kp_sub[i].unsubscribe(subs[i])
-#    print "sub " + str(i) + " chiusa"
-    ss += 1
+     try:
+          kp_sub[i].unsubscribe(subs[i])
+     except:
+          print sys.exc_info()
+     ss += 1
     
-print "Chiuse " + str(ss) + " sottoscrizioni"
+print str(ss) + " subscriptions closed"
 
 print "\nCleaning the sib...\n"
-rskp.remove(Triple(None, None, None))
+try:
+    lt = rskp.execute_rdf_query(Triple(None, None, None))
+    for t in lt:
+         rskp.remove(t)
+except:
+     print sys.exc_info()
+
 print "Triples expected at this step: 0"
 print "Triples at this step: " + str(len(rskp.execute_rdf_query(Triple(None, None, None))))
-vskp.leave_sib()
-rskp.leave_sib()
+#vskp.leave_sib()
+
+try:
+     rskp.leave_sib()
+except:
+     print sys.exc_info()

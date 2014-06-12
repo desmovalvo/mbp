@@ -56,4 +56,14 @@ tools/WebSIBExplorer/wse.db
 virtualiser/.gitignore
 tools/WebSIBExplorer/wse.db
 virtualiser/.gitignore
+<<<<<<< HEAD
 *svg
+=======
+gui/gpublisher.py
+publisher/gpublisher.py
+test/multiple_insert100_20_100.svg
+test/multiple_insert10_20_100.svg
+test/multiple_insert.svg
+test/multiple_insert.svg
+gui/experimental/gkp.py
+>>>>>>> 886033df692d8fb37b77e825d636bf1737b63ba7
