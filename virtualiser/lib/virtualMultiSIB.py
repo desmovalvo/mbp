@@ -23,6 +23,7 @@ active_subscriptions = {}
 val_subscriptions = []
 sibs_info = {}
 sib = {}
+sib_ping = {}
 
 # logging configuration
 LOG_DIRECTORY = "log/"
@@ -47,93 +48,105 @@ def handler(clientsock, addr, port, sibs_info):
         try:
             ssap_msg = clientsock.recv(BUFSIZ)
 
-            # check whether we received a blank message
-            if not ssap_msg and not complete_ssap_msg:
+            # it may be a "space" character from a subscribed kp or from a publisher
+            if len(ssap_msg) == 1 and ssap_msg == " ":
+                # received a ping from publisher: update his timer
+                if sib_ping["socket"] != None:
+                    #print colored("remoteSIB> ", "blue", attrs=["bold"]) + str(clientsock) + " is alive "                    
+                    sib_ping["timer"] = datetime.datetime.now()
+            elif len(ssap_msg) == 0:
                 break
-
-            if ssap_msg != None:
-                complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
-
-            if "</SSAP_message>" in complete_ssap_msg:
-                ssap_msg = complete_ssap_msg.split("</SSAP_message>")[0] + "</SSAP_message>"
-                complete_ssap_msg = complete_ssap_msg.replace(ssap_msg, "")
-                
-            # try to decode the message
-            try:
-                    
-                # parse the ssap message
-                root = ET.fromstring(ssap_msg)           
-                info = {}
-                for child in root:
-                    if child.attrib.has_key("name"):
-                        k = child.tag + "_" + str(child.attrib["name"])
-                    else:
-                        k = child.tag
-                    info[k] = child.text
+      
+            else:
     
-                # debug info
-                print vmsib_print(True) + " received a " + info["transaction_type"] + " " + info["message_type"]
-                logger.info("Received the following  message from " + str(addr))
-                logger.info(str(complete_ssap_msg).replace("\n", ""))
-                logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
-                    
-                ### REQUESTS
-                
-                # JOIN/LEAVE/REMOVE/INSERT REQUEST
-                if info["message_type"] == "REQUEST" and info["transaction_type"] in ["JOIN", "LEAVE", "REMOVE", "INSERT"]:
-                    
-                    # how many confirms should we wait? 
-                    confirms[info["node_id"]] = len(sibs_info)
+                if ssap_msg != None:
+                    complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
 
-                    # store the client socket from which we received the request
-                    kp_list[info["node_id"]] = clientsock
-                    
-                    # call the method that handles the request and wait for confirms
-                    handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
-    
-                # SPARQL/RDF QUERY REQUEST
-                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY":
+                # check whether we received a blank message
+                if not ssap_msg and not complete_ssap_msg:
+                    break
 
-                    # how many confirms should we wait? 
-                    confirms[info["node_id"]] = len(sibs_info)
+                else:
+                    #extract all the messages and let the remaining part into the complete_ssap_msg variable
+                    messages, complete_ssap_msg = extract_complete_messages(complete_ssap_msg)
 
-                    # creation of an empty array in which we'll insert the query results
-                    query_results[info["node_id"]] = []
-
-                    # store the client socket from which we received the request
-                    kp_list[info["node_id"]] = clientsock
-
-                    # call the method that handles the request and wait for confirms
-                    handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], query_results)
-    
-                # RDF and SPARQL SUBSCRIBE REQUEST
-                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE":# and info["parameter_type"] == "RDF-M3":
-    
-                    # how many confirms should we wait? 
-                    confirms[info["node_id"]] = len(sibs_info)
-
-                    # creation of an empty array in which we'll insert the initial results
-                    initial_results[info["node_id"]] = []
-
-                    # store the client socket from which we received the request
-                    kp_list[info["node_id"]] = clientsock
-
-                    # call the method that handles the request and wait for confirms
-                    handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions, active_subscriptions, initial_results)
-    
-                # RDF UNSUBSCRIBE REQUEST
-                elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
-
-                    # how many confirms should we wait? 
-                    confirms[info["node_id"]] = len(sibs_info)
-
-                    # call the method that handles the request and wait for confirms
-                    handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions)
-                
-            except ET.ParseError:
-                print vmsib_print(False) + " ParseError"
-                pass
-
+                for ssap_msg in messages:
+                    # try to decode the message
+                    try:
+                            
+                        # parse the ssap message
+                        root = ET.fromstring(ssap_msg)           
+                        info = {}
+                        for child in root:
+                            if child.attrib.has_key("name"):
+                                k = child.tag + "_" + str(child.attrib["name"])
+                            else:
+                                k = child.tag
+                            info[k] = child.text
+            
+                        # debug info
+                        print vmsib_print(True) + " received a " + info["transaction_type"] + " " + info["message_type"]
+                        logger.info("Received the following  message from " + str(addr))
+                        logger.info(str(complete_ssap_msg).replace("\n", ""))
+                        logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
+                            
+                        ### REQUESTS
+                        
+                        # JOIN/LEAVE/REMOVE/INSERT REQUEST
+                        if info["message_type"] == "REQUEST" and info["transaction_type"] in ["JOIN", "LEAVE", "REMOVE", "INSERT"]:
+                            
+                            # how many confirms should we wait? 
+                            confirms[info["node_id"]] = len(sibs_info)
+        
+                            # store the client socket from which we received the request
+                            kp_list[info["node_id"]] = clientsock
+                            
+                            # call the method that handles the request and wait for confirms
+                            handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]])
+            
+                        # SPARQL/RDF QUERY REQUEST
+                        elif info["message_type"] == "REQUEST" and info["transaction_type"] == "QUERY":
+        
+                            # how many confirms should we wait? 
+                            confirms[info["node_id"]] = len(sibs_info)
+        
+                            # creation of an empty array in which we'll insert the query results
+                            query_results[info["node_id"]] = []
+        
+                            # store the client socket from which we received the request
+                            kp_list[info["node_id"]] = clientsock
+        
+                            # call the method that handles the request and wait for confirms
+                            handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], query_results)
+            
+                        # RDF and SPARQL SUBSCRIBE REQUEST
+                        elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE":# and info["parameter_type"] == "RDF-M3":
+            
+                            # how many confirms should we wait? 
+                            confirms[info["node_id"]] = len(sibs_info)
+        
+                            # creation of an empty array in which we'll insert the initial results
+                            initial_results[info["node_id"]] = []
+        
+                            # store the client socket from which we received the request
+                            kp_list[info["node_id"]] = clientsock
+        
+                            # call the method that handles the request and wait for confirms
+                            handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions, active_subscriptions, initial_results)
+            
+                        # RDF UNSUBSCRIBE REQUEST
+                        elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
+        
+                            # how many confirms should we wait? 
+                            confirms[info["node_id"]] = len(sibs_info)
+        
+                            # call the method that handles the request and wait for confirms
+                            handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, confirms[info["node_id"]], clientsock, val_subscriptions)
+                        
+                    except ET.ParseError:
+                        print vmsib_print(False) + " ParseError"
+                        pass
+        
         except socket.error:
             print vmsib_print(False) + " socket.error: break!"
 #            break
