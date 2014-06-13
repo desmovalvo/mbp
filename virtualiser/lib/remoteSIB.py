@@ -17,6 +17,7 @@ import time
 import datetime
 from SSAPLib import *
 from message_helpers import *
+from xml_helpers import *
 
 BUFSIZ = 1024
 
@@ -75,14 +76,16 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     try:
                             
                         # parse the ssap message
-                        root = ET.fromstring(ssap_msg)           
-                        info = {}
-                        for child in root:
-                            if child.attrib.has_key("name"):
-                                k = child.tag + "_" + str(child.attrib["name"])
-                            else:
-                                k = child.tag
-                            info[k] = child.text
+                        ssap_root = ET.fromstring(ssap_msg)
+                        ssap_msg_dict = build_dict(ssap_root)
+                        # root = ET.fromstring(ssap_msg)           
+                        # info = {}
+                        # for child in root:
+                        #     if child.attrib.has_key("name"):
+                        #         k = child.tag + "_" + str(child.attrib["name"])
+                        #     else:
+                        #         k = child.tag
+                        #     info[k] = child.text
             
                         # debug info
                         #print colored("remoteSIB> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
@@ -93,24 +96,24 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         ### REQUESTS
             
                         # REGISTER REQUEST
-                        if info["message_type"] == "REQUEST" and info["transaction_type"] == "REGISTER":
+                        if ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "REGISTER":
                             
                             # set the status online
                             a = SibLib(ancillary_ip, ancillary_port)
                             t = []
-                            t.append(Triple(URI(ns + str(info["node_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
+                            t.append(Triple(URI(ns + str(ssap_msg_dict["node_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
                             a.remove(t)
                             t = []
-                            t.append(Triple(URI(ns + str(info["node_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
+                            t.append(Triple(URI(ns + str(ssap_msg_dict["node_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
                             a.insert(t)       
                             t = []
     
     
                             # build a reply message
-                            reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                   info["space_id"],
+                            reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                   ssap_msg_dict["space_id"],
                                                                    "REGISTER",
-                                                                   info["transaction_id"],
+                                                                   ssap_msg_dict["transaction_id"],
                                                                    '<parameter name="status">m3:Success</parameter>')
     
                             # try to send, then return
@@ -144,17 +147,17 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         
               
                         # RDF/SPARQL SUBSCRIBE REQUEST
-                        elif info["message_type"] == "REQUEST" and info["transaction_type"] == "SUBSCRIBE":
-                            # kp_list[info["node_id"]] = {}
-                            # kp_list[info["node_id"]]["socket"] = clientsock
-                            # kp_list[info["node_id"]]["timer"] = datetime.datetime.now()
+                        elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "SUBSCRIBE":
+                            # kp_list[ssap_msg_dict["node_id"]] = {}
+                            # kp_list[ssap_msg_dict["node_id"]]["socket"] = clientsock
+                            # kp_list[ssap_msg_dict["node_id"]]["timer"] = datetime.datetime.now()
     
                             # debug info
     #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
                             # logger.info("SUBSCRIBE REQUEST handled")
     
                             # generating a Subreq instance
-                            newsub = Subreq(clientsock, info)#, info["node_id"], info["transaction_id"])
+                            newsub = Subreq(clientsock, ssap_msg_dict)#, ssap_msg_dict["node_id"], ssap_msg_dict["transaction_id"])
                             
                             # forwarding message to the publisher
                             try:
@@ -162,7 +165,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 val_subscriptions.append(newsub)
                                 # kp_check_var = True
                                 # TODO: e' meglio far partire il seguente thread quando riceviamo la conferma di sottoscrizione? In caso inizia a pingare prima di mandare la conferma e da' problemi...
-                                # thread.start_new_thread(kp_observer, (newsub, sib, ancillary_ip, ancillary_port))#, kp_list[info["node_id"]], kp_check_var)) 
+                                # thread.start_new_thread(kp_observer, (newsub, sib, ancillary_ip, ancillary_port))#, kp_list[ssap_msg_dict["node_id"]], kp_check_var)) 
                                 
                                 #print colored("remoteSIB> ", "blue", attrs=["bold"]) + "Subscribed kp observer started for socket " + str(newsub.conn)
     
@@ -170,10 +173,10 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 clientsock.close()
     
                             except socket.error:
-                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                 info["space_id"],
+                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                 ssap_msg_dict["space_id"],
                                                                  "SUBSCRIBE",
-                                                                 info["transaction_id"],
+                                                                 ssap_msg_dict["transaction_id"],
                                                                  '<parameter name="status">m3:Error</parameter>')
                                 newsub.conn.send(err_msg)
                                 del newsub
@@ -182,7 +185,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
     
      
                         # RDF/SPARQL SUBSCRIBE CONFIRM
-                        elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "SUBSCRIBE": 
+                        elif ssap_msg_dict["message_type"] == "CONFIRM" and ssap_msg_dict["transaction_type"] == "SUBSCRIBE": 
     
                             sib["timer"] = datetime.datetime.now()
     
@@ -192,21 +195,21 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             
                             # store the corrispondence between the real sib and the real_subscription_id
                             for s in val_subscriptions:                              
-                                if s.node_id == info["node_id"] and s.request_transaction_id == info["transaction_id"]:                            
-                                    s.subscription_id = info["parameter_subscription_id"]
+                                if s.node_id == ssap_msg_dict["node_id"] and s.request_transaction_id == ssap_msg_dict["transaction_id"]:                            
+                                    s.subscription_id = ssap_msg_dict["subscription_id"]
                                     s.conn.send(ssap_msg)
                                     break
     
     
                         # RDF/SPARQL UNSUBSCRIBE REQUEST
-                        elif info["message_type"] == "REQUEST" and info["transaction_type"] == "UNSUBSCRIBE":
+                        elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "UNSUBSCRIBE":
                             # debug info
     #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
                             # logger.info("UNSUBSCRIBE REQUEST handled")
     
                             # find the Subreq instance
                             for s in val_subscriptions:
-                                if str(s.subscription_id) == str(info["parameter_subscription_id"]):
+                                if str(s.subscription_id) == str(ssap_msg_dict["subscription_id"]):
     
                                     # forwarding message to the publishers
                                     
@@ -214,10 +217,10 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                         # send the message
                                         sib["socket"].send(ssap_msg)                
                                     except socket.error:
-                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                                 info["space_id"],
+                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                                 ssap_msg_dict["space_id"],
                                                                                  "UNSUBSCRIBE",
-                                                                                 info["transaction_id"],
+                                                                                 ssap_msg_dict["transaction_id"],
                                                                                  '<parameter name="status">m3:Error</parameter>')
                                         s.conn.send(err_msg)
                                             
@@ -234,7 +237,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
     
     
                         # RDF/SPARQL UNSUBSCRIBE CONFIRM
-                        elif info["message_type"] == "CONFIRM" and info["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
+                        elif ssap_msg_dict["message_type"] == "CONFIRM" and ssap_msg_dict["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
     
                             sib["timer"] = datetime.datetime.now()
     
@@ -244,7 +247,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
     
     
                             for s in val_subscriptions:
-                                if str(s.subscription_id) == str(info["parameter_subscription_id"]):
+                                if str(s.subscription_id) == str(ssap_msg_dict["subscription_id"]):
                                     
                                     try:
                                         s.conn.send(ssap_msg)
@@ -261,7 +264,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         # INDICATIONS
                             
                         # RDF/SPARQL SUBSCRIBE INDICATION
-                        elif info["message_type"] == "INDICATION" and info["transaction_type"] == "SUBSCRIBE": 
+                        elif ssap_msg_dict["message_type"] == "INDICATION" and ssap_msg_dict["transaction_type"] == "SUBSCRIBE": 
     
                             sib["timer"] = datetime.datetime.now()
     
@@ -270,7 +273,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                             # logger.info("SUBSCRIBE INDICATION handled")                
     
                             for s in val_subscriptions:
-                                if str(s.subscription_id) == str(info["parameter_subscription_id"]):
+                                if str(s.subscription_id) == str(ssap_msg_dict["subscription_id"]):
     
                                     # send the message to the kp
                                     try:
@@ -282,31 +285,31 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                     
                                 
                         ### OTHER REQUESTS
-                        elif info["message_type"] == "REQUEST":
-                            # kp_list[info["node_id"]] = clientsock
-                            kp_list[info["node_id"] + "_" + info["transaction_id"]] = clientsock
+                        elif ssap_msg_dict["message_type"] == "REQUEST":
+                            # kp_list[ssap_msg_dict["node_id"]] = clientsock
+                            kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = clientsock
     
                             # debug message
     #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
-                            # logger.info(info["transaction_type"] + " REQUEST handled")
+                            # logger.info(ssap_msg_dict["transaction_type"] + " REQUEST handled")
     
                             # forwarding message to the publisher
                             try:
                                 sib["socket"].send(ssap_msg)
                                 
                             except socket.error:
-                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                         info["space_id"],
-                                                                         info["transaction_type"],
-                                                                         info["transaction_id"],
+                                err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                         ssap_msg_dict["space_id"],
+                                                                         ssap_msg_dict["transaction_type"],
+                                                                         ssap_msg_dict["transaction_id"],
                                                                          '<parameter name="status">m3:Error</parameter>')
     
                                 # send a notification error to the KP
-                                # kp_list[info["node_id"]].send(err_msg)
-                                kp_list[info["node_id"] + "_" + info["transaction_id"]].send(err_msg)
-                                # del kp_list[info["node_id"]]
-                                del kp_list[info["node_id"] + "_" + info["transaction_id"]]
-                                logger.error(info["transaction_type"] + " REQUEST forwarding failed")
+                                # kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+                                kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].send(err_msg)
+                                # del kp_list[ssap_msg_dict["node_id"]]
+                                del kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]]
+                                logger.error(ssap_msg_dict["transaction_type"] + " REQUEST forwarding failed")
                                 print sys.exc_info()
 
                             except AttributeError:
@@ -315,19 +318,19 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
     
                         ### OTHER CONFIRMS
             
-                        elif info["message_type"] == "CONFIRM":
+                        elif ssap_msg_dict["message_type"] == "CONFIRM":
     
                             sib["timer"] = datetime.datetime.now()
     
                             # debug info
     #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
-                            # logger.info(info["transaction_type"] + " CONFIRM handled")
+                            # logger.info(ssap_msg_dict["transaction_type"] + " CONFIRM handled")
                         
                             # forward message to the kp
-                            # kp_list[info["node_id"]].send(ssap_msg)
-                            # kp_list[info["node_id"]].close()                        
-                            kp_list[info["node_id"] + "_" + info["transaction_id"]].send(ssap_msg)
-                            kp_list[info["node_id"] + "_" + info["transaction_id"]].close()                        
+                            # kp_list[ssap_msg_dict["node_id"]].send(ssap_msg)
+                            # kp_list[ssap_msg_dict["node_id"]].close()                        
+                            kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].send(ssap_msg)
+                            kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].close()                        
            
                     except ET.ParseError:
                         print colored("remoteSIB> ", "red", attrs=["bold"]) + " ParseError"

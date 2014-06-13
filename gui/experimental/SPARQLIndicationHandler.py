@@ -38,17 +38,23 @@ class SPARQLIndicationHandler:
 
         # notify the added triples
         self.app.results_text.insert(INSERT, "INDICATION - triples inserted:\n")
-        ta = ""
+        s = ""
         for t in added:
-            ta = ta + str(t[2][2]) + " " + str(t[1][2]) + " " + str(t[0][2]) + "\n" 
-        self.app.results_text.insert(INSERT, ta + "\n")
+            for el in t:
+                s = s + str(el[2]) + " "
+            s = s + "\n"
+
+        self.app.results_text.insert(INSERT, s + "\n")
 
         # notify the removed triples
         self.app.results_text.insert(INSERT, "INDICATION - triples deleted:\n")
-        td = ""
+        d = ""
         for t in removed:
-            td = td + str(t[2][2]) + " " + str(t[1][2]) + " " + str(t[0][2]) + "\n" 
-        self.app.results_text.insert(INSERT, td + "\n")
+            for el in t:
+                d = d + str(el[2]) + " "
+            d = d + "\n"
+
+        self.app.results_text.insert(INSERT, d + "\n")
             
         # disable the text area
         self.app.results_text.config(state = DISABLED)

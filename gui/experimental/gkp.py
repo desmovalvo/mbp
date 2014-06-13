@@ -626,10 +626,15 @@ class SibInteraction(Tkinter.Frame):
         
             # notify the initial results
             self.results_text.insert(INSERT, "Initial results:\n")
-            i = ""
+            s = ""
+            s = str(len(ir)) + " Triples\n"
+            
             for t in ir:
-                i = i + str(t[0][2]) + " " + str(t[1][2]) + " " + str(t[2][2]) + "\n" 
-            self.results_text.insert(INSERT, i + "\n")
+                for el in t:
+                    s = s + str(el[2]) + " "
+                s = s + "\n"
+
+            self.results_text.insert(INSERT, s + "\n")
 
             # disable the text area
             self.results_text.config(state = DISABLED)            
@@ -638,7 +643,7 @@ class SibInteraction(Tkinter.Frame):
             print "OK!"
             self.notification_label["text"] = 'Subscribe request successful!'
 
-        except:
+        except ZeroDivisionError:
             
             # notify the failure
             self.notification_label["text"] = 'Error during Subscription'

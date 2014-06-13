@@ -76,6 +76,7 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
     
     # query to the ancillary SIB 
     a = SibLib(ancillary_ip, ancillary_port)
+    print 'Connected to the ancillary sib'
 
     try:
         try:
@@ -89,7 +90,7 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
         confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
         return confirm
 
-
+    print "PRE-IF"
     if len(result) > 0: # != None:
         virtualiser_id = result[0][0][2].split("#")[1]
         virtualiser_ip = result[0][1][2].split("#")[1]
@@ -98,6 +99,8 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
         virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         virtualiser.settimeout(15)
         
+        print "IF"
+
         # connect to the virtualiser
         try :
             virtualiser.connect((virtualiser_ip, virtualiser_port))
@@ -107,10 +110,14 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
     
         print colored("requests_handler> ", "blue", attrs=['bold']) + 'Connected to the virtualiser. Sending ' + colored("NewRemoteSib", "cyan", attrs=["bold"]) + " request!"
     
+        print "BUILD REQUEST"
+        
         # build request message 
         request_msg = {"command":"NewRemoteSIB", "owner":owner}
         request = json.dumps(request_msg)
         virtualiser.send(request)
+
+        print "SEND REQUEST"
 
         while 1:
             try:
@@ -122,11 +129,17 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
                 return confirm
             
             if confirm_msg:
+
+                print "IF 2"
+
                 print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
                 print confirm_msg
                 break
     
         confirm = json.loads(confirm_msg)
+
+        print "BOH"
+
         if confirm["return"] == "fail":
             print colored("requests_handler> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
             
@@ -143,7 +156,7 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner):
     # if the query returned 0 results
     else: 
         confirm = {'return':'fail', 'cause':' No virtualisers available.'}
-        virtualiser.close()
+#        virtualiser.close()
         return confirm
 
 def DeleteSIB(ancillary_ip, ancillary_port, sib_id):
@@ -351,12 +364,14 @@ def DiscoveryAll(ancillary_ip, ancillary_port):
     print ancillary_port
     print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("DiscoveryAll", "cyan", attrs=["bold"])
     # query to the ancillary sib to get all the existing virtual sib 
+    print " query to the ancillary sib to get all the existing virtual sib "
     query = PREFIXES + """
         SELECT ?s ?o
         WHERE {?s ns:hasKpIpPort ?o}
         """
     a = SibLib(ancillary_ip, ancillary_port)
     result = a.execute_sparql_query(query)
+    print "query done"
     
     virtual_sib_list = {}
     for i in result:
@@ -364,6 +379,7 @@ def DiscoveryAll(ancillary_ip, ancillary_port):
         virtual_sib_list[sib_id] = {} 
         sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2].split('#')[1]).split("-")[0]
         sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2].split('#')[1]).split("-")[1]
+    print "query results: " + str(virtual_sib_list)
     return virtual_sib_list
 
 def DiscoveryWhere(ancillary_ip, ancillary_port, sib_profile):

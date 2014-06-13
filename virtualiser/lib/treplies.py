@@ -16,6 +16,7 @@ from threading import Thread, Lock
 from xml.etree import ElementTree as ET
 import time
 from message_helpers import *
+from xml_helpers import *
 import sys
 
 BUFSIZ = 1024
@@ -67,9 +68,11 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                     try:
 
                         # parse the ssap message
-                        info = parse_message(ssap_msg)
+                        ssap_root = ET.fromstring(ssap_msg)
+                        ssap_msg_dict = build_dict(ssap_root)
+                        #info = parse_message(ssap_msg)
         
-                        if info["transaction_type"] == "JOIN":
+                        if ssap_msg_dict["transaction_type"] == "JOIN":
         
                             print "IF 4" + str(ddd)
         
@@ -79,29 +82,29 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
           
                             # check if we already received a failure
                             mutex.acquire()
-                            if not num_confirms[info["node_id"]] == None:
+                            if not num_confirms[ssap_msg_dict["node_id"]] == None:
                                 try:
         
                                     # check if the current message represent a successful insertion
-                                    if info["parameter_status"] == "m3:Success":
+                                    if ssap_msg_dict["status"] == "m3:Success":
                                        
-                                        num_confirms[info["node_id"]] -= 1
-                                        if num_confirms[info["node_id"]] == 0:
-                                            kp_list[info["node_id"]].send(ssap_msg)
+                                        num_confirms[ssap_msg_dict["node_id"]] -= 1
+                                        if num_confirms[ssap_msg_dict["node_id"]] == 0:
+                                            kp_list[ssap_msg_dict["node_id"]].send(ssap_msg)
                                             print "inviata conferma join al kp"
-                                            kp_list[info["node_id"]].close()
+                                            kp_list[ssap_msg_dict["node_id"]].close()
                         
                                     else:
-                                        num_confirms[info["node_id"]] = None
+                                        num_confirms[ssap_msg_dict["node_id"]] = None
                                         # send SSAP ERROR MESSAGE
-                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                                 info["space_id"],
+                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                                 ssap_msg_dict["space_id"],
                                                                                  "JOIN",
-                                                                                 info["transaction_id"],
+                                                                                 ssap_msg_dict["transaction_id"],
                                                                                  '<parameter name="status">m3:Error</parameter>')
-                                        kp_list[info["node_id"]].send(err_msg)
-                                        kp_list[info["node_id"]].close()
-                                        del kp_list[info["node_id"]]
+                                        kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+                                        kp_list[ssap_msg_dict["node_id"]].close()
+                                        del kp_list[ssap_msg_dict["node_id"]]
                                         logger.error("JOIN CONFIRM forwarding failed")
           
                                 except socket.error:
@@ -155,39 +158,41 @@ def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                     try:
 
                         # parse the ssap message
-                        info = parse_message(ssap_msg)
+                        ssap_root = ET.fromstring(ssap_msg)
+                        ssap_msg_dict = build_dict(ssap_root)
+                        #info = parse_message(ssap_msg)
 
         
-                        if info["transaction_type"] == "LEAVE":
+                        if ssap_msg_dict["transaction_type"] == "LEAVE":
                             # debug info
                             print treplies_print(True) + " handle_leave_confirm"
                             logger.info("LEAVE CONFIRM handled by handle_leave_confirm")
         
                             # check if we already received a failure
                             mutex.acquire()
-                            if not num_confirms[info["node_id"]] == None:
+                            if not num_confirms[ssap_msg_dict["node_id"]] == None:
                                 try:
                 
                                     # check if the current message represent a successful insertion
-                                    if info["parameter_status"] == "m3:Success":
+                                    if ssap_msg_dict["status"] == "m3:Success":
                                         
-                                        num_confirms[info["node_id"]] -= 1
-                                        if num_confirms[info["node_id"]] == 0:
-                                            kp_list[info["node_id"]].send(ssap_msg)       
+                                        num_confirms[ssap_msg_dict["node_id"]] -= 1
+                                        if num_confirms[ssap_msg_dict["node_id"]] == 0:
+                                            kp_list[ssap_msg_dict["node_id"]].send(ssap_msg)       
         
-                                            kp_list[info["node_id"]].close()
-                                            del kp_list[info["node_id"]]
+                                            kp_list[ssap_msg_dict["node_id"]].close()
+                                            del kp_list[ssap_msg_dict["node_id"]]
                 
                                     else:
-                                        num_confirms[info["node_id"]] = None
+                                        num_confirms[ssap_msg_dict["node_id"]] = None
                                         # send SSAP ERROR MESSAGE
-                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                                 info["space_id"],
+                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                                 ssap_msg_dict["space_id"],
                                                                                  "LEAVE",
-                                                                                 info["transaction_id"],
+                                                                                 ssap_msg_dict["transaction_id"],
                                                                                  '<parameter name="status">m3:Error</parameter>')
-                                        kp_list[info["node_id"]].send(err_msg)
-                                        kp_list[info["node_id"]].close()
+                                        kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+                                        kp_list[ssap_msg_dict["node_id"]].close()
                                         logger.error("LEAVE CONFIRM forwarding failed")
         
                                 except socket.error:
@@ -244,10 +249,12 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                     try:
 
                         # parse the ssap message
-                        info = parse_message(ssap_msg)
+                        ssap_root = ET.fromstring(ssap_msg)
+                        ssap_msg_dict = build_dict(ssap_root)
+                        #info = parse_message(ssap_msg)
 
         
-                        if info["transaction_type"] == "INSERT":
+                        if ssap_msg_dict["transaction_type"] == "INSERT":
           
                             # debug message
                             print treplies_print(True) + " handle_insert_confirm"
@@ -255,28 +262,28 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                             
                             # check if we already received a failure
                             mutex.acquire()
-                            if not num_confirms[info["node_id"]] == None:
+                            if not num_confirms[ssap_msg_dict["node_id"]] == None:
                                 try:
                                     # check if the current message represent a successful insertion
-                                    if info["parameter_status"] == "m3:Success":
-                                        num_confirms[info["node_id"]] -= 1
-                                        if num_confirms[info["node_id"]] == 0:    
-                                            kp_list[info["node_id"]].send(ssap_msg)
+                                    if ssap_msg_dict["status"] == "m3:Success":
+                                        num_confirms[ssap_msg_dict["node_id"]] -= 1
+                                        if num_confirms[ssap_msg_dict["node_id"]] == 0:    
+                                            kp_list[ssap_msg_dict["node_id"]].send(ssap_msg)
                                             
-                                            kp_list[info["node_id"]].close()
+                                            kp_list[ssap_msg_dict["node_id"]].close()
             
                                     # if the current message represent a failure...
                                     else:
                                         
-                                        num_confirms[info["node_id"]] = None
+                                        num_confirms[ssap_msg_dict["node_id"]] = None
                                         # send SSAP ERROR MESSAGE
-                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                         info["space_id"],
+                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                         ssap_msg_dict["space_id"],
                                                                          "INSERT",
-                                                                         info["transaction_id"],
+                                                                         ssap_msg_dict["transaction_id"],
                                                                          '<parameter name="status">m3:Error</parameter>')
-                                        kp_list[info["node_id"]].send(err_msg)
-                                        kp_list[info["node_id"]].close()
+                                        kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+                                        kp_list[ssap_msg_dict["node_id"]].close()
                                         logger.error("INSERT CONFIRM forwarding failed")
         
                                 except socket.error:
@@ -333,10 +340,12 @@ def remove_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                     try:
 
                         # parse the ssap message
-                        info = parse_message(ssap_msg)
+                        ssap_root = ET.fromstring(ssap_msg)
+                        ssap_msg_dict = build_dict(ssap_root)
+                        #info = parse_message(ssap_msg)
 
         
-                        if info["transaction_type"] == "REMOVE":
+                        if ssap_msg_dict["transaction_type"] == "REMOVE":
         
                             # debug message
                             print treplies_print(True) + " handle_remove_confirm"
@@ -344,28 +353,28 @@ def remove_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                 
                             # check if we already received a failure
                             mutex.acquire()
-                            if not num_confirms[info["node_id"]] == None:
+                            if not num_confirms[ssap_msg_dict["node_id"]] == None:
                                 try:
                                     # check if the current message represent a successful insertion
-                                    if info["parameter_status"] == "m3:Success":
-                                        num_confirms[info["node_id"]] -= 1
-                                        if num_confirms[info["node_id"]] == 0:                      
-                                            kp_list[info["node_id"]].send(ssap_msg)
+                                    if ssap_msg_dict["status"] == "m3:Success":
+                                        num_confirms[ssap_msg_dict["node_id"]] -= 1
+                                        if num_confirms[ssap_msg_dict["node_id"]] == 0:                      
+                                            kp_list[ssap_msg_dict["node_id"]].send(ssap_msg)
         
-                                            kp_list[info["node_id"]].close()
+                                            kp_list[ssap_msg_dict["node_id"]].close()
                             
                                     # if the current message represent a failure...
                                     else:
                                         
-                                        confirms[info["node_id"]] = None
+                                        confirms[ssap_msg_dict["node_id"]] = None
                                         # send SSAP ERROR MESSAGE
-                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                                         info["space_id"],
+                                        err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                                         ssap_msg_dict["space_id"],
                                                                          "REMOVE",
-                                                                         info["transaction_id"],
+                                                                         ssap_msg_dict["transaction_id"],
                                                                          '<parameter name="status">m3:Error</parameter>')
-                                        kp_list[info["node_id"]].send(err_msg)
-                                        kp_list[info["node_id"]].close()
+                                        kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+                                        kp_list[ssap_msg_dict["node_id"]].close()
                                         logger.error("REMOVE CONFIRM forwarding failed")
                              
                                 except socket.error:
@@ -397,8 +406,8 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
     complete_ssap_msg = ""
     while 1:
         try:
-            ssap_msg = sib_sock.recv(BUFSIZ)
- 
+            ssap_msg = sib_sock.recv(BUFSIZ)            
+            
             if ssap_msg != None:
                 complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
 
@@ -415,15 +424,12 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
                     # try to decode the message
                     try:
 
-                        # convert ssap_msg to dict
-                        ssap_msg_dict = msg_to_dict(ssap_msg)
+                        ssap_root = ET.fromstring(ssap_msg)
+                        ssap_msg_dict = build_dict(ssap_root)
+
+                        # # convert ssap_msg to dict
+                        # ssap_msg_dict = msg_to_dict(ssap_msg)
                         
-                        # ssap_msg_dict = {}
-                        # parser = make_parser()
-                        # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                        # parser.setContentHandler(ssap_mh)
-                        # parser.parse(StringIO(ssap_msg))
-                                                                                                    
                         if ssap_msg_dict["transaction_type"] == "QUERY":
         
                             # debug message
@@ -444,7 +450,8 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
                                         start = time.time()
                                                                     
                                         # extract triples from ssap reply
-                                        triple_list = parse_sparql(ssap_msg_dict["results"])
+                                        triple_list = extract_sparql_triples(ssap_root)
+                                        #triple_list = parse_sparql(ssap_msg_dict["results"])
                                           
                                         end = time.time() - start
                                         
@@ -548,12 +555,8 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
                     try:
 
                         # convert ssap_msg to dict
-                        ssap_msg_dict = msg_to_dict(ssap_msg)
-                        # ssap_msg_dict = {}
-                        # parser = make_parser()
-                        # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                        # parser.setContentHandler(ssap_mh)
-                        # parser.parse(StringIO(ssap_msg))
+                        ssap_root = ET.fromstring(ssap_msg)
+                        ssap_msg_dict = build_dict(ssap_root)
                                                                             
                         if ssap_msg_dict["transaction_type"] == "QUERY":
 
@@ -570,16 +573,10 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
                                     if ssap_msg_dict["status"] == "m3:Success":
                                         num_confirms[ssap_msg_dict["node_id"]] -= 1
                                         
-                                        # # convert ssap_msg to dict
-                                        # ssap_msg_dict = {}
-                                        # parser = make_parser()
-                                        # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                                        # parser.setContentHandler(ssap_mh)
-                                        # parser.parse(StringIO(ssap_msg))
-                            
                                         # extract triples from ssap reply
                                         start = time.time()
-                                        triple_list = parse_M3RDF(ssap_msg_dict["results"])
+#                                        triple_list = parse_M3RDF(ssap_msg_dict["results"])
+                                        triple_list = extract_rdf_triples(ssap_root)
                                         end = time.time() - start
                                         print "tempo estrazione delle triple " + str(end) 
                                           
@@ -682,20 +679,16 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                     try:
 
                         # parse the ssap message
-                        # info = parse_message(ssap_msg)
                         # convert ssap_msg to dict
-                        ssap_msg_dict = msg_to_dict(ssap_msg)
-                        # ssap_msg_dict = {}
-                        # parser = make_parser()
-                        # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                        # parser.setContentHandler(ssap_mh)
-                        # parser.parse(StringIO(ssap_msg))
-
+                        ssap_root = ET.fromstring(ssap_msg)
+                        ssap_msg_dict = build_dict(ssap_root)
+#                        ssap_msg_dict = msg_to_dict(ssap_msg)
 
                         if ssap_msg_dict["transaction_type"] == "SUBSCRIBE":
         
                             if ssap_msg_dict["message_type"] == "CONFIRM":
-                                # debug info                        
+                                # debug info             
+                                print ssap_msg_dict
                                 print treplies_print(True) + " handle_subscribe_confirm"
                                 logger.info(query_type + " SUBSCRIBE CONFIRM handled by handle_subscribe_confirm")
                                 
@@ -715,36 +708,64 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                                 #                    s.received_confirm(clientsock, info["parameter_subscription_id"])
                                                     subreq_instance = s
                                                 
-                                                    # # convert ssap_msg to dict
-                                                    # ssap_msg_dict = {}
-                                                    # parser = make_parser()
-                                                    # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
-                                                    # parser.setContentHandler(ssap_mh)
-                                                    # parser.parse(StringIO(ssap_msg))
-                                        
                                                     # extract triples from ssap reply
                                                     if query_type == "RDF-M3":
-                                                        triple_list = parse_M3RDF(ssap_msg_dict["results"])
+                                                        # triple_list = parse_M3RDF(ssap_msg_dict["results"])
+                                                        triple_list = extract_rdf_triples(ssap_root)
                                                     else:
-                                                        triple_list = parse_sparql(ssap_msg_dict["results"])
-                                                      
-                                                    for triple in triple_list:
-                                                        initial_results[ssap_msg_dict["node_id"]].append(triple)
+                                                        triple_list = extract_sparql_triples(ssap_root)
+                                                        #triple_list = parse_sparql(ssap_msg_dict["results"])
                                                     
-                                                    # remove duplicates
-                                                    for triple in initial_results[ssap_msg_dict["node_id"]]:
-                                                        if not triple in s.result:
-                                                            s.result.append(triple)
+
+                                                    ########
+                                                    # duplicates removal
+                                                    start = time.time()
+                                                    lista = initial_results[ssap_msg_dict["node_id"]] + triple_list
+                                                    seen = set()
+                                                    new_list = []
+                                                    for triple in lista:
+                                                        if str(triple) in seen:
+                                                            continue
+                                                        else:
+                                                            seen.add(str(triple))
+                                                            #s.result.append(triple)
+                                                            new_list.append(triple)
+
+                                                    end = time.time() - start
+                                                    print "tempo rimozione duplicati " + str(end) 
+
+                                                    ###########
+
+                                                      
+                                                    # for triple in triple_list:
+                                                    #     initial_results[ssap_msg_dict["node_id"]].append(triple)
+                                                    
+                                                    # # remove duplicates
+                                                    # for triple in initial_results[ssap_msg_dict["node_id"]]:
+                                                    #     if not triple in s.result:
+                                                    #         s.result.append(triple)
                                                             
-                                                    initial_results[ssap_msg_dict["node_id"]] = s.result
-                                        
+                                                    initial_results[ssap_msg_dict["node_id"]] = new_list
+
+                                                    print "---------risultati iniziali: ----------\n" + str(new_list)
+
+                                                                                                                                                                                             
                                                     if num_confirms[ssap_msg_dict["node_id"]] == 0:    
-                                                        # build ssap reply                
-                                                        ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
-                                                                                            ssap_msg_dict["space_id"],
-                                                                                            ssap_msg_dict["transaction_id"],
-                                                                                            s.result,
-                                                                                            ssap_msg_dict["subscription_id"])
+                                                        if query_type == "RDF-M3":
+                                                            # build ssap reply                
+                                                            ssap_reply = reply_to_rdf_subscribe(ssap_msg_dict["node_id"],
+                                                                                                ssap_msg_dict["space_id"],
+                                                                                                ssap_msg_dict["transaction_id"],
+                                                                                                new_list,
+                                                                                                ssap_msg_dict["subscription_id"])
+                                                                                            #subreq_instance.subscription_id)                        
+                                                        else:
+# build ssap reply                
+                                                            ssap_reply = reply_to_sparql_subscribe(ssap_msg_dict["node_id"],
+                                                                                                ssap_msg_dict["space_id"],
+                                                                                                ssap_msg_dict["transaction_id"],
+                                                                                                new_list,
+                                                                                                ssap_msg_dict["subscription_id"])
                                                                                             #subreq_instance.subscription_id)                        
         
                                                         subreq_instance.conn.send(ssap_reply)
@@ -779,7 +800,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                             # TODO qui bisogna anche eliminare l'istanza della subscription!
                             # debug info
                             print treplies_print(True) + " handle_unsubscribe_confirm"
-                            logger.info(query_type + " UNSUBSCRIBE CONFIRM handled by handle_unsubscribe_confirm")
+                            logger.info(ssap_msg_dict["query_type"] + " UNSUBSCRIBE CONFIRM handled by handle_unsubscribe_confirm")
                             
                             # check if we already received a failure
                             mutex.acquire()
@@ -830,19 +851,19 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
 ##############################################################
     
 # JOIN/LEAVE/INSERT/REMOVE REQUESTS
-def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
+def handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, num):
 
     """The present method is used to manage the join/leave/insert/remove
     requests received from a KP."""
 
     t = {}
     global num_confirms 
-    num_confirms[info["node_id"]] = num
+    num_confirms[ssap_msg_dict["node_id"]] = num
     sib_list_conn = {}
       
     # debug message
     print treplies_print(True) + " handle_generic_request"
-    logger.info(info["transaction_type"] + " REQUEST handled by handle_generic_request")
+    logger.info(ssap_msg_dict["transaction_type"] + " REQUEST handled by handle_generic_request")
     
     # cycle through all the SIBs that compose the VMSIB
     for s in sibs_info:
@@ -871,15 +892,15 @@ def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
                
         except :
              print treplies_print(False) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
-                                                      info["transaction_type"],
-                                                      info["transaction_id"],
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                      ssap_msg_dict["space_id"],
+                                                      ssap_msg_dict["transaction_type"],
+                                                      ssap_msg_dict["transaction_id"],
                                                       '<parameter name="status">m3:Error</parameter>')
              # send a notification error to the KP
-             kp_list[info["node_id"]].send(err_msg)
-             del kp_list[info["node_id"]]
-             logger.error(info["transaction_type"] + " REQUEST forwarding failed")
+             kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+             del kp_list[ssap_msg_dict["node_id"]]
+             logger.error(ssap_msg_dict["transaction_type"] + " REQUEST forwarding failed")
 
         
         n = str(uuid.uuid4())
@@ -887,23 +908,23 @@ def handle_generic_request(logger, info, ssap_msg, sibs_info, kp_list, num):
 
         # spawning threads
         print 'Start a thread for ' + str(s)
-        func = globals()[info["transaction_type"].lower() + "_confirm_handler"]
+        func = globals()[ssap_msg_dict["transaction_type"].lower() + "_confirm_handler"]
         thread.start_new_thread(func, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
 
 
 # RDF/SPARQL QUERY REQUEST
-def handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, query_results):
+def handle_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, num, query_results):
 
     """The present method is used to manage the query request received from a KP."""
 
     t = {}
     global num_confirms
-    num_confirms[info["node_id"]] = num
+    num_confirms[ssap_msg_dict["node_id"]] = num
     sib_list_conn = {}
 
     # debug info
     print treplies_print(True) + " handle_query_request"
-    logger.info(info["parameter_type"] + " QUERY REQUEST handled by handle_sparql_query_request")
+    logger.info(ssap_msg_dict["query_type"] + " QUERY REQUEST handled by handle_sparql_query_request")
 
 
     for s in sibs_info:
@@ -926,20 +947,20 @@ def handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, query_
                
         except :
              print treplies_print(False) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                      ssap_msg_dict["space_id"],
                                                       "QUERY",
-                                                      info["transaction_id"],
+                                                      ssap_msg_dict["transaction_id"],
                                                       '<parameter name="status">m3:Error</parameter>')
              # send a notification error to the KP
-             kp_list[info["node_id"]].send(err_msg)
-             logger.error(info["parameter_type"] + " QUERY REQUEST forwarding failed")
+             kp_list[ssap_msg_dict["node_id"]].send(err_msg)
+             logger.error(ssap_msg_dict["query_type"] + " QUERY REQUEST forwarding failed")
 
     
         n = str(uuid.uuid4())
         t[n] = n
 
-        if info["parameter_type"] == "sparql":
+        if ssap_msg_dict["query_type"] == "sparql":
             print "START A THREAD FOR " + str(s)
             thread.start_new_thread(sparql_query_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, query_results))
         else:
@@ -948,12 +969,12 @@ def handle_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, query_
 
 
 # SPARQL QUERY REQUEST
-def handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, query_results):
+def handle_sparql_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, num, query_results):
     """The present method is used to manage the sparql query request received from a KP."""
 
     t = {}
     global num_confirms
-    num_confirms[info["node_id"]] = num
+    num_confirms[ssap_msg_dict["node_id"]] = num
     sib_list_conn = {}
 
     # debug info
@@ -980,13 +1001,13 @@ def handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, num,
                
         except :
              print treplies_print(False) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                      ssap_msg_dict["space_id"],
                                                       "QUERY",
-                                                      info["transaction_id"],
+                                                      ssap_msg_dict["transaction_id"],
                                                       '<parameter name="status">m3:Error</parameter>')
              # send a notification error to the KP
-             kp_list[info["node_id"]].send(err_msg)
+             kp_list[ssap_msg_dict["node_id"]].send(err_msg)
              logger.error("SPARQL QUERY REQUEST forwarding failed")
 
     
@@ -997,12 +1018,12 @@ def handle_sparql_query_request(logger, info, ssap_msg, sibs_info, kp_list, num,
 
 
 # RDF QUERY REQUEST
-def handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, query_results):
+def handle_rdf_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, num, query_results):
     """The present method is used to manage the rdf query request received from a KP."""
 
     t = {}
     global num_confirms
-    num_confirms[info["node_id"]] = num
+    num_confirms[ssap_msg_dict["node_id"]] = num
     sib_list_conn = {}
 
     # debug info
@@ -1029,13 +1050,13 @@ def handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, qu
                
         except :
              print treplies_print(False) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                      ssap_msg_dict["space_id"],
                                                       "QUERY",
-                                                      info["transaction_id"],
+                                                      ssap_msg_dict["transaction_id"],
                                                       '<parameter name="status">m3:Error</parameter>')
              # send a notification error to the KP
-             kp_list[info["node_id"]].send(err_msg)
+             kp_list[ssap_msg_dict["node_id"]].send(err_msg)
              logger.error("SPARQL QUERY REQUEST forwarding failed")
 
     
@@ -1045,12 +1066,12 @@ def handle_rdf_query_request(logger, info, ssap_msg, sibs_info, kp_list, num, qu
 
 
 # RDF SUBSCRIBE REQUEST
-def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num, clientsock, val_subscriptions, active_subscriptions, initial_results):
+def handle_rdf_subscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, num, clientsock, val_subscriptions, active_subscriptions, initial_results):
     """The present method is used to manage the rdf query request received from a KP."""
 
     t = {}
     global num_confirms
-    num_confirms[info["node_id"]] = num
+    num_confirms[ssap_msg_dict["node_id"]] = num
     sib_list_conn = {}
 
     # debug info
@@ -1058,11 +1079,12 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num
     logger.info("RDF SUBSCRIBE REQUEST handled by handle_rdf_subscribe_request")
 
     # generating a Subreq instance
-    newsub = Subreq(clientsock, info)
+    newsub = Subreq(clientsock, ssap_msg_dict)
     val_subscriptions.append(newsub)
 
     # convert ssap_msg to dict
-    ssap_msg_dict = msg_to_dict(ssap_msg)
+    ssap_root = ET.fromstring(ssap_msg)
+    ssap_msg_dict = build_dict(ssap_root)
     # ssap_msg_dict = {}
     # parser = make_parser()
     # ssap_mh = SSAPMsgHandler(ssap_msg_dict)
@@ -1089,10 +1111,10 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num
                
         except socket.error:
              print treplies_print(False) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                      ssap_msg_dict["space_id"],
                                                       "SUBSCRIBE",
-                                                      info["transaction_id"],
+                                                      ssap_msg_dict["transaction_id"],
                                                       '<parameter name="status">m3:Error</parameter>')
              # send a notification error to the KP
              newsub.conn.send(err_msg)
@@ -1101,18 +1123,18 @@ def handle_rdf_subscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num
              
         n = str(uuid.uuid4())
         t[n] = n
-        query_type = info["parameter_type"]
+        query_type = ssap_msg_dict["query_type"]
         thread.start_new_thread(rdf_subscribe_confirm_handler, (sib_list_conn[s], sibs_info, kp_list, t[n], logger, initial_results, active_subscriptions, clientsock, val_subscriptions, newsub, query_type))
 
 
 
 # RDF UNSUBSCRIBE REQUEST
-def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, num, clientsock, val_subscriptions):
+def handle_rdf_unsubscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, num, clientsock, val_subscriptions):
     """The present method is used to manage the rdf query request received from a KP."""
 
     t = {}
     global num_confirms
-    num_confirms[info["node_id"]] = num
+    num_confirms[ssap_msg_dict["node_id"]] = num
     sib_list_conn = {}
 
     # debug info
@@ -1143,10 +1165,10 @@ def handle_rdf_unsubscribe_request(logger, info, ssap_msg, sibs_info, kp_list, n
                
         except socket.error:
              print treplies_print(False) + 'Unable to connect to the sibs'
-             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(info["node_id"],
-                                                      info["space_id"],
+             err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
+                                                      ssap_msg_dict["space_id"],
                                                       "UNSUBSCRIBE",
-                                                      info["transaction_id"],
+                                                      ssap_msg_dict["transaction_id"],
                                                       '<parameter name="status">m3:Error</parameter>')
              # send a notification error to the KP
              s.conn.send(err_msg)
@@ -1244,6 +1266,51 @@ def reply_to_rdf_subscribe(node_id, space_id, transaction_id, results, subscript
                                     "SUBSCRIBE",
                                     transaction_id,
                                     body)
+    return reply
+
+
+def reply_to_sparql_subscribe(node_id, space_id, transaction_id, results, subscription_id):
+
+    start = time.time()
+    # building HEAD part of the query results
+    variable_list = []
+    head_template_list = []
+    for triple in results:
+        for element in triple:    
+            
+    #         if not SSAP_VARIABLE_TEMPLATE%(str(element[0])) in variable_list:
+    #             variable_list.append(SSAP_VARIABLE_TEMPLATE%(str(element[0])))
+    # head = SSAP_HEAD_TEMPLATE%(''.join(variable_list))
+
+            if not element[0] in variable_list:
+                variable_list.append(element[0])
+                head_template_list.append( SSAP_VARIABLE_TEMPLATE % (str(element[0])) )
+
+    head = SSAP_HEAD_TEMPLATE%(''.join(head_template_list))
+
+    # building RESULTS part of the query results
+    result_list = []
+    result_string = ""
+
+    for triple in results:
+        binding_string = ""
+        binding_list = []
+
+        for element in triple:    
+            binding_list.append(SSAP_BINDING_TEMPLATE%(element[0], element[2]))
+
+        result_list.append(SSAP_RESULT_TEMPLATE%(''.join(binding_list)))
+
+    results_string = SSAP_RESULTS_TEMPLATE%(''.join(result_list))
+    body = SSAP_RESULTS_SPARQL_CONFIRM_TEMPLATE%(subscription_id, head + results_string)
+    
+    # finalizing the reply
+    reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(node_id, 
+                                    space_id, 
+                                    "SUBSCRIBE",
+                                    transaction_id,
+                                    body)
+
     return reply
 
 

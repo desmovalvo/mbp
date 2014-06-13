@@ -239,6 +239,8 @@ if __name__=='__main__':
         logger = logging.getLogger("virtualiser_server")
         
         # Insert the virtualiser informations into the Ancillary SIB
+        print "Ancillary IP: " + str(ancillary_ip)
+        print "Ancillary port: " + str(ancillary_port)
         ancillary_sib = SibLib(ancillary_ip, ancillary_port)
 #        ancillary_sib.join_sib()
         triples = []
@@ -246,6 +248,7 @@ if __name__=='__main__':
         triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(0))))
         triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasIP"), URI(ns + virtualiser_ip)))
         triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasPort"), URI(ns + str(virtualiser_port))))
+        print triples
         ancillary_sib.insert(triples)
         
     except socket.error:

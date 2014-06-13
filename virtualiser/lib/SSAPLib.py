@@ -16,6 +16,8 @@ SSAP_BNODES_PARAM_TEMPLATE = '<parameter name = "bnodes"><urllist>%s</urllist></
 ### Templates used to build query results
 SSAP_RESULTS_SPARQL_PARAM_TEMPLATE = """<parameter name="status">m3:Success</parameter><parameter name="results"><sparql xmlns="http://www.w3.org/2005/sparql-results#">%s</sparql></parameter>"""
 
+SSAP_RESULTS_SPARQL_CONFIRM_TEMPLATE = """<parameter name="status">m3:Success</parameter><parameter name="subscription_id">%s</parameter><parameter name="results"><sparql xmlns="http://www.w3.org/2005/sparql-results#">%s</sparql></parameter>"""
+
 SSAP_HEAD_TEMPLATE = """<head>%s</head>"""
 
 SSAP_VARIABLE_TEMPLATE = """<variable name="%s"/>"""
