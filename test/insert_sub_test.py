@@ -10,7 +10,7 @@ import time
 ns = "http://ns#"
 
 # variables
-step = 5
+step = 100
 min = 0
 median_arrays = []
 kp_sub = []
