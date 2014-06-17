@@ -24,7 +24,10 @@ COMMANDS = {
     "DiscoveryAll" : [],
     "DiscoveryWhere" : ["sib_profile"],
     "DeleteRemoteSIB" : ["virtual_sib_id"],
-    "DeleteSIB": ["sib_id"]
+    "DeleteSIB": ["sib_id"],
+    "SetSIBStatus": ["sib_id", "status"],
+    "AddSIBtoVMSIB": ["sib_id", "vmsib_id"],
+    "RemoveSIBfromVMSIB": ["sib_id", "vmsib_id"]
     }
 
 # classes
@@ -90,8 +93,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.sib_id)
                                 
                     # send a reply
-                    self.request.sendall(json.dumps(confirm))
-
+                    self.request.sendall(json.dumps(confirm))      
 
                 # DiscoveryAll request
                 elif data["command"] == "DiscoveryAll":
@@ -106,7 +108,6 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
-
                                 
                 # NewVirtualMultiSIB request
                 elif data["command"] == "NewVirtualMultiSIB":
@@ -114,6 +115,22 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 
                     # send a reply                    
                     self.request.sendall(json.dumps(confirm))
+
+                # SetSIBStatus
+                elif data["command"] == "SetSIBStatus":
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id, cmd.status)
+                
+                    # send a reply                    
+                    self.request.sendall(json.dumps(confirm))                    
+
+                # AddSIBtoVMSIB
+                elif data["command"] == "AddSIBtoVMSIB":
+                    pass
+
+                # RemoveSIBfromVMSIB
+                elif data["command"] == "RemoveSIBfromVMSIB":
+                    pass
+
 
             else:
                 # debug print

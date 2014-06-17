@@ -407,3 +407,83 @@ WHERE {?s ns:hasKpIpPort ?o .
         sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2].split('#')[1]).split("-")[0]
         sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2].split('#')[1]).split("-")[1]
     return virtual_sib_list
+
+
+def SetSIBStatus(ancillary_ip, ancillary_port, sib_id, new_status):
+
+    # Connecting to the ancillary SIB
+    try:
+        a = SibLib(ancillary_ip, int(ancillary_port))
+    except:
+        confirm = {'return':'fail', 'cause':' connection to the ancillary SIB failed.'}
+        return confirm
+
+    # Verify if the new status is different from the old one
+    try:
+        old_status = a.execute_rdf_query((URI(ns + str(sib_id)), URI(ns + "hasStatus"), None))
+        old_status = str(old_status[0][2]).split("#")[1]
+    except:
+        confirm = {'return':'fail', 'cause':' query failed.'}
+        return confirm
+
+    # Setting the status
+    try:
+        if (old_status.lower() != new_status.lower()) and (new_status.lower() in ["online", "offline"]):
+            a.update(Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), URI(ns + new_status)),
+                     Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), URI(ns + old_status)))
+        else:
+            # Nothing to do ...
+            confirm = {'return':'ok'}
+            return confirm
+    except:
+        confirm = {'return':'fail', 'cause':' Connection to the virtualiser timed out.'}
+        return confirm
+
+    # Look for the VMSIBs using this SIB
+    try:
+        vmsibs = a.execute_sparql_query("""PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+SELECT ?ipport
+WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
+?vmsib_id ns:composedBy ns:5adbedd2-56ec-4237-845e-63bf03d4d67c }""")
+    except:
+        # Impossible to contact the virtual multi sibs
+        print colored("request_handler> ", "red", attrs = ["bold"]) + "failed to contact the virtual multi sibs"
+
+    # Notify the status change to all the VMSIBs
+    if len(vmsibs) > 0:
+
+        # Build the JSON message
+        new_status_msg = {"notification": "StatusChange", "sib_id": sib_id, "status": new_status}
+        new_status_json_msg = json.dumps(new_status_msg)
+
+        # Notify the status change to all the VMSIBs
+        for vms in vmsibs:
+         
+            try:
+                # connection to the vmsib
+                vms_ip = str(vms[0][2].split("#")[1]).split("-")[0]
+                vms_port = str(vms[0][2].split("#")[1]).split("-")[1]
+                vms_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                vms_socket.connect((vms_ip, int(vms_port)))
+                vms_socket.send(new_status_json_msg)
+
+                # Wait for a reply
+                while 1:
+                    try:
+                        confirm_msg = vms_socket.recv(4096)
+                    except socket.timeout:
+                        print colored("request_handler> ", "red", attrs=["bold"]) + 'connection to the virtualiser timed out'            
+
+                # Close the socket to the vmsib
+                vms_socket.close()
+
+            except:
+                print colored("request_handler> ", "red", attrs=["bold"]) + 'impossible to contact the virtualsib'            
+
+    # return
+    confirm = {'return':'ok'}
+    return confirm
