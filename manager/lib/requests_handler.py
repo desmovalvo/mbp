@@ -529,7 +529,7 @@ WHERE {{ ?s rdf:type ns:remoteSib } UNION { ?s rdf:type ns:virtualMultiSib }}"""
         print "525"
 
         # build the json msg for the VirtualMultiSib
-        msg = { "command" : "AddSIBtoVMSIB", "SIBlist" : sib_list }
+        msg = { "command" : "AddSIBtoVMSIB", "sib_list" : sib_list, "vmsib_id" : vmsib_id }
         jmsg = json.dumps(msg)
         print "530"
 

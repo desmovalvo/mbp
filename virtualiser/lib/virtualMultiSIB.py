@@ -41,7 +41,7 @@ ns = "http://smartM3Lab/Ontology.owl#"
 #
 ##############################################################
 
-def handler(clientsock, addr, port, sibs_info):
+def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
     
     # storing received parameters in thread-local variables
     kp_port = port
@@ -59,9 +59,11 @@ def handler(clientsock, addr, port, sibs_info):
                     print "Adding a sib to virtualMultiSib.."
                     
                     # connect to the ancillary
+                    a = SibLib(ancillary_ip, ancillary_port)                    
+
                     # update the list of sibs 
-                    for SIBid in msg["SIBlist"]:
-                        a.insert(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
+                    for SIBid in msg["sib_list"]:
+                        a.insert(Triple(URI(ns + msg["vmsib_id"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
 
                         # update sibs list info
                         t = Triple(URI(ns + str(SIBid)), URI(ns + "hasKpIpPort"), None)
@@ -252,7 +254,7 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
                 clientsock, addr = sock.accept()
                 print vmsib_print(True) + ' incoming connection from ...' + str(addr)
                 logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr, kp_port, sibs_info))
+                thread.start_new_thread(handler, (clientsock, addr, kp_port, sibs_info, ancillary_ip, ancillary_port))
 
             # incoming data
             else:
