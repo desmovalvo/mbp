@@ -288,7 +288,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         elif ssap_msg_dict["message_type"] == "REQUEST":
                             # kp_list[ssap_msg_dict["node_id"]] = clientsock
                             kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = clientsock
-    
+                            clientsock.close()
                             # debug message
     #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
                             # logger.info(ssap_msg_dict["transaction_type"] + " REQUEST handled")
