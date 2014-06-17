@@ -42,6 +42,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
 
     # storing received parameters in thread-local variables
     kp_port = port
+    print "SONO QUI"
 
     complete_ssap_msg = ""
     while 1:
@@ -88,7 +89,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         #     info[k] = child.text
             
                         # debug info
-                        #print colored("remoteSIB> ", "blue", attrs=["bold"]) + " received a " + info["transaction_type"] + " " + info["message_type"]
+                        print colored("remoteSIB> ", "blue", attrs=["bold"]) + " received a " + ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"]
                         # logger.info("Received the following  message from " + str(addr))
                         # logger.info(str(complete_ssap_msg).replace("\n", ""))
                         # logger.info("Message identified as a %s %s"%(info["transaction_type"], info["message_type"]))
@@ -170,6 +171,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 #print colored("remoteSIB> ", "blue", attrs=["bold"]) + "Subscribed kp observer started for socket " + str(newsub.conn)
     
                             except AttributeError:
+                                print "AttributeError - closing socket"
                                 clientsock.close()
     
                             except socket.error:
@@ -251,6 +253,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                     
                                     try:
                                         s.conn.send(ssap_msg)
+                                        print "close 256"
                                         s.conn.close()
                                     except socket.error:
                                         print sys.exc_info()
@@ -286,18 +289,21 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 
                         ### OTHER REQUESTS
                         elif ssap_msg_dict["message_type"] == "REQUEST":
+
                             # kp_list[ssap_msg_dict["node_id"]] = clientsock
                             kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = clientsock
-                            clientsock.close()
+
                             # debug message
-    #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
+                            print colored("remoteSIB>", "green", attrs=["bold"]) + " request handled"
                             # logger.info(ssap_msg_dict["transaction_type"] + " REQUEST handled")
     
                             # forwarding message to the publisher
                             try:
+                                print 'PROVO A SPEDIRE'
                                 sib["socket"].send(ssap_msg)
-                                
+                                print "OK"
                             except socket.error:
+                                print 'ERRORE'
                                 err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
                                                                          ssap_msg_dict["space_id"],
                                                                          ssap_msg_dict["transaction_type"],
@@ -495,7 +501,7 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
     # loop
     while check_var:
 
-#        print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' waiting for connections...'
+        print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' waiting for connections...'
         
         # select the read_sockets
         read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
@@ -506,7 +512,7 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
             # new connection
             if sock in sockets:
                 clientsock, addr = sock.accept()
-#                print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
+                print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
                 # logger.info('Incoming connection from ' + str(addr))
                 thread.start_new_thread(handler, (clientsock, addr, kp_port, ancillary_ip, ancillary_port))
 
