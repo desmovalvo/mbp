@@ -26,8 +26,8 @@ COMMANDS = {
     "DeleteRemoteSIB" : ["virtual_sib_id"],
     "DeleteSIB": ["sib_id"],
     "SetSIBStatus": ["sib_id", "status"],
-    "AddSIBtoVMSIB": ["sib_id", "vmsib_id"],
-    "RemoveSIBfromVMSIB": ["sib_id", "vmsib_id"]
+    "AddSIBtoVMSIB": ["vmsib_id", "sib_list"],
+    "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"]
     }
 
 # classes
@@ -88,7 +88,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     # send a reply
                     self.request.sendall(json.dumps(confirm))
 
-                # DeleteRemoteSIB request
+                # DeleteSIB request
                 elif data["command"] == "DeleteSIB":
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.sib_id)
                                 
@@ -125,7 +125,11 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # AddSIBtoVMSIB
                 elif data["command"] == "AddSIBtoVMSIB":
-                    pass
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.vmsib_id, cmd.sib_list)
+                
+                    # send a reply                    
+                    self.request.sendall(json.dumps(confirm))                    
+
 
                 # RemoveSIBfromVMSIB
                 elif data["command"] == "RemoveSIBfromVMSIB":
