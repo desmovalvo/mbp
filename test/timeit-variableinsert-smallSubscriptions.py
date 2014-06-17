@@ -25,6 +25,7 @@ num_sub = int(sys.argv[5])
 num_iter = int(sys.argv[6])
 max_ins = int(sys.argv[7])
 sub_at = sys.argv[8]
+none = int(sys.argv[9])
 
 class TestHandler:
      def __init__(self):
@@ -34,7 +35,21 @@ class TestHandler:
 
 
 # create num_sub kps subscribed at the triple t_sub
-t_sub = Triple(None,None,None)
+if none == 1:
+    t_sub = Triple(URI("http://ns#non-voglio-scattare"),URI("http://ns#mai"),None)
+elif none == 2:
+    t_sub = Triple(URI("http://ns#non-voglio-scattare"),None,None)
+elif none == 0:
+    t_sub = Triple(URI("http://ns#non-voglio-scattare"),URI("http://ns#mai"),URI("http://ns#piu"))
+elif none == 3:
+    if num_sub > 10:
+        print "Too many subscriptions!"
+        sys.exit()
+    else:
+        t_sub = Triple(None, None, None)
+else:
+    print "Invalid argument " + argv[9]
+
 print "Creating the subscriptions..."
 if sub_at == "virtualsib":
      ss = 0

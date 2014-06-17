@@ -49,6 +49,41 @@ def handler(clientsock, addr, port, sibs_info):
     while 1:
         try:
             ssap_msg = clientsock.recv(BUFSIZ)
+            ###ALE
+            try:
+                msg = json.loads(ssap_msg)
+                # it's a json message (AddSIBtoVMSIB or RemoveSIBfromVMSIB)
+                print msg
+                if msg["command"] == "AddSIBtoVMSIB":
+                    print "Adding a sib to virtualMultiSib.."
+                    
+                    # connect to the ancillary
+                    # update the list of sibs 
+                    for SIBid in msg["SIBlist"]:
+                        a.insert(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
+
+                        # update sibs list info
+                        t = Triple(URI(ns + str(SIBid)), URI(ns + "hasKpIpPort"), None)
+                        result = a.execute_rdf_query(t)
+                        sibs_info[str(SIBid)] = {}
+                        sibs_info[str(SIBid)]["ip"] = str(result[0][2]).split("-")[0]
+                        sibs_info[str(SIBid)]["kp_port"] = int(str(result[0][2]).split("-")[1])
+                        
+                    
+                elif msg["command"] == "RemoveSIBfromVMSIB":
+                    print "Removing a sib from virtualMultiSib.."
+                    # connect to the ancillary
+                    # update the list of sibs 
+                    for SIBid in msg["SIBlist"]:
+                        a.remove(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
+                        # update sibs list info
+                        del sibs_info[str(SIBid)]
+                        
+                
+                continue
+            except ValueError:
+                pass
+            ###
 
             # it may be a "space" character from a subscribed kp or from a publisher
             if len(ssap_msg) == 1 and ssap_msg == " ":
@@ -71,7 +106,7 @@ def handler(clientsock, addr, port, sibs_info):
                 else:
                     #extract all the messages and let the remaining part into the complete_ssap_msg variable
                     messages, complete_ssap_msg = extract_complete_messages(complete_ssap_msg)
-
+                    
                 for ssap_msg in messages:
                     # try to decode the message
                     try:
@@ -190,6 +225,7 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
     a = SibLib(ancillary_ip, ancillary_port)
     for s in sib_list:
         sibs_info[s] = {}
+        #TODO: controllare che le sib in sib_list siano online
         t = Triple(URI(ns + str(s)), URI(ns + "hasKpIpPort"), None)
         result = a.execute_rdf_query(t)
         sibs_info[s]["ip"] = str(result[0][2]).split("-")[0]

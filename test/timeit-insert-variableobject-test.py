@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+import time
 import sys
 import timeit
 import pygal
@@ -57,52 +58,47 @@ kp[1].remove(Triple(None, None, None))
 #############################################################
 
 for client in kp:
-
+    
     median_array = []
+    obj = ""
 
-    # step iteration
-    for i in range(0, max/step):
-        print "Inserting " + str((i+1) * step) + " triples at once"
-    
-        tot = []
-        for it in range(num_iter):   
-    
-            print '* [' + str((i+1) * step) + '] Iteration: ' + str(it)
-    
-            # generate (i+1)*step triples
-            t = []
-            for k in range(((i+1)*step)):
-                tt = Triple(URI(ns + "subject" + str(it) + "_" + str(k)), URI(ns + "predicate" + str(it)), URI(ns + "object" + str(it)))
-                # print tt
-                t.append(tt)
-    
-            # insert the triples
-            end = timeit.timeit(lambda: client.insert(t), number=1)
-             # print "\tTriples at this step: " + str(len(client.execute_rdf_query(Triple(None, None, None))))
-            tot.append(end)
+    # cycle
+    for i in range(0, max):
+         tot = []
+         obj += "a" * step
 
-            # clean sib
-            client.remove(Triple(None, None, None))
-    
-        # sort the array and pick the median value
-        tot.sort()
-        if len(tot)%2 == 0:
-            median = (tot[len(tot)/2] + tot[len(tot)/2-1]) / 2
-        else:
-            median = tot[len(tot)/2]     
-            
-        median_array.append(round(median * 1000, 2))
-
+         # Insertion
+         print "Inserting a triple with object lenght = " + str(len(obj))
+         
+         # step iteration
+         for iter in range(0,num_iter):
+             t = Triple(URI("http://ns#a"), URI("http://ns#a"), Literal(obj))
+             end = timeit.timeit(lambda: client.insert(t), number=1)
+             client.remove(t)
+             tot.append(end)
+         
+         # Median calculation
+         tot.sort()
+         if len(tot)%2 == 0:
+             median = (tot[len(tot)/2] + tot[len(tot)/2-1]) / 2
+         else:
+             median = tot[len(tot)/2]
+         median_array.append(median * 1000)
+             
+    # median array update
     median_arrays.append(median_array)
+
+    # clean the sib
+    client.remove(Triple(None, None, None))
 
 for i in median_arrays:
     print "MEDIAN ARRAY: " + str(i)
+
 bar_chart = pygal.Bar()
 # chart = pygal.StackedLine(fill=True, interpolate='cubic', style=LightGreenStyle)
-bar_chart.title = 'Insertion time with increasing the number of triples inserted'
-bar_chart.add('Local SIB', median_arrays[0])
-bar_chart.add('Remote SIB', median_arrays[1])
-bar_chart.render_to_file('multiple_insert.svg')
+bar_chart.add('Real SIB', median_arrays[0])
+bar_chart.add('Virtual SIB', median_arrays[1])
+bar_chart.render_to_file('single_insert_variableobject.svg')
 
 
 #############################################################
@@ -114,6 +110,4 @@ bar_chart.render_to_file('multiple_insert.svg')
 print "\nCleaning the sib...\n"
 kp1 = SibLib(sib_ip, sib_port)
 kp1.remove(Triple(None, None, None))
-print "Triples expected at this step: 0"
-print "Triples at this step: " + str(len(kp1.execute_rdf_query(Triple(None, None, None))))
 kp1.leave_sib()
