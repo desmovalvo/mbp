@@ -343,7 +343,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         pass
         
         except socket.error:
-            print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket.error: break!"
+            print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket.error: break! 346"
             print sys.exc_info()
             break
 

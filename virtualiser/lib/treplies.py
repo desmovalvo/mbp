@@ -107,7 +107,7 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                         logger.error("JOIN CONFIRM forwarding failed")
           
                                 except socket.error:
-                                    print treplies_print(False) + " socket.error: break! 104"
+                                    print treplies_print(False) + " socket.error treplies: break! 104"
                                 
                             mutex.release()
         
@@ -116,8 +116,9 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                         #print treplies_print(False) + " ParseError"
                         pass
         
-        except ZeroDivisionError:#socket.error:
-            print treplies_print(False) + " socket.error"
+        except socket.error:
+            print treplies_print(False) + " socket.error treplies 120"
+            break
 
                 
             
@@ -198,7 +199,7 @@ def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                         logger.error("LEAVE CONFIRM forwarding failed")
         
                                 except socket.error:
-                                    print treplies_print(False) + " socket.error: break! 191"
+                                    print treplies_print(False) + " socket.error treplies: break! 191"
         
                 
                             mutex.release()
@@ -209,7 +210,8 @@ def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                     
                     
         except socket.error:
-            print treplies_print(False) + " socket.error: break! 201"
+            print treplies_print(False) + " socket.error treplies: break! 201"
+            break
 
 
 
@@ -294,7 +296,7 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                         logger.error("INSERT CONFIRM forwarding failed")
         
                                 except socket.error:
-                                    print treplies_print(False) + " socket.error: break! 282"
+                                    print treplies_print(False) + " socket.error treplies: break! 282"
         
                         
                             mutex.release()
@@ -305,7 +307,8 @@ def insert_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                         pass
         
         except socket.error:
-            print treplies_print(False) + " socket.error 293"
+            print treplies_print(False) + " socket.error treplies 293"
+            break
 
 
 # REMOVE CONFIRM
@@ -390,7 +393,7 @@ def remove_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                                         logger.error("REMOVE CONFIRM forwarding failed")
                              
                                 except socket.error:
-                                    print treplies_print(False) + " socket.error: break! 373"
+                                    print treplies_print(False) + " socket.error treplies: break! 373"
         
                         
                             mutex.release()
@@ -401,8 +404,8 @@ def remove_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                         pass
         
         except socket.error:
-            print treplies_print(False) + " socket.error 384"
-
+            print treplies_print(False) + " socket.error treplies 384"
+            break
 
 
 # SPARQL QUERY CONFIRM
@@ -525,7 +528,7 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
                                         logger.error("SPARQL CONFIRM forwarding failed")
                             
                                 except socket.error:
-                                    print treplies_print(False) + " socket.error: break! 502"
+                                    print treplies_print(False) + " socket.error treplies: break! 502"
         
                         
                             mutex.release()
@@ -536,8 +539,9 @@ def sparql_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_
                         pass
         
         except socket.error:
-            print treplies_print(False) + " socket.error 513"
-                    
+            print treplies_print(False) + " socket.error treplies 513"
+            break
+
 
 # RDF QUERY CONFIRM
 def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_results):
@@ -655,7 +659,7 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
                                         logger.error("RDF QUERY CONFIRM forwarding failed")
                                         
                                 except socket.error:
-                                    print treplies_print(False) + " socket.error: break! 626"
+                                    print treplies_print(False) + " socket.error treplies: break! 626"
 
                 
                             mutex.release()
@@ -666,8 +670,8 @@ def rdf_query_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, query_res
                         pass
 
         except socket.error:
-            print treplies_print(False) + " socket.error 636"
-                    
+            print treplies_print(False) + " socket.error treplies 636"
+            break
 
 
 # RDF SUBSCRIBE CONFIRM
@@ -819,7 +823,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                                                     logger.error("SUBSCRIBE CONFIRM forwarding failed")
                                 
                                     except socket.error:
-                                        print treplies_print(False) + " socket.error: break! 788"
+                                        print treplies_print(False) + " socket.error treplies: break! 788"
                             
                                 mutex.release()
                             elif ssap_msg_dict["message_type"] == "INDICATION":
@@ -869,7 +873,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                                         logger.error("UNSUBSCRIBE CONFIRM forwarding failed")
                             
                                 except socket.error:
-                                    print treplies_print(False) + " socket.error: break! 830"
+                                    print treplies_print(False) + " socket.error treplies: break! 830"
                         
                             mutex.release()
         
@@ -879,7 +883,7 @@ def rdf_subscribe_confirm_handler(sib_sock, sibs_info, kp_list, n, logger, initi
                         pass
         
         except socket.error:
-            print treplies_print(False) + " socket.error 839"
+            print treplies_print(False) + " socket.error treplies 839"
             break
                     
     
