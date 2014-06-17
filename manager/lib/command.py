@@ -10,7 +10,10 @@ COMMANDS = {
     "DiscoveryAll" : [],
     "DiscoveryWhere" : ["sib_profile"],
     "DeleteRemoteSIB" : ["virtual_sib_id"],
-    "DeleteSIB" : ["sib_id"]
+    "DeleteSIB" : ["sib_id"],
+    "SetSIBStatus": ["sib_id", "status"],
+    "AddSIBtoVMSIB": ["sib_id", "vmsib_id"],
+    "RemoveSIBfromVMSIB": ["sib_id", "vmsib_id"]
     }
 
 # class
