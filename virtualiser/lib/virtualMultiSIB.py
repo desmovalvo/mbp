@@ -5,6 +5,7 @@ import time
 import thread
 import logging
 import threading
+import traceback
 from SIBLib import *
 from Subreq import *
 import socket, select
@@ -86,7 +87,7 @@ def handler(clientsock, addr, port, sibs_info):
                         #     info[k] = child.text
                         ssap_root = ET.fromstring(ssap_msg)
                         ssap_msg_dict = build_dict(ssap_root)
-            
+    
                         # debug info
                         print vmsib_print(True) + " received a " + ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"]
                         logger.info("Received the following  message from " + str(addr))
@@ -99,19 +100,19 @@ def handler(clientsock, addr, port, sibs_info):
                         if ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] in ["JOIN", "LEAVE", "REMOVE", "INSERT"]:
                             
                             # how many confirms should we wait? 
-                            confirms[ssap_msg_dict["node_id"]] = len(sibs_info)
+                            confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
         
                             # store the client socket from which we received the request
                             kp_list[ssap_msg_dict["node_id"]] = clientsock
                             
                             # call the method that handles the request and wait for confirms
-                            handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"]])
+                            handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]])
             
                         # SPARQL/RDF QUERY REQUEST
                         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "QUERY":
         
                             # how many confirms should we wait? 
-                            confirms[ssap_msg_dict["node_id"]] = len(sibs_info)
+                            confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
         
                             # creation of an empty array in which we'll insert the query results
                             query_results[ssap_msg_dict["node_id"]] = []
@@ -120,13 +121,13 @@ def handler(clientsock, addr, port, sibs_info):
                             kp_list[ssap_msg_dict["node_id"]] = clientsock
         
                             # call the method that handles the request and wait for confirms
-                            handle_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"]], query_results)
+                            handle_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], query_results)
             
                         # RDF and SPARQL SUBSCRIBE REQUEST
                         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "SUBSCRIBE":# and ssap_msg_dict["parameter_type"] == "RDF-M3":
             
                             # how many confirms should we wait? 
-                            confirms[ssap_msg_dict["node_id"]] = len(sibs_info)
+                            confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
         
                             # creation of an empty array in which we'll insert the initial results
                             initial_results[ssap_msg_dict["node_id"]] = []
@@ -135,23 +136,24 @@ def handler(clientsock, addr, port, sibs_info):
                             kp_list[ssap_msg_dict["node_id"]] = clientsock
         
                             # call the method that handles the request and wait for confirms
-                            handle_rdf_subscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"]], clientsock, val_subscriptions, active_subscriptions, initial_results)
+                            handle_rdf_subscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], clientsock, val_subscriptions, active_subscriptions, initial_results)
             
                         # RDF UNSUBSCRIBE REQUEST
                         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "UNSUBSCRIBE":
         
                             # how many confirms should we wait? 
-                            confirms[ssap_msg_dict["node_id"]] = len(sibs_info)
+                            confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
         
                             # call the method that handles the request and wait for confirms
-                            handle_rdf_unsubscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"]], clientsock, val_subscriptions)
+                            handle_rdf_unsubscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], clientsock, val_subscriptions)
                         
                     except ET.ParseError:
                         print vmsib_print(False) + " ParseError"
                         pass
         
         except socket.error:
-            print vmsib_print(False) + " socket.error: break!"
+            print vmsib_print(False) + " socket.error: break! 154vm"
+            print traceback.print_exc()
 #            break
 
 

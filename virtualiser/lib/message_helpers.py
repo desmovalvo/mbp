@@ -23,12 +23,8 @@ def extract_first_message(ssap_message):
     followed by the remaining part"""
 
     # position of the first and the last chars
-    
-    start = time.time()
     start_msg = ssap_message.find(START_TAG)
     end_msg = ssap_message.find(END_TAG) + len(END_TAG)
-    end = time.time() - start
-    print "Tempo find " + str(end) + " --- Lunghezza: " + str(len(ssap_message)) 
     
     # the first message is...
     first_msg = ssap_message[start_msg:end_msg]
