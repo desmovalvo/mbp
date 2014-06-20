@@ -26,32 +26,12 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
     subs = {}
     node_id = vsib_id
     
-    # socket to the virtual sib
-    vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-     
-    # connect to remote host
-    print colored("publisher3> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host)
-    print colored("publisher3> ", "blue", attrs=['bold']) + " Virtual sib has port " + str(vsib_port)
-    try :
-        vs.connect((vsib_host, vsib_port))
-        print colored("publisher3> ", "blue", attrs=['bold']) + 'Connected to virtual SIB. Sending register request!'
-
-        # building and sending the register request
-        space_id = "X"
-        transaction_id = random.randint(0, 1000)
-        register_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(node_id,
-                                                      space_id,
-                                                      "REGISTER",
-                                                      transaction_id, "")
-        vs.send(register_msg)
-
-    except socket.error:
-        print colored("publisher3> ", "red", attrs=['bold']) + 'Unable to connect to the virtual SIB'
-        print str(sys.exc_info()) + "\n" + str(traceback.print_exc())
-        sys.exit()    
-
+    # register request
+    print colored("publisher3> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host) + ":" + str(vsib_port)
+    connected = False
+    vs = register_request(vsib_host, vsib_port, node_id, connected)
     socket_list = [vs]
-        
+
     while 1:
 
         # Get the list sockets which are readable
@@ -70,34 +50,14 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                 # closing connection to the virtualiser
                 vs.close()
 
-                # re-opening connection
-                try:
-                    print colored("publisher3> ", "blue", attrs=["bold"]) + "New attempt to connect to the virtualiser"
-                    vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    vs.connect((vsib_host, vsib_port))
-                    socket_list = [vs]
-
-                    try:
-                        #vs.connect((vsib_host, vsib_port))                            
-                        print colored("publisher3> ", "blue", attrs=['bold']) + 'Connected to virtual SIB. Sending register request!'
-
-                        # building and sending the register request
-                        transaction_id = random.randint(0, 1000)
-                        register_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(node_id,
-                                                                      space_id,
-                                                                      "REGISTER",
-                                                                      transaction_id, "")
-
-                        vs.send(register_msg)                            
-                        connected = True
-                        break
-                    except:
-                        print colored("publisher3> ", "red", attrs=["bold"]) + "Error while sending register message"
-
-                except:
-                    print colored("publisher3> ", "red", attrs=["bold"]) + "Connection failed"
-                    
+                # register request
+                print colored("publisher3> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host) + ":" + str(vsib_port)
+                vs = register_request(vsib_host, vsib_port, node_id)
+                socket_list = [vs]
+                if connected:
+                    break                    
    
+
         # MAIN LOOP
         for sock in read_sockets:
 
@@ -196,8 +156,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip,
     if ssap_msg_dict["transaction_type"] != "REGISTER":
 
         rs.send(ssap_msg)
-        print colored("publisher3> ", "blue", attrs=["bold"]) + "forwarding " + 
-        colored(ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"], "cyan", attrs=["bold"]) + " to the real sib"
+        print colored("publisher3> ", "blue", attrs=["bold"]) + "forwarding " + colored(ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"], "cyan", attrs=["bold"]) + " to the real sib"
 
         # is it a subscribe request?
         if ssap_msg_dict["transaction_type"] == "SUBSCRIBE" and ssap_msg_dict["message_type"] == "REQUEST":
