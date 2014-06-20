@@ -50,7 +50,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
             if cmd.valid:
                 print colored("SIBmanager> ", "blue", attrs=["bold"]) + "calling the proper method"
 
-                # RegisterPubliSIB request
+                # RegisterPublicSIB request
                 if cmd.command == "RegisterPublicSIB":
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.owner, cmd.ip, cmd.port)
 
@@ -133,7 +133,10 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # RemoveSIBfromVMSIB
                 elif data["command"] == "RemoveSIBfromVMSIB":
-                    pass
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.vmsib_id, cmd.sib_list)
+
+                    # send a reply                    
+                    self.request.sendall(json.dumps(confirm))                    
 
 
             else:

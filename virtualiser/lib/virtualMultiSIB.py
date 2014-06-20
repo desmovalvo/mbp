@@ -59,12 +59,11 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
                 if msg["command"] == "AddSIBtoVMSIB":
                     print "Adding a sib to virtualMultiSib.."
                     
-                    # connect to the ancillary
+                    # connect to the ancillary sib
                     a = SibLib(ancillary_ip, ancillary_port)                    
-
+                    
                     # update the list of sibs 
                     for SIBid in msg["sib_list"]:
-                        a.insert(Triple(URI(ns + msg["vmsib_id"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
 
                         # update sibs list info
                         t = Triple(URI(ns + str(SIBid)), URI(ns + "hasKpIpPort"), None)
@@ -76,14 +75,16 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
             #         for i in multi_sib_changed:
             #             multi_sib_changed[i] = True
                    
-            #     elif msg["command"] == "RemoveSIBfromVMSIB":
-            #         print "Removing a sib from virtualMultiSib.."
-            #         # connect to the ancillary
-            #         # update the list of sibs 
-            #         for SIBid in msg["SIBlist"]:
-            #             a.remove(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
-            #             # update sibs list info
-            #             del sibs_info[str(SIBid)]
+                elif msg["command"] == "RemoveSIBfromVMSIB":
+                    print "Removing a sib from virtualMultiSib.."
+                    
+
+
+                    # update the list of sibs 
+                    for SIBid in msg["sib_list"]:
+
+                        # update sibs list info
+                        del sibs_info[str(SIBid)]
 
             #         for i in multi_sib_changed:
             #             multi_sib_changed[i] = True
@@ -263,7 +264,7 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
                         pass
         
         except socket.error:
-            print vmsib_print(False) + " socket.error: break! 154vm"
+            print vmsib_print(False) + " socket.error: break! 266vm"
             print traceback.print_exc()
 #            break
 
