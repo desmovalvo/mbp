@@ -14,6 +14,7 @@ from termcolor import *
 from output_helpers import *
 from xml_helpers import *
 from xml.etree import ElementTree as ET
+import json
 
 BUFSIZ = 1024
 
@@ -49,41 +50,86 @@ def handler(clientsock, addr, port, sibs_info):
     while 1:
         try:
             ssap_msg = clientsock.recv(BUFSIZ)
-            ###ALE
-            try:
-                msg = json.loads(ssap_msg)
-                # it's a json message (AddSIBtoVMSIB or RemoveSIBfromVMSIB)
-                print msg
-                if msg["command"] == "AddSIBtoVMSIB":
-                    print "Adding a sib to virtualMultiSib.."
+            # ###ALE
+            # try:
+            #     msg = json.loads(ssap_msg)
+            #     # it's a json message (AddSIBtoVMSIB or RemoveSIBfromVMSIB)
+            #     print msg
+            #     if msg["command"] == "AddSIBtoVMSIB":
+            #         print "Adding a sib to virtualMultiSib.."
                     
-                    # connect to the ancillary
-                    # update the list of sibs 
-                    for SIBid in msg["SIBlist"]:
-                        a.insert(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
+            #         # connect to the ancillary
+            #         # update the list of sibs 
+            #         for SIBid in msg["SIBlist"]:
+            #             a.insert(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
 
-                        # update sibs list info
-                        t = Triple(URI(ns + str(SIBid)), URI(ns + "hasKpIpPort"), None)
-                        result = a.execute_rdf_query(t)
-                        sibs_info[str(SIBid)] = {}
-                        sibs_info[str(SIBid)]["ip"] = str(result[0][2]).split("-")[0]
-                        sibs_info[str(SIBid)]["kp_port"] = int(str(result[0][2]).split("-")[1])
-                        
+            #             # update sibs list info
+            #             t = Triple(URI(ns + str(SIBid)), URI(ns + "hasKpIpPort"), None)
+            #             result = a.execute_rdf_query(t)
+            #             sibs_info[str(SIBid)] = {}
+            #             sibs_info[str(SIBid)]["ip"] = str(result[0][2]).split("-")[0]
+            #             sibs_info[str(SIBid)]["kp_port"] = int(str(result[0][2]).split("-")[1])
+
+            #         for i in multi_sib_changed:
+            #             multi_sib_changed[i] = True
                     
-                elif msg["command"] == "RemoveSIBfromVMSIB":
-                    print "Removing a sib from virtualMultiSib.."
-                    # connect to the ancillary
-                    # update the list of sibs 
-                    for SIBid in msg["SIBlist"]:
-                        a.remove(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
-                        # update sibs list info
-                        del sibs_info[str(SIBid)]
+            #     elif msg["command"] == "RemoveSIBfromVMSIB":
+            #         print "Removing a sib from virtualMultiSib.."
+            #         # connect to the ancillary
+            #         # update the list of sibs 
+            #         for SIBid in msg["SIBlist"]:
+            #             a.remove(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
+            #             # update sibs list info
+            #             del sibs_info[str(SIBid)]
+
+            #         for i in multi_sib_changed:
+            #             multi_sib_changed[i] = True
+
+            #     elif msg["command"] == "SetStatus":
+            #         if msg["status"] == "offline":
+            #             # set the status offline
+            #             # a = SibLib(ancillary_ip, ancillary_port)
+                        
+            #             t = []
+            #             t.append(Triple(URI(ns + str(msg["idVSIB"])), URI(ns + "hasStatus"), URI(ns + "online")))
+            #             a.remove(t)
+                    
+            #             t = []
+            #             t.append(Triple(URI(ns + str(msg["idVSIB"])), URI(ns + "hasStatus"), URI(ns + "offline")))
+            #             a.insert(t)       
+                        
+            #             # update sib list but don't remove the triple <vmsib><composedBy><sib>
+            #             del sibs_info[str(msg["idVSIB"])]
+                        
+            #             for i in multi_sib_changed:
+            #                 multi_sib_changed[i] = True
+
+            #         elif msg["status"] == "online":
+            #             # set the status online
+            #             t = []
+            #             t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
+            #             a.remove(t)
+                    
+            #             t = []
+            #             t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
+            #             a.insert(t)       
+
+            #             # update sib list 
+            #             sibs_info[str(msg["idVSIB"])] = {}
+            #             t = Triple(URI(ns + str(msg["idVSIB"])), URI(ns + "hasKpIpPort"), None)
+            #             result = a.execute_rdf_query(t)
+                        
+            #             sibs_info[str(msg["idVSIB"])]["ip"] = str(result[0][2]).split("-")[0]
+            #             sibs_info[str(msg["idVSIB"])]["kp_port"] = int(str(result[0][2]).split("-")[1])
+                        
+            #             for i in multi_sib_changed:
+            #                 multi_sib_changed[i] = True
                         
                 
-                continue
-            except ValueError:
-                pass
-            ###
+            #     continue
+            # except ValueError:
+            #     pass
+            # ###
 
             # it may be a "space" character from a subscribed kp or from a publisher
             if len(ssap_msg) == 1 and ssap_msg == " ":
@@ -133,34 +179,61 @@ def handler(clientsock, addr, port, sibs_info):
                         
                         # JOIN/LEAVE/REMOVE/INSERT REQUEST
                         if ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] in ["JOIN", "LEAVE", "REMOVE", "INSERT"]:
+
+                            # if (kp_list.has_key(ssap_msg_dict["node_id"])) and multi_sib_changed[ssap_msg_dict["node_id"]] == True:
+                            #     #sib error
+                            #     clientsock.close()
+                            #     del multi_sib_changed[ssap_msg_dict["node_id"]]
+                            #     del kp_list[ssap_msg_dict["node_id"]]
+
+                            # else:
+                            #     if not(kp_list.has_key(ssap_msg_dict["node_id"])): #and(ssap_msg_dict["transaction_type"] == "JOIN"):
+                            #      #presumibilmente se il kp non e' nella lista kp_list, allora questa sara' una join, ma potrebbe anche non esserlo visto che la join non e' obbligatoria
+                            #         multi_sib_changed[ssap_msg_dict["node_id"]] = False
                             
-                            # how many confirms should we wait? 
-                            confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
+                                                                                        
+                                # how many confirms should we wait? 
+                                confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
         
-                            # store the client socket from which we received the request
-                            kp_list[ssap_msg_dict["node_id"]] = clientsock
+                                # store the client socket from which we received the request
+                                kp_list[ssap_msg_dict["node_id"]] = clientsock
                             
-                            # call the method that handles the request and wait for confirms
-                            handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]])
+                                # call the method that handles the request and wait for confirms
+                                handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]])
             
                         # SPARQL/RDF QUERY REQUEST
                         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "QUERY":
+
+
+#                             if (kp_list.has_key(ssap_msg_dict["node_id"])) and multi_sib_changed[ssap_msg_dict["node_id"]] == True:
+#                                 #sib error
+#                                 clientsock.close()
+#                                 del multi_sib_changed[ssap_msg_dict["node_id"]]
+#                                 del kp_list[ssap_msg_dict["node_id"]]
+
+#                             else:
+#                                 if not(kp_list.has_key(ssap_msg_dict["node_id"])): #and(ssap_msg_dict["transaction_type"] == "JOIN")
+# #presumibilmente se il kp non e' nella lista kp_list, allora questa sara' una join, ma potrebbe anche non esserlo visto che la join non e' obbligatoria...
+#                                     multi_sib_changed[ssap_msg_dict["node_id"]] = False
+                            
         
-                            # how many confirms should we wait? 
-                            confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
-        
-                            # creation of an empty array in which we'll insert the query results
-                            query_results[ssap_msg_dict["node_id"]] = []
-        
-                            # store the client socket from which we received the request
-                            kp_list[ssap_msg_dict["node_id"]] = clientsock
-        
-                            # call the method that handles the request and wait for confirms
-                            handle_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], query_results)
+                                # how many confirms should we wait? 
+                                confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
             
+                                # creation of an empty array in which we'll insert the query results
+                                query_results[ssap_msg_dict["node_id"]] = []
+            
+                                # store the client socket from which we received the request
+                                kp_list[ssap_msg_dict["node_id"]] = clientsock
+            
+                                # call the method that handles the request and wait for confirms
+                                handle_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], query_results)
+                
                         # RDF and SPARQL SUBSCRIBE REQUEST
                         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "SUBSCRIBE":# and ssap_msg_dict["parameter_type"] == "RDF-M3":
             
+                            ##TODO qui si deve fare il controllo su multi_sib_changed?Secondo me si..
+
                             # how many confirms should we wait? 
                             confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
         

@@ -18,6 +18,7 @@ import datetime
 from SSAPLib import *
 from message_helpers import *
 from xml_helpers import *
+import sys
 
 BUFSIZ = 1024
 
@@ -337,7 +338,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                         pass
         
         except socket.error:
-            print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket.error: break!"
+            print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket.error: break! 341"
             print sys.exc_info()
             break
 
@@ -351,22 +352,27 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
         try:            
             if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
                 print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
-                # set the status offline
-                a = SibLib(ancillary_ip, ancillary_port)
+                # # set the status offline
+                # a = SibLib(ancillary_ip, ancillary_port)
 
-                t = [Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), None)]
-                result = a.execute_rdf_query(t)
+                # t = [Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), None)]
+                # result = a.execute_rdf_query(t)
 
-                if len(result) > 0:
-                    t = []
-                    t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + str(result[0][2]).split("#")[1])))
-                    a.remove(t)
+                # if len(result) > 0:
+                #     t = []
+                #     t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + str(result[0][2]).split("#")[1])))
+                #     a.remove(t)
 
-                    t = []
-                    t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-                    a.insert(t)       
-
-                sib["socket"] = None                
+                #     t = []
+                #     t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
+                #     a.insert(t)       
+                
+                # ###ALE
+                # sib["socket"] = None                
+                # # Send a message to the manager to notify the new status
+                # jmsg = {"command":"SetStatus", "idVSIB":str(sib["virtual_sib_id"]), "status":"offline"}
+                # ###
+                
                 break
             else:
                 time.sleep(5)

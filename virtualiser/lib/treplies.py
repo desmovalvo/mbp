@@ -35,7 +35,9 @@ def join_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
 
     global mutex
     global num_confirms
-
+    
+    print "sono nel join confirm handler"
+    
     ###############################################
     ## ricezione e riunificazione del messaggio  ##
     ###############################################
@@ -896,6 +898,7 @@ def handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, 
     """The present method is used to manage the join/leave/insert/remove
     requests received from a KP."""
 
+    print "sono nel generic handler"
     t = {}
     global num_confirms 
     num_confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = num
@@ -920,8 +923,10 @@ def handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, 
         # connect to the SIBs
         try:
             sock.connect((ip, kp_port))
+            print "connessa alla sib"
 
             try:
+                print "sto inoltrando il messaggio ad una sib"
                 sock.send(ssap_msg)
             except socket.error:
                 print treplies_print(False) + " Send failed 885"       
@@ -945,6 +950,7 @@ def handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, 
         # spawning threads
         print 'Start a thread for ' + str(s)
         func = globals()[ssap_msg_dict["transaction_type"].lower() + "_confirm_handler"]
+        print "sto richiamando l'handler confirm..."
         thread.start_new_thread(func, (sib_list_conn[s], sibs_info, kp_list, t[n], logger))
 
 
