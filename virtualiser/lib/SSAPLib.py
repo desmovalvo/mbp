@@ -44,3 +44,12 @@ SSAP_TRIPLE_TEMPLATE = """<triple><subject type="uri">%s</subject><predicate>%s<
 SSAP_TRIPLE_LIST_TEMPLATE = """<triple_list>%s</triple_list>"""
 
 SSAP_INDICATION_TEMPLATE = """<SSAP_message><message_type>INDICATION</message_type><transaction_type>SUBSCRIBE</transaction_type><space_id>%s</space_id><node_id>%s</node_id><transaction_id>%s</transaction_id><parameter name="ind_sequence">%s</parameter><parameter name="subscription_id">%s</parameter><parameter name="new_results">%s</parameter><parameter name="obsolete_results">%s</parameter></SSAP_message>"""
+
+
+############################################################
+#
+# UNSUBSCRIBE REQUEST template
+#
+############################################################
+
+SSAP_UNSUBSCRIBE_REQUEST_TEMPLATE = """<SSAP_message><transaction_type>UNSUBSCRIBE</transaction_type><message_type>REQUEST</message_type><transaction_id>%s</transaction_id><node_id>%s</node_id><space_id>X</space_id><parameter name = "subscription_id">%s</parameter></SSAP_message>"""

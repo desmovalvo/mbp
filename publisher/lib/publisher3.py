@@ -209,7 +209,6 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
 
     # we open a socket for each subscription
     tvs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #tvs.settimeout(2)
     tvs.connect((vsib_host, vsib_port))
 
     # wait for messages and examinate them!
@@ -218,7 +217,7 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
         if len(ssap_msg) > 1:
 
             # forwarding subscription-related message to the virtual sib
-            #print colored("tpublisher " + str(tn) + ">", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
+            print colored("tpublisher " + str(tn) + ">", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
             
             # connect to remote host
             try :
@@ -234,5 +233,5 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
                 print sys.exc_info() + "\n" + traceback.print_exc()
 
     # close thread
-#    print colored("publisher3> ", "red", attrs=[]) + "Closing thread subscription_handler"
+    print colored("publisher3> ", "red", attrs=[]) + "Closing thread subscription_handler"
     return
