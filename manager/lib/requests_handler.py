@@ -448,7 +448,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <http://smartM3Lab/Ontology.owl#>
 SELECT ?ipport
 WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
-?vmsib_id ns:composedBy ns:5adbedd2-56ec-4237-845e-63bf03d4d67c }""")
+?vmsib_id ns:composedBy ns:""" + sib_id + """ }""")
     except:
         # Impossible to contact the virtual multi sibs
         print colored("request_handler> ", "red", attrs = ["bold"]) + "failed to contact the virtual multi sibs"
@@ -487,3 +487,87 @@ WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
     # return
     confirm = {'return':'ok'}
     return confirm
+
+
+def AddSIBtoVMSIB(ancillary_ip, ancillary_port, vmsib_id, sib_list):
+
+    print 'ADDSIB'
+
+    # check if the vmsib really exists
+    a = SibLib(ancillary_ip, ancillary_port)
+    print vmsib_id
+    res = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
+    print "RES"
+    print res
+
+    if len(res) == 1:
+
+        # get the list of all the SIBs
+        try:
+            print "TRY1"
+            SIBs = a.execute_sparql_query("""PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+SELECT ?s
+WHERE {{ ?s rdf:type ns:remoteSib } UNION { ?s rdf:type ns:virtualMultiSib }}""")
+        except:
+            print "connection failed to the ancillary sib"
+
+        # extract only the SIBs
+        existing_sibs = []
+        for k in SIBs:
+            existing_sibs.append(str(k[0][2]).split("#")[1])
+        print "existing_sibs"
+
+        # check if the specified sibs really exist
+        for s in sib_list:
+            if not(s in existing_sibs):
+                confirm = {'return':'fail', 'cause':' SIB ' + str(s) + ' does not exist.'}
+                return confirm
+        print "525"
+
+        # build the json msg for the VirtualMultiSib
+        msg = { "command" : "AddSIBtoVMSIB", "sib_list" : sib_list, "vmsib_id" : vmsib_id }
+        jmsg = json.dumps(msg)
+        print "530"
+
+        # get the virtualmultisib parameters
+        vms = a.execute_sparql_query("""PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+SELECT ?o
+WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
+
+        # send a message to the virtualiser
+        try:
+            print "TRY2"
+            print "contatto la vmsib",
+            # connection to the vmsib
+            vms_ip = str(vms[0][0][2].split("#")[1]).split("-")[0]
+            vms_port = str(vms[0][0][2].split("#")[1]).split("-")[1]
+            vms_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            vms_socket.connect((vms_ip, int(vms_port)))
+            vms_socket.send(jmsg)
+            vms_socket.close()
+
+            # update info into the ancillary
+            for s in sib_list:
+                print "Insert",
+                a.insert(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), URI(ns + str(s))))
+                print "Successful"
+
+            # confirm
+            confirm = {'return':'ok'}
+            return confirm
+
+        except:
+            print sys.exc_info()
+            print colored("request_handler> ", "red", attrs=["bold"]) + 'impossible to contact the VirtualMultiSib'      
+
+    else:
+        confirm = {'return':'fail', 'cause':' VirtualMultiSib does not exist.'}
+        return confirm

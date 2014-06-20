@@ -12,8 +12,8 @@ COMMANDS = {
     "DeleteRemoteSIB" : ["virtual_sib_id"],
     "DeleteSIB" : ["sib_id"],
     "SetSIBStatus": ["sib_id", "status"],
-    "AddSIBtoVMSIB": ["sib_id", "vmsib_id"],
-    "RemoveSIBfromVMSIB": ["sib_id", "vmsib_id"]
+    "AddSIBtoVMSIB": ["vmsib_id", "sib_list"],
+    "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"]
     }
 
 # class

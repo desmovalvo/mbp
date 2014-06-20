@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+import json
 import time
 import thread
 import logging
@@ -41,7 +42,7 @@ ns = "http://smartM3Lab/Ontology.owl#"
 #
 ##############################################################
 
-def handler(clientsock, addr, port, sibs_info):
+def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
     
     # storing received parameters in thread-local variables
     kp_port = port
@@ -51,28 +52,30 @@ def handler(clientsock, addr, port, sibs_info):
         try:
             ssap_msg = clientsock.recv(BUFSIZ)
             # ###ALE
-            # try:
-            #     msg = json.loads(ssap_msg)
-            #     # it's a json message (AddSIBtoVMSIB or RemoveSIBfromVMSIB)
-            #     print msg
-            #     if msg["command"] == "AddSIBtoVMSIB":
-            #         print "Adding a sib to virtualMultiSib.."
+            try:
+                msg = json.loads(ssap_msg)
+                # it's a json message (AddSIBtoVMSIB or RemoveSIBfromVMSIB)
+                print msg
+                if msg["command"] == "AddSIBtoVMSIB":
+                    print "Adding a sib to virtualMultiSib.."
                     
-            #         # connect to the ancillary
-            #         # update the list of sibs 
-            #         for SIBid in msg["SIBlist"]:
-            #             a.insert(Triple(URI(ns + msg["idVMSIB"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
+                    # connect to the ancillary
+                    a = SibLib(ancillary_ip, ancillary_port)                    
 
-            #             # update sibs list info
-            #             t = Triple(URI(ns + str(SIBid)), URI(ns + "hasKpIpPort"), None)
-            #             result = a.execute_rdf_query(t)
-            #             sibs_info[str(SIBid)] = {}
-            #             sibs_info[str(SIBid)]["ip"] = str(result[0][2]).split("-")[0]
-            #             sibs_info[str(SIBid)]["kp_port"] = int(str(result[0][2]).split("-")[1])
+                    # update the list of sibs 
+                    for SIBid in msg["sib_list"]:
+                        a.insert(Triple(URI(ns + msg["vmsib_id"]),URI(ns + "composedBy"),URI(ns + str(SIBid))))
+
+                        # update sibs list info
+                        t = Triple(URI(ns + str(SIBid)), URI(ns + "hasKpIpPort"), None)
+                        result = a.execute_rdf_query(t)
+                        sibs_info[str(SIBid)] = {}
+                        sibs_info[str(SIBid)]["ip"] = str(result[0][2]).split("-")[0]
+                        sibs_info[str(SIBid)]["kp_port"] = int(str(result[0][2]).split("-")[1])
 
             #         for i in multi_sib_changed:
             #             multi_sib_changed[i] = True
-                    
+                   
             #     elif msg["command"] == "RemoveSIBfromVMSIB":
             #         print "Removing a sib from virtualMultiSib.."
             #         # connect to the ancillary
@@ -126,10 +129,10 @@ def handler(clientsock, addr, port, sibs_info):
             #                 multi_sib_changed[i] = True
                         
                 
-            #     continue
-            # except ValueError:
-            #     pass
-            # ###
+                continue
+            except ValueError:
+                pass
+            ###
 
             # it may be a "space" character from a subscribed kp or from a publisher
             if len(ssap_msg) == 1 and ssap_msg == " ":
@@ -324,7 +327,7 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
                 clientsock, addr = sock.accept()
                 print vmsib_print(True) + ' incoming connection from ...' + str(addr)
                 logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr, kp_port, sibs_info))
+                thread.start_new_thread(handler, (clientsock, addr, kp_port, sibs_info, ancillary_ip, ancillary_port))
 
             # incoming data
             else:
