@@ -31,7 +31,7 @@ def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None,
         manager.connect((manager_ip, manager_port))
 
     except socket.error:
-        print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
+        print colored("connection_helpers> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
         return None
 
     # Send the NewRemoteSib request
@@ -39,7 +39,7 @@ def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None,
         manager.send(request)
 
     except socket.error:
-        print colored("publisher> ", "red", attrs=['bold']) + 'Unable to send the request to the manager'
+        print colored("connection_helpers> ", "red", attrs=['bold']) + 'Unable to send the request to the manager'
         manager.close()
         return None
 
@@ -48,19 +48,19 @@ def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None,
         confirm_msg = manager.recv(4096)
 
     except socket.timeout:
-        print colored("publisher> ", "red", attrs=['bold']) + 'Request timed out'
+        print colored("connection_helpers> ", "red", attrs=['bold']) + 'Request timed out'
         manager.close()
         return None
 
     except socket.error:
-        print colored("publisher> ", "red", attrs=['bold']) + 'Unable to receive the confirm from the manager'
+        print colored("connection_helpers> ", "red", attrs=['bold']) + 'Unable to receive the confirm from the manager'
         manager.close()
         return None
     
     # Analyze the reply
     confirm = json.loads(confirm_msg)
     if confirm["return"] == "fail":
-        print colored("publisher> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
+        print colored("connection_helpers> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
         manager.close()
         return None
 
