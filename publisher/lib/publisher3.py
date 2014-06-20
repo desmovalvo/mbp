@@ -117,6 +117,10 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_po
                     # there are no messages
                     if not ssap_msg and not complete_ssap_msg:
                         print colored("publisher> ", "red", attrs=["bold"]) + "Connection closed by foreign host"
+
+                        # In this case the virtualiser died, so we should look for another virtualiser
+                        # We should repeat the registration process
+
                         sys.exit()
     
                     # there are messages

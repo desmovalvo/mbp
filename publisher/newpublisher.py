@@ -11,6 +11,7 @@ from termcolor import *
 from smart_m3.m3_kp import *
 from lib.publisher3 import *
 from lib.SIBLib import SibLib
+from lib.connection_helpers import *
 import socket, select, string, sys
 
 #main function
@@ -32,99 +33,36 @@ if __name__ == "__main__":
         # action to perform
         action = sys.argv[6]
 
-        # socket to the manager process
-        manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        manager.settimeout(15)
-         
-        # connect to the manager
-        try:
-             manager.connect((manager_ip, manager_port))
-        except :
-             print colored("publisher> ", "red", attrs=['bold']) + 'Unable to connect to the manager'
-             sys.exit()        
+        if sys.argv[6] == "publish":
+            cnf = manager_request(manager_ip, manager_port, "publish", owner)
+            if cnf:
+                
+                # setting virtual sib parameters
+                virtual_sib_id = cnf["virtual_sib_info"]["virtual_sib_id"]
+                virtual_sib_ip = cnf["virtual_sib_info"]["virtual_sib_ip"]
+                virtual_sib_pub_port = cnf["virtual_sib_info"]["virtual_sib_pub_port"]
 
-        # build and send the request message 
-        if action == "register":
-            print colored("publisher> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending RegisterPublicSIB request!'
-            register_msg = {"command":"RegisterPublicSIB", "owner":owner, "ip":realsib_ip, "port":realsib_port}
-            request = json.dumps(register_msg)
-        elif action == "publish":
-            print colored("publisher> ", "blue", attrs=['bold']) + 'Connected to the manager. Sending NewRemoteSIB request!'
-            register_msg = {"command":"NewRemoteSIB", "owner":owner}
-            request = json.dumps(register_msg)
-        else:
-            print colored("publisher> ", "red", attrs=["bold"]) + '"' + action + '" not valid: "action" parameter must be "register" or "publish"!'
-            sys.exit()
- 
-        try:
-             manager.send(request)
-             timer = datetime.datetime.now()
-        except:
-             print colored("publisher> ", "red", attrs=["bold"]) + 'Registration failed! Try again!'  
-
-        # wait for a reply
-        while 1:
-             if (datetime.datetime.now() - timer).total_seconds() > 15:
-                  print colored("publisher> ", "red", attrs=["bold"]) + 'No reply received. Try again!'
-                  sys.exit(0)
-
-             try:
-                  confirm_msg = manager.recv(4096)
-             except socket.timeout:
-                  print colored("publisher> ", "red", attrs=["bold"]) + "Request timed out"
-                  sys.exit(0)
-
-             if confirm_msg:
-                  print colored("publisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
-                  print confirm_msg
-                  break
-
-        confirm = json.loads(confirm_msg)
-        if confirm["return"] == "fail":
-            print colored("publisher> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
-            sys.exit(0)
-
-        elif confirm["return"] == "ok":
-            manager.close()
-            if action == "register":
-                print colored("publisher> ", "blue", attrs=["bold"]) + 'Sib registered!'
-                sib_id = confirm["sib_id"]
-            else:
-                print colored("publisher> ", "blue", attrs=["bold"]) + 'Virtual Sib created!'
-                virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
-                virtual_sib_ip = confirm["virtual_sib_info"]["virtual_sib_ip"]
-                virtual_sib_pub_port = confirm["virtual_sib_info"]["virtual_sib_pub_port"]
-            
                 # lancio publisher
                 timer = datetime.datetime.now()
                 StartConnection(virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_ip, realsib_port)
+
+            else:
+                sys.exit()
+
+        elif sys.argv[6] == "register":
+            cnf = manager_request(manager_ip, manager_port, "register", owner, realsib_ip, realsib_port)
+            if not cnf:
+                sys.exit()
+                
+        else:
+            print colored("publisher> ", "red", attrs=["bold"]) + '"' + action + '" not valid: "action" parameter must be "register" or "publish"!'
+            sys.exit()
                                 
     except KeyboardInterrupt:
          print colored("publisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"]) + " request"
          
-         # build json message
-         manager.close()
-         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-         # if action == "register":
-         #     delete_msg = {"command":"DeleteSIB", "sib_id":sib_id}         
-         if action == "publish":
-             delete_msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":virtual_sib_id}         
-
-         request = json.dumps(delete_msg)
-         
-         # send message
-         try:
-              manager.connect((manager_ip, manager_port))
-              manager.send(request)
-              confirm_msg = manager.recv(4096)
-              if confirm_msg:
-                   print colored("publisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
-                   print confirm_msg
-         except socket.timeout:
-              print colored("publisher> ", "red", attrs=["bold"]) + 'Connection timed out'
-
-         except:
-              print colored("publisher> ", "red", attrs=["bold"]) + "Unable to send the Delete request!"
-
-         print colored("publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
+         cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, virtual_sib_id)
+         if not cnf:
+             print colored("publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
+             sys.exit()
 
