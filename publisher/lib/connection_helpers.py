@@ -15,7 +15,10 @@ def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None,
 
     # Building the json request
     if request == "publish":
-        msg = {"command" : "NewRemoteSIB", "owner" : owner}
+        if vsib_id:
+            msg = {"command" : "NewRemoteSIB", "owner" : owner, "sib_id" : vsib_id}
+        else:
+            msg = {"command" : "NewRemoteSIB", "owner" : owner, "sib_id" : "none"}
     elif request == "register":
         msg = {"command" : "RegisterPublicSIB", "owner" : owner, "ip" : realsib_ip, "port" : realsib_port}
     elif request == "delete":
@@ -65,20 +68,3 @@ def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None,
         manager.close()
         print colored("connection_helpers> ", "blue", attrs=["bold"]) + 'request successful!'
         return confirm
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-

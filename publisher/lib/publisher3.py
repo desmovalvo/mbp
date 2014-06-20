@@ -15,8 +15,9 @@ import time
 import datetime
 from message_helpers import *
 import traceback
+from connection_helpers import *
 
-def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port):
+def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port):
 
     # variables
     complete_ssap_msg = ''
@@ -120,9 +121,34 @@ def StartConnection(vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_po
 
                         # In this case the virtualiser died, so we should look for another virtualiser
                         # We should repeat the registration process
+                        cnf = manager_request(manager_ip, manager_port, "publish", owner, None, None, vsib_id)                    
+                        if not cnf:
+                            
+                            # TODO: maybe we should set the status offline, but at the moment
+                            # we clear the sib from our information
+                            cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, vsib_id)
+                            sys.exit()
+                        else:
+                            # A new virtualsib now exists, so we must update the connection parameters
+                            vsib_host = cnf["virtual_sib_info"]["virtual_sib_ip"]
+                            vsib_port = cnf["virtual_sib_info"]["virtual_sib_pub_port"]
+                            print 'new parameters are: ' + str(vsib_host) + ':' + str(vsib_port)
+                            socket_list.remove(vs)
+                            vs.close()
+                            vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            vs.connect((vsib_host, vsib_port))
+                            socket_list.append(vs)
 
-                        sys.exit()
-    
+                            # now we have to send a register request
+                            # building and sending the register request
+                            space_id = "X"
+                            transaction_id = random.randint(0, 1000)
+                            register_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(node_id,
+                                                                          space_id,
+                                                                          "REGISTER",
+                                                                          transaction_id, "")
+                            vs.send(register_msg)
+
                     # there are messages
                     else:
     

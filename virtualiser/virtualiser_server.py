@@ -37,7 +37,7 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 # this is a dictionary in which the keys are the available commands,
 # while the values are lists of available parameters for that command
 COMMANDS = {
-    "NewRemoteSIB" : ["owner"],
+    "NewRemoteSIB" : ["owner", "sib_id"],
     "DeleteRemoteSIB" : ["virtual_sib_id"],
     "NewVirtualMultiSIB": ["sib_list"]
     }
@@ -89,7 +89,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                     #inserisca nell'ancillary sib anche
                     #questo dato
                     thread_id = str(uuid.uuid4())
-                    virtual_sib_info = globals()[cmd.command](cmd.owner, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port)
+                    virtual_sib_info = globals()[cmd.command](cmd.owner, cmd.sib_id, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port)
                     
                     if virtual_sib_info["return"] == "fail":
                         # send a reply

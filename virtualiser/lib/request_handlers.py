@@ -24,12 +24,15 @@ PREFIX ns: <""" + ns + ">"
 
 #functions
 
-def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port):
+def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port):
     # debug print
     print reqhandler_print(True) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
     # virtual sib id
-    virtual_sib_id = str(uuid.uuid4())
+    if sib_id == "none":
+        virtual_sib_id = str(uuid.uuid4())
+    else:
+        virtual_sib_id = sib_id
 
     # create two sockets
     s1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -52,6 +55,13 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id, anci
     # insert information in the ancillary SIB
     try:
         a = SibLib(ancillary_ip, ancillary_port)
+
+        # remove old triples, if any
+        a.remove([Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), None), 
+                  Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), None),
+                  Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), None)])
+
+        # add the new triples
         t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port)))]
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "remoteSib")))
         t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))

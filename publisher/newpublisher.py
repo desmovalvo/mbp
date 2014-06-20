@@ -41,28 +41,30 @@ if __name__ == "__main__":
                 virtual_sib_id = cnf["virtual_sib_info"]["virtual_sib_id"]
                 virtual_sib_ip = cnf["virtual_sib_info"]["virtual_sib_ip"]
                 virtual_sib_pub_port = cnf["virtual_sib_info"]["virtual_sib_pub_port"]
+                print virtual_sib_id
 
-                # lancio publisher
+                # starting the publisher
                 timer = datetime.datetime.now()
-                StartConnection(virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_ip, realsib_port)
+                StartConnection(manager_ip, manager_port, owner, virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_ip, realsib_port)
 
             else:
                 sys.exit()
 
         elif sys.argv[6] == "register":
             cnf = manager_request(manager_ip, manager_port, "register", owner, realsib_ip, realsib_port)
-            if not cnf:
-                sys.exit()
+            sys.exit()
                 
         else:
             print colored("publisher> ", "red", attrs=["bold"]) + '"' + action + '" not valid: "action" parameter must be "register" or "publish"!'
             sys.exit()
-                                
-    except KeyboardInterrupt:
-         print colored("publisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"]) + " request"
-         
-         cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, virtual_sib_id)
-         if not cnf:
-             print colored("publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
-             sys.exit()
 
+    except KeyboardInterrupt:
+        
+        # CTRL-C pressed
+        
+        print colored("publisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"]) + " request"
+        cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, virtual_sib_id)
+        
+        print colored("publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
+        sys.exit()
+            
