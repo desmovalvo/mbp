@@ -1,17 +1,21 @@
 #!/usr/bin/python
 
+# requirements
 import json
 import socket
 from termcolor import *
 
+
+######################################################
+#
+# manager_request
+#
+######################################################
+
 def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None, realsib_port = None, vsib_id = None):
 
-    # This method is used to make a sib public OR to register a public sib and make it discoverable OR
-    # to delete a remote SIB
-    # The following step are performed:
-    # 0) send a NewRemoteSIB or a Register or a DeleteRemoteSIB request to the manager
-    # 1) wait for a reply
-    # 2) if positive return virtualiser connection data, otherwise return None
+    """This method is used to make a sib public OR to register a public sib and make it discoverable OR
+    to delete a remote SIB"""
 
     # Building the json request
     if request == "publish":

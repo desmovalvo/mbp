@@ -1,8 +1,15 @@
 #!/usr/bin/python
 
+# tags
 START_TAG = "<SSAP_message>"
 END_TAG = "</SSAP_message>"
 
+
+######################################################
+#
+# complete_message_present
+#
+######################################################
 
 def complete_message_present(ssap_message):
 
@@ -14,6 +21,12 @@ def complete_message_present(ssap_message):
     else:
         return False
 
+
+######################################################
+#
+# extract_first_message
+#
+######################################################
 
 def extract_first_message(ssap_message):
 
@@ -33,6 +46,12 @@ def extract_first_message(ssap_message):
     # return the first message
     return [first_msg, remaining]
 
+
+######################################################
+#
+# extract_complete_messages
+#
+######################################################
 
 def extract_complete_messages(ssap_message):
 

@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
+# requirements
 from smart_m3.m3_kp import *
 import xml.etree.cElementTree as ET
+
 
 ######################################################
 #
