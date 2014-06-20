@@ -1,5 +1,6 @@
 # requirements
 import sys
+from xml_helpers import *
 from lib.SSAPLib import *
 from xml.etree import ElementTree as ET
 import socket, select, string, sys
@@ -128,6 +129,7 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                             # we clear the sib from our information
                             cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, vsib_id)
                             sys.exit()
+
                         else:
                             # A new virtualsib now exists, so we must update the connection parameters
                             vsib_host = cnf["virtual_sib_info"]["virtual_sib_ip"]
@@ -178,19 +180,29 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip,
     rs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # we suppose that the real sib is on the same host
     rs.connect((realsib_ip, int(realsib_port)))
+
+    # build a dict
+    ssap_root = ET.fromstring(ssap_msg)
+    ssap_msg_dict = build_dict(ssap_root)
     
     # forward the message to the real SIB
-    if not "<transaction_type>REGISTER</transaction_type>" in ssap_msg:
+    if ssap_msg_dict["transaction_type"] != "REGISTER":
+
         rs.send(ssap_msg)
-        print "Invio richiesta alla real sib"
-        if ("<transaction_type>SUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
+        print colored("publisher3> ", "blue", attrs=["bold"]) + "forwarding " + ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"] + " to the real sib"
+
+        if ssap_msg_dict["transaction_type"] == "SUBSCRIBE" and ssap_msg_dict["message_type"] == "REQUEST":
             # start a new thread to handle it
             thread.start_new_thread(subscription_handler, (rs, vs, vsib_host, vsib_port, subscriptions))
 
-        elif not("<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg and "<message_type>REQUEST</message_type>"):
+        elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "UNSUBSCRIBE":
+            rs.close()
 
+        elif ssap_msg_dict["message_type"] == "REQUEST":
+                
             # start a generic handler
             thread.start_new_thread(generic_handler, (rs, vs, vsib_host, vsib_port))
+
     else:
         print colored("publisher> ", "blue", attrs=["bold"]) + "REGISTER CONFIRM received"
 
