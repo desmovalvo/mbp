@@ -11,29 +11,31 @@ from termcolor import *
 from smart_m3.m3_kp import *
 from lib.publisher3 import *
 from lib.SIBLib import SibLib
-from lib.connection_helpers import *
 import socket, select, string, sys
+from lib.connection_helpers import *
 
-#main function
+
+# main function
 if __name__ == "__main__":
     try:
-        if(len(sys.argv) < 7) :
-            print colored("publisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner manager_ip manager_port realsib_ip realsib_port action'
+        if(len(sys.argv) < 5) :
+            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner manager_ip:port realsib_ip:port action'
             sys.exit()
         
         # manager sib informations
-        manager_ip = sys.argv[2]
-        manager_port = int(sys.argv[3])     
+        manager_ip = sys.argv[2].split(":")[0]
+        manager_port = int(sys.argv[2].split(":")[1])     
             
         # real sib information
         owner = sys.argv[1]
-        realsib_ip = sys.argv[4]
-        realsib_port = sys.argv[5]
+        realsib_ip = sys.argv[3].split(":")[0]
+        realsib_port = sys.argv[3].split(":")[1]
         
         # action to perform
-        action = sys.argv[6]
+        action = sys.argv[4]
 
-        if sys.argv[6] == "publish":
+        # performing requested action
+        if sys.argv[4] == "publish":
             cnf = manager_request(manager_ip, manager_port, "publish", owner)
             if cnf:
                 
@@ -41,7 +43,6 @@ if __name__ == "__main__":
                 virtual_sib_id = cnf["virtual_sib_info"]["virtual_sib_id"]
                 virtual_sib_ip = cnf["virtual_sib_info"]["virtual_sib_ip"]
                 virtual_sib_pub_port = cnf["virtual_sib_info"]["virtual_sib_pub_port"]
-                print virtual_sib_id
 
                 # starting the publisher
                 timer = datetime.datetime.now()
@@ -50,21 +51,23 @@ if __name__ == "__main__":
             else:
                 sys.exit()
 
-        elif sys.argv[6] == "register":
+        elif sys.argv[4] == "register":
             cnf = manager_request(manager_ip, manager_port, "register", owner, realsib_ip, realsib_port)
             sys.exit()
                 
         else:
-            print colored("publisher> ", "red", attrs=["bold"]) + '"' + action + '" not valid: "action" parameter must be "register" or "publish"!'
+            print colored("newpublisher> ", "red", attrs=["bold"]) + '"' + action + '" not valid: "action" parameter must be "register" or "publish"!'
             sys.exit()
 
-    except KeyboardInterrupt:
-        
-        # CTRL-C pressed
-        
-        print colored("publisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"]) + " request"
+
+    # CTRL-C pressed
+    except KeyboardInterrupt: 
+
+        # Sending DeleteRemoteSIB request
+        print colored("newpublisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"]) + " request"
         cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, virtual_sib_id)
         
-        print colored("publisher> ", "blue", attrs=["bold"]) + "Goodbye!"
+        # Exiting
+        print colored("newpublisher> ", "blue", attrs=["bold"]) + "Goodbye!"
         sys.exit()
             

@@ -70,5 +70,5 @@ def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None,
 
     elif confirm["return"] == "ok":
         manager.close()
-        print colored("connection_helpers> ", "blue", attrs=["bold"]) + 'request successful!'
+        print colored("connection_helpers> ", "blue", attrs=["bold"]) + msg["command"] + ' request successful!'
         return confirm
