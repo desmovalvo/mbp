@@ -24,7 +24,7 @@ PREFIX ns: <""" + ns + ">"
 
 #functions
 
-def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port):
+def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port, manager_ip, manager_port):
     # debug print
     print reqhandler_print(True) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -73,7 +73,7 @@ def NewRemoteSIB(owner, virtualiser_ip, threads, thread_id, virtualiser_id, anci
         
         ### thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
         threads[thread_id] = True
-        p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], ancillary_ip, ancillary_port))
+        p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], ancillary_ip, ancillary_port, manager_ip, manager_port))
         p.start()
 
         # t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))

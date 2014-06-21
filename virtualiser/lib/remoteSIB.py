@@ -19,6 +19,8 @@ from SSAPLib import *
 from message_helpers import *
 from xml_helpers import *
 import sys
+import json
+
 
 BUFSIZ = 1024
 
@@ -39,7 +41,7 @@ logger = logging.getLogger("remoteSIB")
 #
 ##############################################################
 
-def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
+def handler(clientsock, addr, port, ancillary_ip, ancillary_port, manager_ip, manager_port):
 
     # storing received parameters in thread-local variables
     kp_port = port
@@ -140,7 +142,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
                                 check_var = True
                                 
                                 # TODO kp_port non serve passarlo: il socket observer non lo usa!!
-                                thread.start_new_thread(socket_observer, (sib, kp_port, check_var, ancillary_ip, ancillary_port))                            
+                                thread.start_new_thread(socket_observer, (sib, kp_port, check_var, ancillary_ip, ancillary_port, manager_ip, manager_port))                            
                                 print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
                     
                             except socket.error:
@@ -349,7 +351,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port):
             break
 
 # SOCKET OBSERVER THREAD
-def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
+def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port, manager_ip, manager_port):
     
     #print "obs id: " + str(uuid.uuid4())
     key = sib["socket"]
@@ -358,28 +360,28 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
         try:            
             if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
                 print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
-                # # set the status offline
-                # a = SibLib(ancillary_ip, ancillary_port)
-
-                # t = [Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), None)]
-                # result = a.execute_rdf_query(t)
-
-                # if len(result) > 0:
-                #     t = []
-                #     t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + str(result[0][2]).split("#")[1])))
-                #     a.remove(t)
-
-                #     t = []
-                #     t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-                #     a.insert(t)       
+                ###ALE
+                sib["socket"] = None                
                 
-                # ###ALE
-                # sib["socket"] = None                
-                # # Send a message to the manager to notify the new status
-                # jmsg = {"command":"SetStatus", "idVSIB":str(sib["virtual_sib_id"]), "status":"offline"}
-                # ###
-                
-                break
+                # check if the vsib really exists
+                a = SibLib(ancillary_ip, ancillary_port)
+                res = a.execute_rdf_query(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(rdf + "type"), URI(ns + "remoteSib")))
+                if len(res) == 1:
+
+                    print "IFFF"
+                    # connect to the manager
+                    manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    manager.connect((manager_ip, manager_port ))
+                    # Send a message to the manager to notify the new status
+                    jmsg = {"command":"SetSIBStatus", "sib_id":str(sib["virtual_sib_id"]), "status":"offline"}
+                    print "\n\n\n" + str(sib["virtual_sib_id"]) + "\n\n\n"
+                    msg = json.dumps(jmsg)
+                    manager.send(msg)
+                    confirm = manager.recv(BUFSIZ)
+                    confirm = json.loads(confirm)
+                    print "mandato il SetSIBStatus al manager"
+                    check_var = False
+                    break
             else:
                 time.sleep(5)
                 #print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
@@ -472,7 +474,7 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port):
 
 
 
-def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, ancillary_ip, ancillary_port):
+def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, ancillary_ip, ancillary_port, manager_ip, manager_port):
 
     print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' started a new remote SIB with ip ' + str(virtualiser_ip) + ", kpPort " + str(kp_port) + ", pubPort " + str(pub_port) + " and id " + str(virtual_sib_id)
 
@@ -520,7 +522,7 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
                 clientsock, addr = sock.accept()
                 print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
                 # logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr, kp_port, ancillary_ip, ancillary_port))
+                thread.start_new_thread(handler, (clientsock, addr, kp_port, ancillary_ip, ancillary_port, manager_ip, manager_port))
 
             # incoming data
             else:

@@ -118,8 +118,9 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # SetSIBStatus
                 elif data["command"] == "SetSIBStatus":
+                    print "manager server: ricevuta set status"
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id, cmd.status)
-                
+                    print confirm
                     # send a reply                    
                     self.request.sendall(json.dumps(confirm))                    
 
@@ -137,6 +138,16 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                     # send a reply                    
                     self.request.sendall(json.dumps(confirm))                    
+
+                # SetSIBStatus
+                elif data["command"] == "SetSIBStatus":
+                    print "manager: set sib status request"
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id, cmd.status)
+
+                    # send a reply                    
+                    print "manager server -------- " + str(confirm)
+                    self.request.sendall(json.dumps(confirm))                    
+
 
 
             else:

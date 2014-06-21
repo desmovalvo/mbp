@@ -100,6 +100,37 @@ if __name__ == "__main__":
                 StartConnection(virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_ip, realsib_port)
                                 
     except KeyboardInterrupt:
+
+         print colored("publisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("SetSIBStatus", "cyan", attrs=["bold"]) + " request"
+         
+         # build json message
+         manager.close()
+         manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+         # if action == "register":
+         #     delete_msg = {"command":"DeleteSIB", "sib_id":sib_id}         
+         if action == "publish":
+             set_status_msg = {"command":"SetSIBStatus", "sib_id":virtual_sib_id, "status":"offline"}         
+
+         request = json.dumps(set_status_msg)
+         
+         print "prima del try"
+         # send message
+         try:
+              manager.connect((manager_ip, manager_port))
+              manager.send(request)
+              confirm_msg = manager.recv(4096)
+              if confirm_msg:
+                   print colored("publisher> ", "blue", attrs=["bold"]) + 'Received the following message:'
+                   print confirm_msg
+         except socket.timeout:
+              print colored("publisher> ", "red", attrs=["bold"]) + 'Connection timed out'
+
+         except:
+              print colored("publisher> ", "red", attrs=["bold"]) + "Unable to send the SetStatus request!"
+
+
+         
+        
          print colored("publisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"]) + " request"
          
          # build json message

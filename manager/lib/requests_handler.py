@@ -24,7 +24,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <""" + ns + ">"
 
 
-
+BUFSIZ = 1024
 
 #functions
 def RegisterPublicSIB(ancillary_ip, ancillary_port, owner, sib_ip, sib_port):
@@ -402,7 +402,9 @@ WHERE {?s ns:hasKpIpPort ?o .
 
 
 def SetSIBStatus(ancillary_ip, ancillary_port, sib_id, new_status):
-
+    
+    print "request handler: set status"
+    
     # Connecting to the ancillary SIB
     try:
         a = SibLib(ancillary_ip, int(ancillary_port))
@@ -447,9 +449,11 @@ WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
 
     # Notify the status change to all the VMSIBs
     if len(vmsibs) > 0:
+        
+        print "request handler: inoltro alle vmsib"
 
         # Build the JSON message
-        new_status_msg = {"notification": "StatusChange", "sib_id": sib_id, "status": new_status}
+        new_status_msg = {"command": "StatusChange", "sib_id": sib_id, "status": new_status}
         new_status_json_msg = json.dumps(new_status_msg)
 
         # Notify the status change to all the VMSIBs
@@ -466,7 +470,10 @@ WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
                 # Wait for a reply
                 while 1:
                     try:
+                        print "aspetto conferma"
                         confirm_msg = vms_socket.recv(4096)
+                        print "conferma ricevuta"
+                        break
                     except socket.timeout:
                         print colored("request_handler> ", "red", attrs=["bold"]) + 'connection to the virtualiser timed out'            
 
@@ -478,6 +485,8 @@ WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
 
     # return
     confirm = {'return':'ok'}
+    
+    print "ritorno risposta"
     return confirm
 
 
@@ -640,3 +649,105 @@ WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
     else:
         confirm = {'return':'fail', 'cause':' VirtualMultiSib does not exist.'}
         return confirm
+
+
+# def SetSIBStatus(ancillary_ip, ancillary_port, sib_id, status):
+#     print "request handler del manager: ricevuta SetSIBStatus request"
+#     confirms = None
+#     # check if the sib with sib_id really exists
+#     a = SibLib(ancillary_ip, ancillary_port)
+        
+#     # get the list of all the SIBs
+#     try:
+#         print "try"
+#         SIBs = a.execute_sparql_query("""PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+# PREFIX owl: <http://www.w3.org/2002/07/owl#>
+# PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+# PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+# PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+# SELECT ?s
+# WHERE {{ ?s rdf:type ns:remoteSib } UNION { ?s rdf:type ns:virtualMultiSib }}""")
+#     except:
+#         print "connection failed to the ancillary sib"
+        
+#     # extract only the SIBs
+#     existing_sibs = []
+#     for k in SIBs:
+#         existing_sibs.append(str(k[0][2]).split("#")[1])
+    
+#     print "costruita lista sibs"
+#     print "\n\n\n" + str(existing_sibs) + "\n\n\n"
+#     print "\n\n\n" + str(sib_id) + "\n\n\n"
+
+    
+    
+#     # check if the specified sibs really exist
+#     if not(sib_id in existing_sibs):
+#         print "if not sib_id in existing sibs"
+#         confirm = {'return':'fail', 'cause':' SIB ' + str(sib_id) + ' does not exist.'}
+#         return confirm
+            
+#     # update info into the ancillary
+#     res = a.execute_rdf_query(Triple(URI(ns + sib_id), URI(ns + "hasStatus"), None))
+#     print "fatta query stato"
+#     st = str(res[0][2]).split("#")[1]
+#     a.remove(Triple(URI(ns + sib_id), URI(ns + "hasStatus"), URI(ns + st)))
+#     if status == "online":
+#         a.insert(Triple(URI(ns + sib_id), URI(ns + "hasStatus"), URI(ns + "online")))
+#     else:
+#         a.insert(Triple(URI(ns + sib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+#     print "Successful"
+    
+#     confirms = True
+
+#     #check if the sib is part of an or more multisibs
+#     res = a.execute_rdf_query(Triple(None, URI(ns + "composedBy"), URI(ns + sib_id)))
+#     vmsib = []
+#     for i in res:
+#         print "for multi sib"
+#         vmsib.append(str(i[0]).split("#")[1])
+#     jmsg = {"command":"ChangedSIBStatus", "sib_id":str(sib_id), "status":status}
+#     msg = json.dumps(jmsg)
+    
+#     for i in vmsib:
+#         # get the virtualmultisib parameters
+#         vms = a.execute_sparql_query("""PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+# PREFIX owl: <http://www.w3.org/2002/07/owl#>
+# PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+# PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+# PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+# SELECT ?o
+# WHERE { ns:""" + i + """ ns:hasKpIpPort ?o }""")
+
+#         # send a message to the virtualiser
+#         try:
+#             print "contatto la vmsib",
+#             # connection to the vmsib
+#             vms_ip = str(vms[0][0][2].split("#")[1]).split("-")[0]
+#             vms_port = str(vms[0][0][2].split("#")[1]).split("-")[1]
+#             vms_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#             vms_socket.connect((vms_ip, int(vms_port)))
+#             vms_socket.send(msg)
+#             confirm = vms_socket.recv(BUFSIZ)
+#             confirm = json.loads(confirm)
+#             print confirm
+#             if confirm["return"] == "failed":
+#                 confirms = False
+#                 break
+#             else:
+#                 confirms = True
+                
+#         except socket.error:
+#             print "socket error 719 request handler del manager"
+#             confirms = False
+#             break
+            
+#     # confirm
+#     if confirms == True:
+#         confirm = {'return':'ok'}
+            
+#     else:
+#         confirm = {'return':'failed'}
+        
+#     print "rh ------ confirm---- " + str(confirm) + "inoltrata al manager server"
+#     return confirm

@@ -89,7 +89,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                     #inserisca nell'ancillary sib anche
                     #questo dato
                     thread_id = str(uuid.uuid4())
-                    virtual_sib_info = globals()[cmd.command](cmd.owner, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port)
+                    virtual_sib_info = globals()[cmd.command](cmd.owner, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port, self.server.manager_ip, self.server.manager_port)
                     
                     if virtual_sib_info["return"] == "fail":
                         # send a reply
@@ -225,7 +225,9 @@ if __name__=='__main__':
 * virtualiser ip
 * virtualiser port
 * ancillary ip
-* ancillary port"""
+* ancillary port
+* manager ip
+* manager port"""
         sys.exit()
     else:
         virtualiser_id = str(uuid.uuid4())
@@ -233,6 +235,9 @@ if __name__=='__main__':
         virtualiser_port = int(sys.argv[2])
         ancillary_ip = sys.argv[3]
         ancillary_port = int(sys.argv[4])
+        manager_ip = sys.argv[5]
+        manager_port = int(sys.argv[6])
+
 
     try:
         # Create a logger object
@@ -256,13 +261,15 @@ if __name__=='__main__':
         sys.exit()
 
     try:
-        # Start the manager server
+        # Start the virtualiser server
         server = VirtualiserServer((virtualiser_ip, int(virtualiser_port)), VirtualiserServerHandler)
         server.virtualiser_id = virtualiser_id
         server.virtualiser_ip =  virtualiser_ip
         server.virtualiser_port = virtualiser_port 
         server.ancillary_ip = ancillary_ip
         server.ancillary_port = ancillary_port
+        server.manager_ip = manager_ip
+        server.manager_port = manager_port
         server.logger = logger
         server.logger.info(" Starting server on IP " + virtualiser_ip + " Port " + str(virtualiser_port))
         print virtserver_print(True) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
