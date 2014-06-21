@@ -19,10 +19,14 @@ rem_sib_port = int(sys.argv[4])
 num_iter = int(sys.argv[5])
 
 # variables
-step = 500
+step = 25
 min = 0
-max = int(sys.argv[6])
+maxn = int(sys.argv[6])
 median_arrays = []
+sibtype = sys.argv[7]
+
+# filename
+filename = "insert_test_" + str(num_iter) + "iter_" + str(step) + "step_" + str(maxn) + "max_" + sibtype + ".svg"
 
 # times
 join_time = None
@@ -61,7 +65,7 @@ for client in kp:
     median_array = []
 
     # step iteration
-    for i in range(0, max/step):
+    for i in range(0, maxn/step):
         print "Inserting " + str((i+1) * step) + " triples at once"
     
         tot = []
@@ -99,10 +103,10 @@ for i in median_arrays:
     print "MEDIAN ARRAY: " + str(i)
 bar_chart = pygal.Bar()
 # chart = pygal.StackedLine(fill=True, interpolate='cubic', style=LightGreenStyle)
-bar_chart.title = 'Insertion time with increasing the number of triples inserted'
-bar_chart.add('Local SIB', median_arrays[0])
-bar_chart.add('Remote SIB', median_arrays[1])
-bar_chart.render_to_file('multiple_insert.svg')
+bar_chart.title = 'Insertion time increasing the number of triples inserted'
+bar_chart.add('Real SIB (' + sibtype + ')', median_arrays[0])
+bar_chart.add('Virtual SIB', median_arrays[1])
+bar_chart.render_to_file(filename)
 
 
 #############################################################
