@@ -390,6 +390,7 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port, manager_
                     print "mandato il SetSIBStatus al manager"
                     check_var = False
                     break
+                break
             else:
                 time.sleep(5)
                 #print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
@@ -571,3 +572,4 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
             else:
                # print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming DATA'
                 pass
+    return

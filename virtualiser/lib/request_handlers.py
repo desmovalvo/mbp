@@ -52,56 +52,23 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
                 print "estratta la porta %s"%(str(pub_port))
                 break        
     
-    # insert information in the ancillary SIB
-    try:
-        a = SibLib(ancillary_ip, ancillary_port)
 
-        # remove old triples, if any
-        a.remove([Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), None), 
-                  Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), None),
-                  Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), None)])
+    # start the virtual sib process
+    threads[thread_id] = True
+    p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], ancillary_ip, ancillary_port, manager_ip, manager_port))
+    p.start()
 
-        # add the new triples
-        t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(pub_port)))]
-        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "remoteSib")))
-        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
-        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
-        t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
-        t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_sib_id))))
-        a.insert(t)
-        
-        virtual_sib_info = {}
-        virtual_sib_info["return"] = "ok"
-        virtual_sib_info["virtual_sib_id"] = str(virtual_sib_id)
-        virtual_sib_info["virtual_sib_ip"] = str(virtualiser_ip)
-        virtual_sib_info["virtual_sib_pub_port"] = pub_port
-        virtual_sib_info["virtual_sib_kp_port"] = kp_port
-        virtual_sib_info["virtual_sib_owner"] = str(owner)
+    # build the reply
+    virtual_sib_info = {}
+    virtual_sib_info["return"] = "ok"
+    virtual_sib_info["virtual_sib_id"] = str(virtual_sib_id)
+    virtual_sib_info["virtual_sib_ip"] = str(virtualiser_ip)
+    virtual_sib_info["virtual_sib_pub_port"] = pub_port
+    virtual_sib_info["virtual_sib_kp_port"] = kp_port
+    virtual_sib_info["virtual_sib_owner"] = str(owner)
 
-        # start a virtual sib (nel try, in quanto va fatto solo se
-        # l'inserimento delle informazioni e' andato a buon fine)
-        
-        ### thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id))
-        threads[thread_id] = True
-        p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], ancillary_ip, ancillary_port, manager_ip, manager_port))
-        p.start()
-
-        # t = thread.start_new_thread(virtualiser, (kp_port, pub_port, virtual_sib_id, threads[thread_id]))
-        
-        # return virtual sib id
-        return virtual_sib_info
-
-    except socket.error:
-        virtual_sib_info = {}
-        virtual_sib_info["return"] = "fail"
-        virtual_sib_info["cause"] = "Connection to Ancillary Sib failed"
-        return virtual_sib_info
-    except Exception, e: #TODO catturare qui i sibError
-        print 'ECCEZIONE: ' + str(e)
-        virtual_sib_info = {}
-        virtual_sib_info["return"] = "fail"
-        virtual_sib_info["cause"] = "Sib Error"
-        return virtual_sib_info
+    # return virtual sib info
+    return virtual_sib_info
 
 
 def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip, ancillary_port):

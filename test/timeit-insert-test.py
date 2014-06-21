@@ -19,7 +19,7 @@ rem_sib_port = int(sys.argv[4])
 num_iter = int(sys.argv[5])
 
 # variables
-step = 25
+step = 500
 min = 0
 maxn = int(sys.argv[6])
 median_arrays = []
@@ -53,6 +53,8 @@ kp.append(SibLib(sib_ip, sib_port))
 kp[0].remove(Triple(None, None, None))
 kp.append(SibLib(rem_sib_ip, rem_sib_port))
 kp[1].remove(Triple(None, None, None))
+
+print "Sibs joined"
 
 #############################################################
 #

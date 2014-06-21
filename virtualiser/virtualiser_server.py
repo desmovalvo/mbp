@@ -84,10 +84,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                             print virtserver_print(False) + "Confirm message forwarding failed!"                          
 
                 elif data["command"] == "NewRemoteSIB":
-                    #Passiamo al metodo NewRemoteSIB
-                    #l'owner della sib in modo che
-                    #inserisca nell'ancillary sib anche
-                    #questo dato
+
                     thread_id = str(uuid.uuid4())
 
                     virtual_sib_info = globals()[cmd.command](cmd.owner, cmd.sib_id, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port, self.server.manager_ip, self.server.manager_port)
@@ -110,54 +107,17 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                         
                         t_id[virtual_sib_info["virtual_sib_id"]] = thread_id
                         
-                        print virtserver_print(True) + "Updating the load of virtualiser  " + virtualiser_id
-                        
-                        #############################################
-                        ##                                         ##
-                        ## Update the load of selected virtualiser ##
-                        ##                                         ##
-                        #############################################
-                        # get old load
-                        try:
-                            a = SibLib(self.server.ancillary_ip, self.server.ancillary_port)
-                            query = PREFIXES + """SELECT ?load
-WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
-
-                            result = a.execute_sparql_query(query)
-                            load = int(result[0][0][2])
-                            print "Old Load " + str(load)
-                            
-                            # remove triple
-                            t = []
-                            t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
-                            a.remove(t)
-                            # insert new triple
-                            #new_load = int(load) + 1
-                            load += 1
-                            print "New Load " + str(load)
-                            t = []
-                            t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
-                            a.insert(t)
-                        except socket.error:
-                            print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
-                            confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
-                            return confirm
-
-                        #############################################
-                        #############################################
-
-
                         # send a reply
                         try:
                             self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
                         except socket.error:
                             # remove virtual sib info from the ancillary sib
-                            a = SibLib(self.server.ancillary_ip, self.server.ancillary_port)
-                            t = [Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasPubIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_pub_port"]) ))]
-                            t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasKpIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_kp_port"]))))
-                            t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasOwner"), URI(ns + virtual_sib_info["owner"])))
-                            t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasStatus"), URI(ns + "online")))
-                            a.remove(t)
+                            # a = SibLib(self.server.ancillary_ip, self.server.ancillary_port)
+                            # t = [Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasPubIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_pub_port"]) ))]
+                            # t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasKpIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_kp_port"]))))
+                            # t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasOwner"), URI(ns + virtual_sib_info["owner"])))
+                            # t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasStatus"), URI(ns + "online")))
+                            # a.remove(t)
                             
                             #killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
                             threads[thread_id] = False

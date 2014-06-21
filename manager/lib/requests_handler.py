@@ -78,7 +78,8 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner, sib_id):
     # query to the ancillary SIB 
     a = SibLib(ancillary_ip, ancillary_port)
     print 'Connected to the ancillary sib'
-
+    
+    # search the best virtualiser querying the ancillary sib
     try:
         try:
             result = get_best_virtualiser(a)
@@ -90,8 +91,9 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner, sib_id):
         print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
         confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
         return confirm
-
-    if len(result) > 0: # != None:
+    
+    # if there are some virtualiser
+    if len(result) > 0:
         virtualiser_id = result[0][0][2].split("#")[1]
         virtualiser_ip = result[0][1][2].split("#")[1]
         virtualiser_port = int(result[0][2][2].split("#")[1])        
@@ -99,54 +101,118 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner, sib_id):
         virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         virtualiser.settimeout(15)
         
-
         # connect to the virtualiser
         try :
             virtualiser.connect((virtualiser_ip, virtualiser_port))
         except :
             print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the virtualiser'
-            sys.exit()        
+            confirm = {'return':'fail', 'cause':' Unable to connect to the virtualiser.'}
+            return confirm
+
     
         print colored("requests_handler> ", "blue", attrs=['bold']) + 'Connected to the virtualiser. Sending ' + colored("NewRemoteSib", "cyan", attrs=["bold"]) + " request!"
-    
-        
-        # build request message 
+            
+        # build request message and send it to the selected virtualiser
         request_msg = {"command":"NewRemoteSIB", "owner":owner, "sib_id":sib_id}
         request = json.dumps(request_msg)
         virtualiser.send(request)
 
-
+        # we wait for the reply
         while 1:
             try:
                 confirm_msg = virtualiser.recv(4096)
             except socket.timeout:
                 print colored("request_handler> ", "red", attrs=["bold"]) + 'Connection to the virtualiser timed out'
+                # TODO: e se il virtualiser ha gia' creato la virtual sib e non abbiamo ricevuto la risposta? mandare una delete remote sib?
                 confirm = {'return':'fail', 'cause':' Connection to the virtualiser timed out.'}
                 virtualiser.close()
                 return confirm
             
             if confirm_msg:
-
                 print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
                 print confirm_msg
                 break
-    
+            
+        # parsing of the reply
         confirm = json.loads(confirm_msg)
 
         if confirm["return"] == "fail":
             print colored("requests_handler> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
             
         elif confirm["return"] == "ok":
+            
+            # extract all the information
             virtual_sib_id = confirm["virtual_sib_info"]["virtual_sib_id"]
             virtual_sib_ip = confirm["virtual_sib_info"]["virtual_sib_ip"]
             virtual_sib_pub_port = confirm["virtual_sib_info"]["virtual_sib_pub_port"]
+            virtual_sib_kp_port = confirm["virtual_sib_info"]["virtual_sib_kp_port"]
             
+            # insert information in the ancillary SIB
+            try:
+                a = SibLib(ancillary_ip, ancillary_port)
+
+                # remove old triples, if any
+                a.remove([Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), None), 
+                          Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), None),
+                          Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), None)])
+
+                # add the new triples
+                t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(virtual_sib_pub_port)))]
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "remoteSib")))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(virtual_sib_kp_port))))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
+                t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_sib_id))))
+                a.insert(t)
+                
+                #############################################
+                ##                                         ##
+                ## Update the load of selected virtualiser ##
+                ##                                         ##
+                #############################################
+                # get old load
+                query = PREFIXES + """SELECT ?load
+WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
+
+                result = a.execute_sparql_query(query)
+                load = int(result[0][0][2])
+                print "Old Load " + str(load)
+                
+                # remove triple
+                t = []
+                t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
+                a.remove(t)
+                # insert new triple
+                #new_load = int(load) + 1
+                load += 1
+                print "New Load " + str(load)
+                t = []
+                t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
+                a.insert(t)
+                #############################################
+
+            except socket.error:
+                virtual_sib_info = {}
+                virtual_sib_info["return"] = "fail"
+                virtual_sib_info["cause"] = "Connection to Ancillary Sib failed"
+                return virtual_sib_info
+            except Exception, e: #TODO catturare qui i sibError
+                print 'ECCEZIONE: ' + str(e)
+                virtual_sib_info = {}
+                virtual_sib_info["return"] = "fail"
+                virtual_sib_info["cause"] = "Sib Error"
+                return virtual_sib_info
+
+
+                        
             print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' started on ' + str(virtual_sib_ip) + ":" + str(virtual_sib_pub_port)
             
         virtualiser.close()
         return confirm
 
-    # if the query returned 0 results
+
+
+    # if the query returned 0 results (no virtualiser found)
     else: 
         confirm = {'return':'fail', 'cause':' No virtualisers available.'}
 #        virtualiser.close()
