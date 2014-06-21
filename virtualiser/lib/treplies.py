@@ -912,6 +912,9 @@ def handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, 
     print treplies_print(True) + " handle_generic_request"
     logger.info(ssap_msg_dict["transaction_type"] + " REQUEST handled by handle_generic_request")
     
+    print 'SIBS INFO: '
+    print sibs_info
+
     # cycle through all the SIBs that compose the VMSIB
     for s in sibs_info:
 
@@ -926,6 +929,9 @@ def handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, 
 
         # connect to the SIBs
         try:
+            print "CONTROLLA QUI:"
+            print ip, 
+            print type(kp_port)
             sock.connect((ip, kp_port))
             print "connessa alla sib"
 
