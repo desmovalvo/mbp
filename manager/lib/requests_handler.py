@@ -347,11 +347,12 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
     a = SibLib(ancillary_ip, ancillary_port)
 
     # check if the received sibs are all existing and alive
-    # TODO: add an or clause to allow the use of others multisibs 
+    sib_list_for_message = []
     for sib in sib_list:
         res = get_sib_ip_port(sib, a)
         if len(res) == 1:
-            print "sib trovata"
+            sib_dict = { "id" : sib, "ipport" : res[0][0][2]}
+            sib_list_for_message.append(sib_dict)
         else:            
             return {'return':'fail', 'cause':'not all the SIBs are alive'}
 
@@ -368,12 +369,12 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
         confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
         return confirm
 
+    # a virtualiser has been selected
     if len(result) > 0:
         virtualiser_id = result[0][0][2].split("#")[1]
         virtualiser_ip = result[0][1][2].split("#")[1]
         virtualiser_port = int(result[0][2][2].split("#")[1])                
         virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        virtualiser.settimeout(15)
         
         # connect to the virtualiser
         try :
@@ -384,7 +385,7 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
             return confirm
 
         # build request message 
-        request_msg = {"command":"NewVirtualMultiSIB", "sib_list":sib_list}
+        request_msg = {"command":"NewVirtualMultiSIB", "sib_list": sib_list_for_message}
         request = json.dumps(request_msg)
         virtualiser.send(request)
 
@@ -400,26 +401,38 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
             
             if confirm_msg:
                 print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
-                print confirm_msg
                 break
     
         # parse the reply
         confirm = json.loads(confirm_msg)
-        print "confirm: " + str(confirm)
         if confirm["return"] == "fail":
             print colored("requests_handler> ", "red", attrs=["bold"]) + 'Creation failed!' + confirm["cause"]
             
+        # the virtual multi sib has been created
         elif confirm["return"] == "ok":
+
+            # get the virtual multi sib parameters
             virtual_multisib_id = confirm["virtual_multi_sib_info"]["virtual_multi_sib_id"]
             virtual_multisib_ip = confirm["virtual_multi_sib_info"]["virtual_multi_sib_ip"]
             virtual_multisib_kp_port = confirm["virtual_multi_sib_info"]["virtual_multi_sib_kp_port"]
-            
             print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Virtual Multi SIB ' + virtual_multisib_id + ' started on ' + str(virtual_multisib_ip) + ":" + str(virtual_multisib_kp_port)
+
+            # insert the triples into the ancillary sib        
+            t = []
+            for i in sib_list:
+                t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "composedBy"), URI(ns + str(i))))    
+            t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
+            t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(virtual_multisib_kp_port))))
+            t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
+            t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multisib_id))))
+            a.insert(t)
             
+        # close the connection with the virtualiser
         virtualiser.close()
+
+        # return the confirm message
         return confirm
 
-    
     # return the confirm message
     return {'return':'ok', 'virtual_multi_sib_id':virtual_multisib_id}
 

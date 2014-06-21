@@ -299,6 +299,8 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
     host = virtualiser_ip
     kp_addr = (host, kp_port)
     sib["virtual_multi_sib_id"] = virtual_multi_sib_id
+
+    # TODO: this parameters may be unnecessary
     ancillary_ip = ancillary_ip
     ancillary_port = ancillary_port
 
@@ -310,15 +312,11 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
     kp_socket.listen(10)
     logger.info('Virtual Multi SIB waiting for KPs on ' + str(host) + ":" + str(kp_port))
     
-    # retrieving information about the real SIBs from the ancillary SIB
-    a = SibLib(ancillary_ip, ancillary_port)
+    # parsing the received sib_list to extract IPs and ports
     for s in sib_list:
-        sibs_info[s] = {}
-        #TODO: controllare che le sib in sib_list siano online
-        t = Triple(URI(ns + str(s)), URI(ns + "hasKpIpPort"), None)
-        result = a.execute_rdf_query(t)
-        sibs_info[s]["ip"] = str(result[0][2]).split("-")[0]
-        sibs_info[s]["kp_port"] = int(str(result[0][2]).split("-")[1])
+        sibs_info[s["id"]] = {}
+        sibs_info[s["id"]]["ip"] = str(s["ipport"].split("-")[0])
+        sibs_info[s["id"]]["kp_port"] = int(s["ipport"].split("-")[1])
         
     # sockets
     sockets = [kp_socket]
