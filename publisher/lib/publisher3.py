@@ -156,7 +156,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip,
     if ssap_msg_dict["transaction_type"] != "REGISTER":
 
         rs.send(ssap_msg)
-        print colored("publisher3> ", "blue", attrs=["bold"]) + "forwarding " + colored(ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"], "cyan", attrs=["bold"]) + " to the real sib"
+        # print colored("publisher3> ", "blue", attrs=["bold"]) + "forwarding " + colored(ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"], "cyan", attrs=["bold"]) + " to the real sib"
 
         # is it a subscribe request?
         if ssap_msg_dict["transaction_type"] == "SUBSCRIBE" and ssap_msg_dict["message_type"] == "REQUEST":
@@ -204,7 +204,7 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             try :
                 
                 # forwarding message to the virtual sib
-                print colored("publisher3> ", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib, sending it to the Virtual Sib"
+                # print colored("publisher3> ", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib, sending it to the Virtual Sib"
                 tvs.send(ssap_msg)
 
                 # closing sockets
@@ -225,7 +225,7 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             break
     
     # closing thread
-    print colored("publisher3> ", "red", attrs=[]) + "Closing thread generic_handler"
+    # print colored("publisher3> ", "red", attrs=[]) + "Closing thread generic_handler"
     return
 
 
@@ -259,7 +259,7 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
             try:
                
                 # forwarding subscription-related message to the virtual sib
-                print colored("tpublisher " + str(tn) + ">", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
+                # print colored("tpublisher " + str(tn) + ">", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
                 tvs.send(ssap_msg)
 
                 # if it's an unsubscribe confirm we have to close sockets
@@ -275,5 +275,5 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
                 break
 
     # close thread
-    print colored("publisher3> ", "red", attrs=[]) + "Closing thread subscription_handler"
+    # print colored("publisher3> ", "red", attrs=[]) + "Closing thread subscription_handler"
     return
