@@ -28,7 +28,6 @@ remote_sib_template = """
         <li><b>Status:</b> %s</li>
         <li><b>KP ip and port:</b> %s</li>
         <li><b>Pub ip and port:</b> %s</li>
-        <li><b>Triple list:</b> %s</li>
     </ul><p>
 """
 
@@ -47,7 +46,6 @@ def get_sib_content(ip, port):
     # get all the triples from the given sib
 
     b = SIBLib.SibLib(ip, port)
-    b.join_sib()
     query = """SELECT ?s ?p ?o WHERE { ?s ?p ?o }"""    
     res = b.execute_sparql_query(query)
     tlist = "<table border=0>"
@@ -109,22 +107,19 @@ SELECT ?s ?owner ?status ?kpipport ?pubipport
     # create html code
     v = "<h2>Remote SIBs</h2><ul>"
     for el in res:
-        print el[3][2]
         ip = str(el[3][2].replace(ns, "")).split("-")[0]
         port = int(str(el[3][2].replace(ns, "")).split("-")[1])
-
-        if el[2][2].replace(ns, "") == "online":
-            c = get_sib_content(ip, port)
-        else:
-            c = ""
+        
+    #     if el[2][2].replace(ns, "") == "online":
+    #         c = get_sib_content(ip, port)
+    #     else:
+    #         c = ""
 
         v = v + remote_sib_template%(str(el[0][2].replace(ns, "")),
                                      str(el[1][2].replace(ns, "")),
                                      str(el[2][2].replace(ns, "")),
                                      str(el[3][2].replace(ns, "")),
-                                     str(el[4][2].replace(ns, "")),
-                                     c
-            )
+                                     str(el[4][2].replace(ns, "")))
 
     v = v + """</ul>"""
     
@@ -187,7 +182,6 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
 
         # connection to the Ancillary SIB
         a = SIBLib.SibLib(anc_ip, anc_port)
-        a.join_sib()
         
         # get the informations from the Ancillary SIB  
         print "--- GET the list of the virtualisers"
@@ -197,9 +191,9 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         print "--- GET the list of the remote SIBs"
         r = get_remoteSIBs(a)
 
-        # get the virtual multi SIBs
-        print "--- GET the list of the VMSIBs"
-        vm = get_vmSIBs(a)
+        # # get the virtual multi SIBs
+        # print "--- GET the list of the VMSIBs"
+        # vm = get_vmSIBs(a)
 
         # output the informations
         s.send_response(200)
@@ -234,7 +228,7 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         s.wfile.write("<body><header><h1>Ancillary SIB Explorer</h1></header>")
         s.wfile.write("<article>%s</article>" % str(v))
         s.wfile.write("<article>%s</article>" % str(r))
-        s.wfile.write("<article>%s</article>" % str(vm))
+        # s.wfile.write("<article>%s</article>" % str(vm))
         s.wfile.write("</body></html>")
 
 

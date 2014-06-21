@@ -203,6 +203,11 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port, manager_ip, ma
                                 if s.node_id == ssap_msg_dict["node_id"] and s.request_transaction_id == ssap_msg_dict["transaction_id"]:                            
                                     s.subscription_id = ssap_msg_dict["subscription_id"]
                                     s.conn.send(ssap_msg)
+                                    
+                                    # start a thread to ping
+                                    thread.start_new_thread(subscription_observer, (sib, s))                            
+                                                                       
+                                    print "BREAKING UP"
                                     break
     
     
@@ -241,7 +246,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port, manager_ip, ma
      
     
     
-                        # RDF/SPARQL UNSUBSCRIBE CONFIRM
+                        # RDF/SPARQL UNSUBSCRIBE CONFIRM                        
                         elif ssap_msg_dict["message_type"] == "CONFIRM" and ssap_msg_dict["transaction_type"] == "UNSUBSCRIBE": # and not "sparql" in ssap_msg
     
                             sib["timer"] = datetime.datetime.now()
@@ -250,12 +255,12 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port, manager_ip, ma
     #                        print colored("remoteSIB>", "green", attrs=["bold"]) + " confirm handled"
                             # logger.info("UNSUBSCRIBE CONFIRM handled")
     
-    
                             for s in val_subscriptions:
                                 if str(s.subscription_id) == str(ssap_msg_dict["subscription_id"]):
                                     
                                     try:
-                                        s.conn.send(ssap_msg)
+                                        if s.unsubscribed == False:
+                                            s.conn.send(ssap_msg)
                                         print "close 256"
                                         s.conn.close()
                                     except socket.error:
@@ -263,8 +268,11 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port, manager_ip, ma
                                         pass
 
                                                                             
-                                    # destroy the class instance
-                                    del s
+                                    # rather than destroying the class instance, 
+                                    # we set the unsubscribed field to true, so that
+                                    # the subscription_observer can avoid to send an
+                                    # useless unsubscribe request to the publisher
+                                    s.unsubscribed = True
     
     
                         # INDICATIONS
@@ -355,7 +363,7 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port, manager_
     
     #print "obs id: " + str(uuid.uuid4())
     key = sib["socket"]
-
+    
     while check_var:
         try:            
             if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
@@ -400,6 +408,41 @@ def socket_observer(sib, port, check_var, ancillary_ip, ancillary_port, manager_
         
     print colored("socket_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(key)
 
+
+def subscription_observer(sib, sub):
+
+    print colored("remoteSib> ", "blue", attrs=["bold"]) + 'subscription observer started for subscription ' + str(sub.subscription_id)
+    
+    # local variables
+    sub_id = sub.subscription_id
+
+    # infinite loop
+    while True:
+
+        data = None
+        time.sleep(5)
+        try:
+            sub.conn.send(" ")
+            data = sub.conn.recv(4096)
+                
+        except socket.error:
+            
+            if sub.unsubscribed:
+                print colored("remoteSib> ", "blue", attrs=["bold"]) + " subscription " + str(sub_id) + " closed"
+            else:
+                print colored("remoteSib> ", "red", attrs=["bold"]) + " subscription " + str(sub_id) + " dead"
+
+                # In this case the subscription died, so it wasn't closed properly.
+                # Now we build an unsubscribe request and send it to the publisher
+                # so that it can close the subscription thread
+                # NOTE: the transacation id for the unsubscribe request is generated incrementing
+                # the transaction id used for the subscribe request. This may be a problem, we have to solve it!
+                ssap_msg = SSAP_UNSUBSCRIBE_REQUEST_TEMPLATE%(str(int(sub.request_transaction_id) + 1), str(sub.node_id), str(sub.subscription_id))
+                sib["socket"].send(ssap_msg)
+                
+            break
+
+    return
 
 
 # # SUBSCRIBED KP OBSERVER THREAD

@@ -16,6 +16,7 @@ class Subreq:
         self.subscription_id = None
         self.real_sib_id = {}
         self.result = []
+        self.unsubscribed = False
 
     # received_confirm: when we receive a SUBSCRIBE CONFIRM we store
     # the corrispondence between real_sib and the subscription_id that

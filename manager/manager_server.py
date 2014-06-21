@@ -19,7 +19,7 @@ logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 # while the values are lists of available parameters for that command
 COMMANDS = {
     "RegisterPublicSIB" : ["owner", "ip", "port"],
-    "NewRemoteSIB" : ["owner"],
+    "NewRemoteSIB" : ["owner", "sib_id"],
     "NewVirtualMultiSIB": ["sib_list"],
     "DiscoveryAll" : [],
     "DiscoveryWhere" : ["sib_profile"],
@@ -68,7 +68,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # NewRemoteSIB request
                 if cmd.command == "NewRemoteSIB":
-                    confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.owner)
+                    confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.owner, cmd.sib_id)
                     
                     # send a reply
                     try:
