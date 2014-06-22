@@ -80,18 +80,19 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
                         
 
                 elif msg["command"] == "RemoveSIBfromVMSIB":
-                    print "Removing a sib from virtualMultiSib.."
-                    
-
+                    print "Removing a sib from virtualMultiSib.."                    
 
                     # update the list of sibs 
                     for SIBid in msg["sib_list"]:
 
                         # update sibs list info
-                        del sibs_info[str(SIBid)]
+                        if sibs_info.has_key(str(SIBid)):
+                            del sibs_info[str(SIBid)]
 
-                    for i in multi_sib_changed:
-                        multi_sib_changed[i] = True
+                            for i in multi_sib_changed:
+                                multi_sib_changed[i] = True
+                                
+                    clientsock.send(json.dumps({"return":"ok"}))
 
                 elif msg["command"] == "StatusChange":
                     if msg["status"] == "offline":
@@ -106,11 +107,13 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
             #             t.append(Triple(URI(ns + str(msg["idVSIB"])), URI(ns + "hasStatus"), URI(ns + "offline")))
             #             a.insert(t)       
                         
-                        # update sib list but don't remove the triple <vmsib><composedBy><sib>
-                        del sibs_info[str(msg["sib_id"])]
+                        # update sib list but don't remove the triple
+                        # <vmsib><composedBy><sib>
+                        if sibs_info.has_key(str(msg["sib_id"])):
+                            del sibs_info[str(msg["sib_id"])]
                         
-                        for i in multi_sib_changed:
-                            multi_sib_changed[i] = True
+                            for i in multi_sib_changed:
+                                multi_sib_changed[i] = True
 
                         jmsg = {"return":"ok"}
                         msg = json.dumps(jmsg)

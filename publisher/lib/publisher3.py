@@ -18,7 +18,7 @@ from message_helpers import *
 import traceback
 from connection_helpers import *
 
-def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port):
+def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port, check):
 
     # variables
     complete_ssap_msg = ''
@@ -80,6 +80,10 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                     if not ssap_msg and not complete_ssap_msg:
                         print colored("publisher3> ", "red", attrs=["bold"]) + "Connection closed by foreign host"
 
+                        # close all subscriptions
+                        print "closing all the subscriptions"
+                        check[0] = True
+                        
                         # In this case the virtualiser died, so we should look for another virtualiser
                         # We should repeat the registration process
                         cnf = manager_request(manager_ip, manager_port, "publish", owner, None, None, vsib_id)                    
@@ -124,7 +128,7 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                             timer = datetime.datetime.now()
     
                             # start a new thread
-                            thread.start_new_thread(handler, (sock, msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip, realsib_port))                        
+                            thread.start_new_thread(handler, (sock, msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip, realsib_port, check))                        
                         
                         # there is no complete message
                         else:
@@ -140,7 +144,7 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
 #
 ######################################################                        
 
-def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip, realsib_port):
+def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip, realsib_port, check):
   
     """This thread is spawned once a new message arrives"""
   
@@ -161,7 +165,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip,
         # is it a subscribe request?
         if ssap_msg_dict["transaction_type"] == "SUBSCRIBE" and ssap_msg_dict["message_type"] == "REQUEST":
             # start a new thread to handle it
-            thread.start_new_thread(subscription_handler, (rs, vs, vsib_host, vsib_port, subscriptions))
+            thread.start_new_thread(subscription_handler, (rs, vs, vsib_host, vsib_port, subscriptions, check))
 
         # is it an unsubscribe request?
         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "UNSUBSCRIBE":
@@ -235,7 +239,7 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
 #
 ######################################################
 
-def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
+def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions, check):
 
     """This function is used to handle subscriptions. This function
     receives and forwards indications (as well as [un]subscribe
@@ -250,7 +254,13 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
 
     # wait for messages and examinate them!
     while 1:
-
+        
+        if check[0]:
+            print "i'm here"
+            tvs.close()
+            rs.close()
+            break
+        
         # receive the message
         ssap_msg = rs.recv(4096)
         if len(ssap_msg) > 1:
@@ -262,6 +272,7 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
                 # print colored("tpublisher " + str(tn) + ">", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
                 tvs.send(ssap_msg)
 
+
                 # if it's an unsubscribe confirm we have to close sockets
                 if "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg:
                     tvs.close()
@@ -271,7 +282,7 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions):
             # socket error
             except socket.error:
                 print colored("tpublisher " + str(tn) + ">", "red", attrs=["bold"]) + "Socket error"
-                print sys.exc_info() + "\n" + traceback.print_exc()
+                print sys.exc_info() + "\n" + str(traceback.print_exc())
                 break
 
     # close thread

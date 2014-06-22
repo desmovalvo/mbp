@@ -18,6 +18,9 @@ from lib.connection_helpers import *
 # main function
 if __name__ == "__main__":
     try:
+        check = []
+        check.append(False)
+        
         if(len(sys.argv) < 5) :
             print colored("newpublisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner manager_ip:port realsib_ip:port action'
             sys.exit()
@@ -46,7 +49,7 @@ if __name__ == "__main__":
 
                 # starting the publisher
                 timer = datetime.datetime.now()
-                StartConnection(manager_ip, manager_port, owner, virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_ip, realsib_port)
+                StartConnection(manager_ip, manager_port, owner, virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, timer, realsib_ip, realsib_port, check)
 
             else:
                 sys.exit()

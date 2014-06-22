@@ -22,8 +22,10 @@ num_iter = int(sys.argv[5])
 # variables
 step = 500
 min = 0
-max = int(sys.argv[6])
+maxn = int(sys.argv[6])
 median_arrays = []
+sibtype = sys.argv[7]
+filename = "timeit_insert_variable_object_" + str(num_iter) + "iter_" + str(maxn) + "max_" + sibtype + ".svg"
 
 # times
 join_time = None
@@ -63,7 +65,7 @@ for client in kp:
     obj = ""
 
     # cycle
-    for i in range(0, max):
+    for i in range(0, maxn):
          tot = []
          obj += "a" * step
 
@@ -96,9 +98,9 @@ for i in median_arrays:
 
 bar_chart = pygal.Bar()
 # chart = pygal.StackedLine(fill=True, interpolate='cubic', style=LightGreenStyle)
-bar_chart.add('Real SIB', median_arrays[0])
+bar_chart.add('Real SIB (' + sibtype + ')', median_arrays[0])
 bar_chart.add('Virtual SIB', median_arrays[1])
-bar_chart.render_to_file('single_insert_variableobject.svg')
+bar_chart.render_to_file(filename)
 
 
 #############################################################
