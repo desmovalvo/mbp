@@ -77,7 +77,7 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
                     msg = {'return':'ok'}
                     jmsg = json.dumps(msg)
                     clientsock.send(jmsg)
-                        
+                    clientsock.close()
 
                 elif msg["command"] == "RemoveSIBfromVMSIB":
                     print "Removing a sib from virtualMultiSib.."                    
@@ -93,6 +93,7 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
                                 multi_sib_changed[i] = True
                                 
                     clientsock.send(json.dumps({"return":"ok"}))
+                    clientsock.close()
 
                 elif msg["command"] == "StatusChange":
                     if msg["status"] == "offline":
@@ -119,7 +120,7 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
                         msg = json.dumps(jmsg)
                         clientsock.send(msg)
                         print "messaggio di risposta inoltrato al manager"
-                        #clientsock.close()
+                        clientsock.close()
 
 
                     elif msg["status"] == "online":
@@ -146,7 +147,7 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
                         jmsg = {"return":"ok"}
                         msg = json.dumps(jmsg)
                         clientsock.send(msg)
-                        #clientsock.close()
+                        clientsock.close()
                                         
                 continue
             except ValueError:
@@ -284,7 +285,7 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
         except socket.error:
             print vmsib_print(False) + " socket.error: break! 266vm"
             print traceback.print_exc()
-#            break
+            break
 
 
 ##########################################################################

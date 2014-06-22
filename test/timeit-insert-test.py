@@ -19,7 +19,7 @@ rem_sib_port = int(sys.argv[4])
 num_iter = int(sys.argv[5])
 
 # variables
-step = 500
+step = 25
 min = 0
 maxn = int(sys.argv[6])
 median_arrays = []
