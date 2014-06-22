@@ -213,18 +213,18 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
             break
 
     try:
-        # insert information into the ancillary SIB
-        a = SibLib(ancillary_ip, ancillary_port)
-        t = []
-        for i in sib_list:
-            t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i))))
+        # # insert information into the ancillary SIB
+        # a = SibLib(ancillary_ip, ancillary_port)
+        # t = []
+        # for i in sib_list:
+        #     t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i))))
     
-        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
-        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
-        t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_multi_sib_id))))
-        t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
-        t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multi_sib_id))))
-        a.insert(t)
+        # t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
+        # t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
+        # t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_multi_sib_id))))
+        # t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
+        # t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multi_sib_id))))
+        # a.insert(t)
 
         # fill a dictionary with the info about the VMSIB
         virtual_multi_sib_info = {}

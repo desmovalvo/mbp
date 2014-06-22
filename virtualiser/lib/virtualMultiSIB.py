@@ -60,22 +60,25 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
                 if msg["command"] == "AddSIBtoVMSIB":
                     print "Adding a sib to virtualMultiSib.."
                     
-                    # connect to the ancillary sib
-                    a = SibLib(ancillary_ip, ancillary_port)                    
-                    
                     # update the list of sibs 
                     for SIBid in msg["sib_list"]:
+                        
+                        print SIBid
 
-                        # update sibs list info
-                        t = Triple(URI(ns + str(SIBid)), URI(ns + "hasKpIpPort"), None)
-                        result = a.execute_rdf_query(t)
                         sibs_info[str(SIBid)] = {}
-                        sibs_info[str(SIBid)]["ip"] = str(result[0][2]).split("-")[0]
-                        sibs_info[str(SIBid)]["kp_port"] = int(str(result[0][2]).split("-")[1])
+                        sibs_info[str(SIBid)]["ip"] = msg["sib_list"][SIBid]["ip"]
+                        sibs_info[str(SIBid)]["kp_port"] = msg["sib_list"][SIBid]["port"]
+                        
+                        print sibs_info
 
                     for i in multi_sib_changed:
                         multi_sib_changed[i] = True
-                   
+                        
+                    msg = {'return':'ok'}
+                    jmsg = json.dumps(msg)
+                    clientsock.send(jmsg)
+                        
+
                 elif msg["command"] == "RemoveSIBfromVMSIB":
                     print "Removing a sib from virtualMultiSib.."
                     
