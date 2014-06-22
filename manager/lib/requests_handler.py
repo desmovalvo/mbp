@@ -262,80 +262,192 @@ def DeleteSIB(ancillary_ip, ancillary_port, sib_id):
 
 
 def DeleteRemoteSIB(ancillary_ip, ancillary_port, virtual_sib_id):
+
     # debug print
-    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing method " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"])
+    print "DeleteRemoteSIB " + colored("requests_handler > ", "blue", attrs=["bold"]) + "executing method",
+    print "DeleteRemoteSIB " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"])
     
-    # query to the ancillary SIB 
+    # connection to the ancillary SIB 
     a = SibLib(ancillary_ip, ancillary_port)
 
-    try:
-
-        # get the virtualiser server related to that virtual sib
-        query = PREFIXES + """SELECT ?ip ?port WHERE {?vid ns:hasRemoteSib ns:"""+ str(virtual_sib_id) + """ .
+    # get the virtualiser
+    print "DeleteRemoteSIB " + "Looking for the virtualiser... ",
+    query = PREFIXES + """SELECT ?ip ?port ?vid WHERE {?vid ns:hasRemoteSib ns:"""+ str(virtual_sib_id) + """ .
 ?vid ns:hasIP ?ip .
 ?vid ns:hasPort ?port}"""
-        result = a.execute_sparql_query(query)  
-
-        if len(result) > 0:
-            virtualiser_ip = (result[0][0][2]).split("#")[1]
-            virtualiser_port = (result[0][1][2]).split("#")[1]
-            print "Virtualiser ip " + str(virtualiser_ip)
-            print "Virtualiser port " + str(virtualiser_port)
-        
-    except socket.error:
-        print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
-        confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
-        return confirm
-
-    if len(result) > 0:
-        virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        virtualiser.settimeout(15)
-            
-        # connect to the virtualiser
-        try :
-            virtualiser.connect((virtualiser_ip, int(virtualiser_port)))
-        except :
-            print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the virtualiser'
-            sys.exit()        
-        
-        print colored("requests_handler> ", "blue", attrs=['bold']) + 'Connected to the virtualiser. Sending ' + colored("DeleteRemoteSib", "cyan", attrs=["bold"]) + " request!"
-        
-        # build request message 
-        request_msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":virtual_sib_id}
-        request = json.dumps(request_msg)
-        try:
-            virtualiser.send(request)
-        except:
-            print colored("requests_handler> ", "red", attrs=['bold']) + 'Send failed'
-            sys.exit()        
-            
-                
-        while 1:
-            confirm_msg = virtualiser.recv(4096)
-            if confirm_msg:
-                print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
-                print confirm_msg
-                break
-        
-        confirm = json.loads(confirm_msg)
-        if confirm["return"] == "fail":
-            print colored("requests_handler> ", "red", attrs=["bold"]) + 'Deletion failed!' + confirm["cause"]
-                
-        elif confirm["return"] == "ok":
-            print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Triples deleted!' 
-            print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' killed ' 
-            
-        return confirm
-
-    else:
-
-        # The virtualiser is not online anymore, so we have to remove the triples here
-        a.remove(Triple(URI(ns + virtual_sib_id), None, None))
-        a.remove(Triple(None, None, URI(ns + virtual_sib_id)))
-        confirm = {}
-        confirm['return'] = 'ok'
-        return confirm
+    result = a.execute_sparql_query(query)
     
+    if len(result) > 0:
+        print "DeleteRemoteSIB " + "found! "
+
+        virtualiser_ip = (result[0][0][2]).split("#")[1]
+        virtualiser_port = (result[0][1][2]).split("#")[1]
+        virtualiser_id = (result[0][2][2]).split("#")[1]
+        print "DeleteRemoteSIB " + "Virtualiser id " + str(virtualiser_id)
+        print "DeleteRemoteSIB " + "Virtualiser ip " + str(virtualiser_ip)
+        print "DeleteRemoteSIB " + "Virtualiser port " + str(virtualiser_port)
+
+        # Connect to the virtualiser
+        virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # connect to the virtualiser
+        try:
+            print "DeleteRemoteSIB " + "Connecting to the virtualiser "
+            virtualiser.connect((virtualiser_ip, int(virtualiser_port)))                  
+            print "DeleteRemoteSIB " + "Connected to the virtualiser "
+        except:
+            print "DeleteRemoteSIB " + colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the virtualiser '
+            confirm = {'return':'fail', 'cause':' Unable to connect to the virtualiser.'}
+            return confirm
+    
+        # send the request to the virtualiser
+        try:
+            # build the message
+            msg = json.dumps({"command" : "DeleteRemoteSIB", "virtual_sib_id" : str(virtual_sib_id)})
+            print "DeleteRemoteSIB " + "Sending message to virtualiser  "
+            virtualiser.send(msg)
+            print "DeleteRemoteSIB " + "DeleteRemoteSIB request sent to the virtualiser  "
+        except:
+            print "DeleteRemoteSIB " + colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to send the request to the virtualiser  '
+            confirm = {'return':'fail', 'cause':' Unable to send the request to the virtualiser.'}
+            return confirm
+
+        # wait for a reply
+        try:
+            while 1:
+                confirm_msg = virtualiser.recv(4096)
+                print "DeleteRemoteSIB " + "Response received  "
+                if confirm_msg:
+                    print "DeleteRemoteSIB " + "Confirm message  " + str(confirm_msg)
+                    print "DeleteRemoteSIB " + colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
+                    virtualiser.close()
+                    break                
+        except:
+            print "DeleteRemoteSIB " + colored("requests_handler> ", "red", attrs=['bold']) + 'Reply not received from the virtualiser '
+            confirm = {'return':'fail', 'cause':' Reply not received from the virtualiser'}
+            return confirm
+        
+        # check the confirm
+        confirm = json.loads(confirm_msg)
+        if confirm["return"] == "fail":            
+            print "DeleteRemoteSIB " + colored("requests_handler> ", "red", attrs=["bold"]) + 'Deletion failed!' + confirm["cause"]
+            return confirm
+
+        else:
+            print "DeleteRemoteSIB " + "Virtualsib killed  "
+
+            # get the list of the virtual multi sib in which that virtual sib appear
+            query = PREFIXES + """SELECT ?id ?ipport 
+WHERE { ?id ns:composedBy ns:""" + str(virtual_sib_id) + """ . ?id ns:hasKpIpPort ?ipport }"""
+            result = a.execute_sparql_query(query)
+            
+            if len(result) > 0:
+
+                # build RemoveSIBfromVMSIB message
+                msg = json.dumps({"command":"RemoveSIBfromVMSIB", "sib_list":[str(virtual_sib_id)]})
+
+                # send the RemoveSIBfromVMSIB request to all the vmsibs
+
+                for multisib in result:
+                    print "DeleteRemoteSIB " + str(multisib) + ""
+
+                    # get vmsib parameters
+                    vmsib_id = multisib[0][2].split("#")[1]
+                    vmsib_ip = multisib[1][2].split("#")[1].split("-")[0]
+                    vmsib_port = int(multisib[1][2].split("#")[1].split("-")[1])
+                    
+                    print "DeleteRemoteSIB " + str(vmsib_ip) + " "
+                    print "DeleteRemoteSIB " + str(vmsib_port) + " "
+
+                    # connect to the vmsib
+                    print "DeleteRemoteSIB " + "connecting to the vmsib  "
+                    vmsib = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            
+                    # connect to the vmsib
+                    try:
+                        vmsib.connect((vmsib_ip, vmsib_port))                  
+                        print "DeleteRemoteSIB " + "Connected to the vmsib"
+                    except:
+                        print "DeleteRemoteSIB " + colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the vmsib'
+                        confirm = {'return':'fail', 'cause':' Unable to connect to the vmsib.'}
+                        return confirm
+                
+                    # send the request to the vmsib
+                    try:
+                        # build the message
+                        vmsib.send(msg)
+                        print "DeleteRemoteSIB " + "RemoveSIBfromVMSIB request sent to the vmsib"
+                    except:
+                        print "DeleteRemoteSIB " + colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to send the request to the vmsib'
+                        confirm = {'return':'fail', 'cause':' Unable to send the request to the vmsib.'}
+                        return confirm
+            
+                    # wait for a reply
+                    try:
+                        while 1:
+                            confirm_msg = vmsib.recv(4096)
+                            confirm_msg = json.loads(confirm_msg)
+                            print "DeleteRemoteSIB " + "Response received"
+                            if confirm_msg:
+                                print "DeleteRemoteSIB " + colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
+                                vmsib.close()
+                                break                    
+
+                    except:
+                        print "DeleteRemoteSIB " + colored("requests_handler> ", "red", attrs=['bold']) + 'Reply not received from the vmsib'
+                        confirm = {'return':'fail', 'cause':' Reply not received from the vmsib'}
+                        return confirm                    
+
+                    # eventually update the status
+                    if confirm_msg["return"] == "fail":
+                        print "DeleteRemoteSIB " + colored("requests_handler> ", "red", attrs=['bold']) + 'Negative reply from vmsib'
+                        confirm = {'return':'fail', 'cause':' Negative reply from vmsib'}
+                        return confirm                    
+                    else:
+                        a.remove(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), URI(ns + virtual_sib_id)))
+                        r = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), None))
+                        if len(r) == 0:
+                            a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
+                            a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+                        
+                # Remove all the triples related to the virtual sib
+                a.remove(Triple(URI(ns + virtual_sib_id), None, None))
+                a.remove(Triple(None, None, URI(ns + virtual_sib_id)))
+
+                # Update the virtualiser's load
+                load_results = a.execute_rdf_query(Triple(URI(ns + virtualiser_id), URI(ns + "load"), None))
+                print load_results
+                print type(load_results)
+                print load_results[0]
+                print type(load_results[0])
+                print load_results[0][2]
+                print type(load_results[0][2])
+                virtualiser_load = int(str(load_results[0][2]))
+                print "DeleteRemoteSIB " + "Virtualiser old load: " + str(virtualiser_load)
+                print "DeleteRemoteSIB " + "Virtualiser new load: " + str(int(virtualiser_load)-1)
+                a.update(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(virtualiser_load-1))), Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(virtualiser_load))))
+                
+                confirm = {'return':'ok'}
+                return confirm
+       
+    else:
+        print "DeleteRemoteSIB " + "not found!"
+        confirm = {'return':'fail', 'cause':' Virtualiser not found.'}
+        return confirm
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
 
@@ -419,13 +531,19 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
 
             # insert the triples into the ancillary sib        
             t = []
+            print sib_list
             for i in sib_list:
+                print i
                 t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "composedBy"), URI(ns + str(i))))    
             t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
             t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(virtual_multisib_kp_port))))
             t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
             t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multisib_id))))
             a.insert(t)
+
+            for tripla in t:
+                print tripla
+            
             
         # close the connection with the virtualiser
         virtualiser.close()
@@ -447,7 +565,7 @@ def DiscoveryAll(ancillary_ip, ancillary_port):
     print " query to the ancillary sib to get all the existing virtual sib "
     query = PREFIXES + """
         SELECT ?s ?o
-        WHERE {?s ns:hasKpIpPort ?o}
+        WHERE {?s ns:hasKpIpPort ?o . ?s ns:hasStatus ns:online }
         """
     a = SibLib(ancillary_ip, ancillary_port)
     result = a.execute_sparql_query(query)
@@ -491,7 +609,7 @@ WHERE {?s ns:hasKpIpPort ?o .
 
 def SetSIBStatus(ancillary_ip, ancillary_port, sib_id, new_status):
     
-    print "request handler: set status"
+    print "SetSIBStatus " + "request handler: set status"
     
     # Connecting to the ancillary SIB
     try:
@@ -533,12 +651,12 @@ WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
 ?vmsib_id ns:composedBy ns:""" + sib_id + """ }""")
     except:
         # Impossible to contact the virtual multi sibs
-        print colored("request_handler> ", "red", attrs = ["bold"]) + "failed to contact the virtual multi sibs"
+        print "SetSIBStatus " + colored("request_handler> ", "red", attrs = ["bold"]) + "failed to contact the virtual multi sibs"
 
     # Notify the status change to all the VMSIBs
     if len(vmsibs) > 0:
         
-        print "request handler: inoltro alle vmsib"
+        print "SetSIBStatus " + "request handler: inoltro alle vmsib"
 
         # Build the JSON message
         new_status_msg = {"command": "StatusChange", "sib_id": sib_id, "status": new_status}
@@ -558,23 +676,23 @@ WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
                 # Wait for a reply
                 while 1:
                     try:
-                        print "aspetto conferma"
+                        print "SetSIBStatus " + "aspetto conferma"
                         confirm_msg = vms_socket.recv(4096)
-                        print "conferma ricevuta"
+                        print "SetSIBStatus " + "conferma ricevuta"
                         break
                     except socket.timeout:
-                        print colored("request_handler> ", "red", attrs=["bold"]) + 'connection to the virtualiser timed out'            
+                        print "SetSIBStatus " + colored("request_handler> ", "red", attrs=["bold"]) + 'connection to the virtualiser timed out'            
 
                 # Close the socket to the vmsib
                 vms_socket.close()
 
             except:
-                print colored("request_handler> ", "red", attrs=["bold"]) + 'impossible to contact the virtualsib'            
+                print "SetSIBStatus " + colored("request_handler> ", "red", attrs=["bold"]) + 'impossible to contact the virtualsib'            
 
     # return
     confirm = {'return':'ok'}
     
-    print "ritorno risposta"
+    print "SetSIBStatus " + "ritorno risposta (SetStatus)"
     return confirm
 
 

@@ -72,80 +72,11 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
 
 
 def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip, ancillary_port):
-    try:
-        # remove virtual sib info from the ancillary sib
-        a = SibLib(ancillary_ip, ancillary_port)
 
-        # check if the remote SIB is part of a virtual multi SIB
-        t = Triple(None, URI(ns + "composedBy"), URI(ns + virtual_sib_id))
-        result = a.execute_rdf_query(t)
-        a.remove(result)
-        
-        # check if we have to set the multi SIBs offline
-        for vmsib in result:
-            t2 = Triple(URI(vmsib[0]), URI(ns + "composedBy"), None)
-            r = a.execute_rdf_query(t2)
-            if len(r) == 0:
-                t3 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), None)
-                t4 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), URI(ns + "offline"))
-                r = a.execute_rdf_query(t3)
-                a.remove(r)
-                a.insert(t4)
-
-        # remove the triples related to the remote SIB
-        t = Triple(URI(ns + virtual_sib_id), None, None)
-        result = a.execute_rdf_query(t)  
-        print result
-        a.remove(result)
-
-        t = [Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + virtual_sib_id))]
-        a.remove(t)
-        print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Triples deleted!'
-
-        # killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
-        threads[t_id[virtual_sib_id]] = False
-        print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' killed ' 
-
-        #############################################
-        ##                                         ##
-        ## Update the load of selected virtualiser ##
-        ##                                         ##
-        #############################################
-
-        # get old load
-        try:
-            query = PREFIXES + """SELECT ?load
-WHERE { ns:""" + str(virtualiser_id) + """ ns:load ?load }"""
-
-            result = a.execute_sparql_query(query)
-            load = int(result[0][0][2])
-            print "Old Load " + str(load)
-            
-            # remove triple
-            t = []
-            t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
-            a.remove(t)
-            # insert new triple
-            load -= 1
-            print "New Load " + str(load)
-            t = []
-            t.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(load))))
-            a.insert(t)
-        except socket.error:
-            print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
-            confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
-            return confirm
-
-        #############################################
-        #############################################
-
-
-        confirm = {'return':'ok'}
-        
-    except socket.error:
-        print colored("request_handlers> ", "red", attrs=['bold']) + 'Unable to connect to the ancillary SIB'
-        confirm = {'return':'fail', 'cause':' Unable to connect to the ancillary SIB.'}
-
+    # killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
+    threads[t_id[virtual_sib_id]] = False
+    print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' killed ' 
+    confirm = {'return':'ok'}
     return confirm
                                         
 
@@ -184,7 +115,7 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
         a = SibLib(ancillary_ip, ancillary_port)
         t = []
         for i in sib_list:
-            t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i))))
+            t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "composedBy"), URI(ns + str(i["id"]))))
     
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
         t.append(Triple(URI(ns + str(virtual_multi_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(kp_port))))
