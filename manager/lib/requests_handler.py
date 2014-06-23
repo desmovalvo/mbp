@@ -809,12 +809,13 @@ WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
 
 def RemoveSIBfromVMSIB(ancillary_ip, ancillary_port, vmsib_id, sib_list):
 
-    # check if the vmsib really exists
+    # connect to the ancillary sib
     a = SibLib(ancillary_ip, ancillary_port)
-    print vmsib_id
-    res = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
-    print res
 
+    # check if the vmsib really exists
+    res = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
+
+    # if vmsib exists
     if len(res) == 1:
         
         # get the list of all the SIBs
@@ -833,7 +834,7 @@ WHERE {{ ?s rdf:type ns:remoteSib } UNION { ?s rdf:type ns:virtualMultiSib }}"""
         existing_sibs = []
         for k in SIBs:
             existing_sibs.append(str(k[0][2]).split("#")[1])
-        print "existing_sibs"
+
 
         # check if the specified sibs really exist
         for s in sib_list:
@@ -854,7 +855,7 @@ PREFIX ns: <http://smartM3Lab/Ontology.owl#>
 SELECT ?o
 WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
 
-        # send a message to the virtualiser
+        # send a message to the vmsib
         try:
             print "contatto la vmsib",
             # connection to the vmsib
@@ -863,20 +864,49 @@ WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
             vms_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             vms_socket.connect((vms_ip, int(vms_port)))
             vms_socket.send(jmsg)
-            vms_socket.close()
 
-            # update info into the ancillary
-            for s in sib_list:
-                a.remove(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), URI(ns + str(s))))
-                print "Successful"
+            # wait for a reply
+            while 1:
+                try:
+                    print 'RemoveSIB: waiting for a reply:',
+                    confirm_msg = vms_socket.recv(4096)
+                    print 'ok'
+                    break
+                except:
+                    print colored("request_handler> ", "red", attrs=["bold"]) + 'Request to the vmsib failed'
+                    confirm = {'return':'fail', 'cause':' Request to the vmsib failed.'}
+                    vms_socket.close()
+                    return confirm
 
-            # confirm
-            confirm = {'return':'ok'}
-            return confirm
+            print 'RemoveSIB: ' + str(confirm_msg)
+
+            # closing socket
+            vms_socket.close()            
+
+            # check the confirm content
+            c = json.loads(confirm_msg)
+            print 'RemoveSIB: ' + str(c)
+            if c["return"] == "ok":
+
+                # update the ancillary sib
+                for s in sib_list:
+                    a.remove(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), URI(ns + str(s))))
+
+                r = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), None))
+                if len(r) == 0:
+                    a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
+                    a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+                
+            # return
+            return c
+
 
         except:
             print sys.exc_info()
             print colored("request_handler> ", "red", attrs=["bold"]) + 'impossible to contact the VirtualMultiSib'      
+            confirm = {'return':'fail', 'cause':' impossible to contact the vmsib.'}
+            vms_socket.close()
+            return confirm
 
     else:
         confirm = {'return':'fail', 'cause':' VirtualMultiSib does not exist.'}
