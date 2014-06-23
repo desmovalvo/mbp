@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+from connection_helpers import *
 from xml.etree import ElementTree as ET
 from remoteSIB import *
 from Subreq import *
@@ -62,8 +63,7 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port, manager_ip, ma
             elif len(ssap_msg) == 0:
                 break
       
-            else:
-    
+            else:    
     
                 if ssap_msg != None:
                     complete_ssap_msg = str(complete_ssap_msg) + str(ssap_msg)
@@ -88,16 +88,10 @@ def handler(clientsock, addr, port, ancillary_ip, ancillary_port, manager_ip, ma
             
                         # REGISTER REQUEST
                         if ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "REGISTER":
-                            
+
                             # set the status online
-                            a = SibLib(ancillary_ip, ancillary_port)
-                            t = []
-                            t.append(Triple(URI(ns + str(ssap_msg_dict["node_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-                            a.remove(t)
-                            t = []
-                            t.append(Triple(URI(ns + str(ssap_msg_dict["node_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
-                            a.insert(t)       
-                            t = []
+                            msg = { "command" : "SetSIBStatus", "sib_id" : str(sib["virtual_sib_id"]) , "status" : "online" }
+                            manager_request(manager_ip, manager_port, msg)
     
                             # build a reply message
                             reply = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
