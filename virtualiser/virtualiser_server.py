@@ -51,7 +51,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         try:
             # Output the received message
-            print virtserver_print(True) + "incoming connection, received the following message:"
+            print virtserver_print(True) + "incoming connection, received the following message:",
             self.server.logger.info(" Incoming connection, received the following message:")
             data = json.loads(self.request.recv(1024).strip())
             print data
@@ -62,7 +62,6 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
             if cmd.valid:
             
                 # decode 
-                print virtserver_print(True) + "calling the proper method"
                 
                 if data["command"] == "DeleteRemoteSIB":
                     confirm = globals()[cmd.command](cmd.virtual_sib_id, threads, t_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port)

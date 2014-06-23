@@ -923,11 +923,14 @@ def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
 
     # TODO: handle active virtual (multi) sibs !!!
     
-    # # get the list of the virtual sibs started on that virtualiser
-    # vsibs_query = PREFIXES + """SELECT ?vsib_id
-    # WHERE { ns:""" + virtualiser_id + """ ns:hasRemoteSib ?vsib_id }"""
-    # vsibs = ancillary_sib.execute_sparql_query(vsibs_query)
-    # print "Vsibs found: " + str(vsibs)
+    # get the list of the virtual sibs started on that virtualiser
+    vsibs_query = PREFIXES + """SELECT ?vsib_id
+    WHERE { ns:""" + virtualiser_id + """ ns:hasRemoteSib ?vsib_id }"""
+    vsibs = ancillary_sib.execute_sparql_query(vsibs_query)
+
+    for vsib in vsibs:
+        ancillary_sib.remove(Triple(URI(vsib[0][2]), None, None))
+        ancillary_sib.remove(Triple(None, None, URI(vsib[0][2])))
 
     # # get the list of the virtual multi sibs started on that virtualiser
     # vsibs_query = PREFIXES + """SELECT ?vsib_id

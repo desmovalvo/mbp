@@ -42,14 +42,12 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
     while True:
         kp_port = random.randint(10000, 11000)
         if s1.connect_ex(("localhost", kp_port)) != 0:
-            print "estratta la porta %s"%(str(kp_port))
             break
 
     while True:
         pub_port = random.randint(10000, 11000)
         if pub_port != kp_port:
             if s2.connect_ex(("localhost", pub_port)) != 0:
-                print "estratta la porta %s"%(str(pub_port))
                 break        
     
 
