@@ -124,32 +124,3 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
     # return the virtual multi sib info
     return virtual_multi_sib_info
 
-
-############################################################
-#
-# Discovery
-#
-# This function handles the Discovery request and
-# it's called by the virtualiser_server once it receives
-# a Discovery request message
-#
-############################################################
-
-def Discovery(ancillary_ip, ancillary_port):
-    # debug print
-    print reqhandler_print(True) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
-    # query to the ancillary sib to get all the existing virtual sib 
-    query = """
-        SELECT ?s ?o
-        WHERE {?s ns:hasKpIpPort ?o}
-        """
-    a = SibLib(ancillary_ip, ancillary_port)
-    result = a.execute_sparql_query(query)
-    
-    virtual_sib_list = {}
-    for i in result:
-        sib_id = str(i[0][2].split('#')[1])
-        virtual_sib_list[sib_id] = {} 
-        sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2].split('#')[1]).split("-")[0]
-        sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2].split('#')[1]).split("-")[1]
-    return virtual_sib_list

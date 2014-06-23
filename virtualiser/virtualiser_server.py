@@ -125,19 +125,6 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                             
                             print virtserver_print(False) + "Confirm message forwarding failed!"
 
-                ##########################################################################
-                #
-                # Discovery
-                #
-                ##########################################################################                                                                    
-                            
-                elif cmd.command == "Discovery":
-                    # calling the proper method
-                    virtual_sib_list = Discovery()
-
-                    # send a reply
-                    self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
-
                    
                 ##########################################################################
                 #
