@@ -29,6 +29,7 @@ COMMANDS = {
     "DeleteSIB": ["sib_id"],
     "DeleteVirtualiser" : ["id"],
     "SetSIBStatus": ["sib_id", "status"],
+    "GetSIBStatus": ["sib_id"],
     "AddSIBtoVMSIB": ["vmsib_id", "sib_list"],
     "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"]
     }
@@ -150,11 +151,18 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # SetSIBStatus
                 elif data["command"] == "SetSIBStatus":
-                    print "manager server: ricevuta set status"
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id, cmd.status)
-                    print confirm
+
                     # send a reply                    
                     self.request.sendall(json.dumps(confirm))                    
+
+                # GetSIBStatus
+                elif data["command"] == "GetSIBStatus":
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id)
+
+                    # send a reply                    
+                    self.request.sendall(json.dumps(confirm))                    
+
 
                 # AddSIBtoVMSIB
                 elif data["command"] == "AddSIBtoVMSIB":

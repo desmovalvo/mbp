@@ -1064,3 +1064,32 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
     return confirm
 
 
+
+def GetSIBStatus(ancillary_ip, ancillary_port, sib_id):
+
+    # debug info
+    print requests_print(True) + "executing " + command_print("GetSIBStatus")    
+    
+    # Connecting to the ancillary SIB
+    try:
+        a = SibLib(ancillary_ip, int(ancillary_port))
+    except:
+        confirm = {'return':'fail', 'cause':' connection to the ancillary SIB failed.'}
+        return confirm
+
+    # Executing a query
+    res = a.execute_rdf_query(Triple(URI(ns + sib_id), URI(ns + "hasStatus"), None))
+
+    # Checking results
+    if len(res) == 0:
+        
+        # the sib does not exist
+        confirm = {"return":"ok", "status":"none"}
+
+    else:
+
+        # the sib exists
+        confirm = {"return":"ok", "status":str(res[0][2]).split("#")[1]}
+
+    # Return
+    return confirm

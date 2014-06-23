@@ -53,7 +53,7 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
 
     # start the virtual sib process
     threads[thread_id] = True
-    p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], ancillary_ip, ancillary_port, manager_ip, manager_port))
+    p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], manager_ip, manager_port))
     p.start()
 
     # build the reply

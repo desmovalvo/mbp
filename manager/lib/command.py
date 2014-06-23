@@ -13,6 +13,7 @@ COMMANDS = {
     "DeleteRemoteSIB" : ["virtual_sib_id"],
     "DeleteSIB" : ["sib_id"],
     "DeleteVirtualiser" : ["id"],
+    "GetSIBStatus": ["sib_id"],
     "SetSIBStatus": ["sib_id", "status"],
     "AddSIBtoVMSIB": ["vmsib_id", "sib_list"],
     "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"]
