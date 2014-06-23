@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # requirements
+from lib.connection_helpers import *
 from lib.request_handlers import *
 from lib.output_helpers import *
 from collections import Counter
@@ -187,45 +188,36 @@ if __name__=='__main__':
         manager_ip = sys.argv[5]
         manager_port = int(sys.argv[6])
 
+    # Create a logger object
+    logger = logging.getLogger("virtualiser_server")
 
-    try:
-        # Create a logger object
-        logger = logging.getLogger("virtualiser_server")
-        
-        # Insert the virtualiser informations into the Ancillary SIB
-        print "Ancillary IP: " + str(ancillary_ip)
-        print "Ancillary port: " + str(ancillary_port)
-        ancillary_sib = SibLib(ancillary_ip, ancillary_port)
-#        ancillary_sib.join_sib()
-        triples = []
-        triples.append(Triple(URI(ns + virtualiser_id), URI(rdf + "type"), URI(ns + "virtualiser")))
-        triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(0))))
-        triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasIP"), URI(ns + virtualiser_ip)))
-        triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasPort"), URI(ns + str(virtualiser_port))))
-        print triples
-        ancillary_sib.insert(triples)
-        
-    except socket.error:
-        print virtserver_print(False) + "Unable to connect to the ancillary SIB!"
-        sys.exit()
-
-    try:
-        # Start the virtualiser server
-        server = VirtualiserServer((virtualiser_ip, int(virtualiser_port)), VirtualiserServerHandler)
-        server.virtualiser_id = virtualiser_id
-        server.virtualiser_ip =  virtualiser_ip
-        server.virtualiser_port = virtualiser_port 
-        server.ancillary_ip = ancillary_ip
-        server.ancillary_port = ancillary_port
-        server.manager_ip = manager_ip
-        server.manager_port = manager_port
-        server.logger = logger
-        server.logger.info(" Starting server on IP " + virtualiser_ip + " Port " + str(virtualiser_port))
-        print virtserver_print(True) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
-        server.serve_forever()
+    # build the NewVirtualiser request
+    msg = {"command":"NewVirtualiser", "ip":virtualiser_ip, "port":str(virtualiser_port), "id":virtualiser_id}
     
-    except KeyboardInterrupt:
-        # cleaning the ancillary SIB
-        ancillary_sib.remove(triples)
-        print virtserver_print(True) + "Goodbye!"
-
+    # send the request to the manager
+    confirm = manager_request(manager_ip, manager_port, msg)
+    if confirm['return'] == "ok":
+        
+        try:
+            # Start the virtualiser server
+            server = VirtualiserServer((virtualiser_ip, int(virtualiser_port)), VirtualiserServerHandler)
+            server.virtualiser_id = virtualiser_id
+            server.virtualiser_ip =  virtualiser_ip
+            server.virtualiser_port = virtualiser_port 
+            server.ancillary_ip = ancillary_ip
+            server.ancillary_port = ancillary_port
+            server.manager_ip = manager_ip
+            server.manager_port = manager_port
+            server.logger = logger
+            server.logger.info(" Starting server on IP " + virtualiser_ip + " Port " + str(virtualiser_port))
+            print virtserver_print(True) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
+            server.serve_forever()
+        
+        except KeyboardInterrupt:
+            # cleaning the ancillary SIB
+            ancillary_sib.remove(triples)
+            print virtserver_print(True) + "Goodbye!"
+    
+    else:
+        print colored("virtualiser_server> ", "red", attrs=["bold"]) + "unable to start the virtualiser. Cause: " + str(confirm["cause"])
+        sys.exit(0)

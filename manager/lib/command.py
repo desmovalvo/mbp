@@ -7,6 +7,7 @@ COMMANDS = {
     "RegisterPublicSIB": ["owner", "ip", "port"],
     "NewRemoteSIB" : ["owner", "sib_id"],
     "NewVirtualMultiSIB": ["sib_list"],
+    "NewVirtualiser": ["id", "ip", "port"],
     "DiscoveryAll" : [],
     "DiscoveryWhere" : ["sib_profile"],
     "DeleteRemoteSIB" : ["virtual_sib_id"],

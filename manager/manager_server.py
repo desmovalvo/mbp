@@ -21,6 +21,7 @@ COMMANDS = {
     "RegisterPublicSIB" : ["owner", "ip", "port"],
     "NewRemoteSIB" : ["owner", "sib_id"],
     "NewVirtualMultiSIB": ["sib_list"],
+    "NewVirtualiser": ["id", "ip", "port"],
     "DiscoveryAll" : [],
     "DiscoveryWhere" : ["sib_profile"],
     "DeleteRemoteSIB" : ["virtual_sib_id"],
@@ -80,6 +81,13 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                         else:
                             # Send DeleteRemoteSIB request to the virtualiser to remove the virtual sib just created
                             confirm = globals()["DeleteRemoteSIB"](confirm["virtual_sib_info"]["virtual_sib_id"])
+
+                # NewVirtualiser request
+                if cmd.command == "NewVirtualiser":
+                    confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.id, cmd.ip, cmd.port)
+                    
+                    # send a reply
+                    self.request.sendall(json.dumps(confirm))
 
                 # DeleteRemoteSIB request
                 elif data["command"] == "DeleteRemoteSIB":

@@ -911,3 +911,40 @@ WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
     else:
         confirm = {'return':'fail', 'cause':' VirtualMultiSib does not exist.'}
         return confirm
+
+
+
+def NewVirtualiser(ancillary_ip, ancillary_port, virtualiser_id, virtualiser_ip, virtualiser_port):
+
+    # debug info
+    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing " + colored("NewVirtualiser", "cyan", attrs=["bold"]),
+
+    # connection to the ancillary sib
+    try:
+        ancillary_sib = SibLib(ancillary_ip, ancillary_port)
+    except:
+        confirm = {"return":"fail", "cause":"Unable to connect to the ancillary SIB"}
+        print confirm
+        return confirm
+
+    # build the triple to send
+    triples = []
+    triples.append(Triple(URI(ns + virtualiser_id), URI(rdf + "type"), URI(ns + "virtualiser")))
+    triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(0))))
+    triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasIP"), URI(ns + virtualiser_ip)))
+    triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasPort"), URI(ns + str(virtualiser_port))))
+
+    # insertion
+    try:
+        ancillary_sib.insert(triples)
+    except:
+        confirm = {"return":"fail", "cause":"Unable to insert the virtualiser triples into the ancillary SIB"}
+        print confirm
+        return confirm        
+
+    # Everything's fine
+    confirm = {"return":"ok"}
+    print confirm
+    return confirm
+
+
