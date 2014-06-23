@@ -12,6 +12,7 @@ from random import *
 from termcolor import *
 from SIBLib import SibLib
 from smart_m3.m3_kp import *
+from output_helpers import *
 import socket, select, string, sys
 
 # constants
@@ -872,10 +873,16 @@ WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
 
 
 
+#########################################################################
+#
+# NewVirtualiser
+#
+#########################################################################
+
 def NewVirtualiser(ancillary_ip, ancillary_port, virtualiser_id, virtualiser_ip, virtualiser_port):
 
     # debug info
-    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing " + colored("NewVirtualiser", "cyan", attrs=["bold"]),
+    print requests_print(True) + "executing " + command_print("NewVirtualiser")
 
     # connection to the ancillary sib
     try:
@@ -905,6 +912,8 @@ def NewVirtualiser(ancillary_ip, ancillary_port, virtualiser_id, virtualiser_ip,
     print confirm
     return confirm
 
+
+
 #########################################################################
 #
 # DeleteVirtualiser
@@ -914,7 +923,7 @@ def NewVirtualiser(ancillary_ip, ancillary_port, virtualiser_id, virtualiser_ip,
 def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
 
     # debug info
-    print colored("requests_handler> ", "blue", attrs=["bold"]) + "executing " + colored("DeleteVirtualiser", "cyan", attrs=["bold"]),
+    print requests_print(True) + "executing " + command_print("DeleteVirtualiser")
 
     # connection to the ancillary sib
     try:
@@ -926,10 +935,13 @@ def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
 
     ##############################################################
     #
-    #  Delete all the virtual sibs from the vmsibs
+    #  Delete all the virtual sibs from the vmsibs and from the ancillary
     #
     ##############################################################
     
+    # debug print
+    print requests_print(True) + "removing all the virtual sibs running on the virtualiser"
+
     # get the list of the virtual sibs started on that virtualiser
     vsibs_query = PREFIXES + """SELECT ?vsib_id
     WHERE { ns:""" + virtualiser_id + """ ns:hasRemoteSib ?vsib_id }"""
@@ -953,7 +965,6 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
             msg = json.dumps({"command":"RemoveSIBfromVMSIB", "sib_list":[str(vsib[0][2].split("#")[1])]})
 
             # send the RemoveSIBfromVMSIB request to all the vmsibs
-
             for multisib in result:
 
                 # get vmsib parameters
@@ -1015,6 +1026,9 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
     #
     ##############################################################
 
+    # debug print
+    print requests_print(True) + "removing all the virtual multi sib running on the virtualiser"
+
     # get the list of the virtual sibs started on that virtualiser
     vmsibs_query = PREFIXES + """SELECT ?vmsib_id
     WHERE { ns:""" + virtualiser_id + """ ns:hasVirtualMultiSib ?vmsib_id }"""
@@ -1024,7 +1038,6 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
     for vmsib in vmsibs:
         
         # get all the triples related to that virtual multi sib
-        print "VMSIB: " + str(vmsib[0][2])
         ancillary_sib.remove(Triple(URI(vmsib[0][2]), None, None))
 
     ##############################################################
@@ -1033,23 +1046,15 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
     #
     ##############################################################
 
+    # debug print
+    print requests_print(True) + "removing all the triples related to the virtualiser"
+
     # get the triples related to that virtualiser
-    triples = ancillary_sib.execute_rdf_query(Triple(URI(ns + virtualiser_id), None, None))
-    for t in triples:
-        print t
-
-    # deletion
     try:
-        print "Rimozione triple",
-        ancillary_sib.remove(triples)
-        print 'ok'
-
-        print ancillary_sib.execute_rdf_query(triples[0])
+        ancillary_sib.remove(Triple(URI(ns + virtualiser_id), None, None))
 
     except:
         confirm = {"return":"fail", "cause":"Unable to delete the virtualiser triples from the ancillary SIB"}
-        print sys.exc_info()
-        print traceback.print_exc()
         print confirm
         return confirm        
 
