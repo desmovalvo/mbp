@@ -191,9 +191,9 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         print "--- GET the list of the remote SIBs"
         r = get_remoteSIBs(a)
 
-        # # get the virtual multi SIBs
-        # print "--- GET the list of the VMSIBs"
-        # vm = get_vmSIBs(a)
+        # get the virtual multi SIBs
+        print "--- GET the list of the VMSIBs"
+        vm = get_vmSIBs(a)
 
         # output the informations
         s.send_response(200)
@@ -228,7 +228,7 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         s.wfile.write("<body><header><h1>Ancillary SIB Explorer</h1></header>")
         s.wfile.write("<article>%s</article>" % str(v))
         s.wfile.write("<article>%s</article>" % str(r))
-        # s.wfile.write("<article>%s</article>" % str(vm))
+        s.wfile.write("<article>%s</article>" % str(vm))
         s.wfile.write("</body></html>")
 
 
