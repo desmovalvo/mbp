@@ -335,7 +335,11 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
         print vmsib_print(True) + ' waiting for connections...'
         
         # select the read_sockets
-        read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
+        try:
+            read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
+        except:
+            # this exception happens when a virtualiser is disconnected
+            break
         
         # look for a connection on both the ports
         for sock in read_sockets:

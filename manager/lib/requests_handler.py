@@ -6,6 +6,7 @@ import uuid
 import json
 import thread
 import threading
+import traceback
 from query import *
 from random import *
 from termcolor import *
@@ -44,7 +45,7 @@ def RegisterPublicSIB(ancillary_ip, ancillary_port, owner, sib_ip, sib_port):
         t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
         t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
         a.insert(t)
-        
+
         sib_info = {}
         sib_info["return"] = "ok"
         sib_info["sib_id"] = str(sib_id)
@@ -162,7 +163,7 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner, sib_id):
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
                 t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_sib_id))))
                 a.insert(t)
-                
+                print 'INFORMAZIONI INSERITE'
                 #############################################
                 ##                                         ##
                 ## Update the load of selected virtualiser ##
@@ -904,8 +905,11 @@ def NewVirtualiser(ancillary_ip, ancillary_port, virtualiser_id, virtualiser_ip,
     print confirm
     return confirm
 
-
-
+#########################################################################
+#
+# DeleteVirtualiser
+#
+#########################################################################
 
 def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
 
@@ -920,7 +924,11 @@ def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
         print confirm
         return confirm
 
-    # TODO: handle active virtual (multi) sibs !!!
+    ##############################################################
+    #
+    #  Delete all the virtual sibs
+    #
+    ##############################################################
     
     # get the list of the virtual sibs started on that virtualiser
     vsibs_query = PREFIXES + """SELECT ?vsib_id
@@ -929,8 +937,8 @@ def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
 
     for vsib in vsibs:
         print vsib
-        ancillary_sib.remove(Triple(URI(vsib[0][2].split("#")[1]), None, None))
-        ancillary_sib.remove(Triple(None, None, URI(vsib[0][2].split("#")[1])))
+        ancillary_sib.remove(Triple(URI(vsib[0][2]), None, None))
+        ancillary_sib.remove(Triple(None, None, URI(vsib[0][2])))
 
         # Notify the deletion of the vsib to the vmsibs that use them
         # just like DeleteRemoteSIB does
@@ -938,7 +946,6 @@ def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
         # get the list of the virtual multi sib in which that virtual sib appears
         query = PREFIXES + """SELECT ?id ?ipport 
 WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:hasKpIpPort ?ipport }"""
-        print query
         result = ancillary_sib.execute_sparql_query(query)
         if len(result) > 0:
 
@@ -1002,25 +1009,58 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
                         ancillary_sib.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
                         ancillary_sib.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
 
+    ##############################################################
+    #
+    #  Delete all the virtual multi sibs
+    #
+    ##############################################################
+
+    # get the list of the virtual sibs started on that virtualiser
+    vmsibs_query = PREFIXES + """SELECT ?vmsib_id
+    WHERE { ns:""" + virtualiser_id + """ ns:hasVirtualMultiSib ?vmsib_id }"""
+    vmsibs = ancillary_sib.execute_sparql_query(vmsibs_query)
+
+    # for each vmsib, recreate it on another virtualiser
+#     for vmsib in vmsibs:
+
+#         print "VirtualMultiSIB: " + str(vmsib[0][2])
+
+#         component_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+# PREFIX owl: <http://www.w3.org/2002/07/owl#>
+# PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+# PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+# PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+# SELECT ?sibid
+#     WHERE { """ + vmsib[0][2] + """ rdf:type ns:virtualMultiSib . """ + vmsib[0][2] + """ ns:composedBy ?sibid}"""
+    
+#         component_results = ancillary_sib.execute_sparql_query(component_query)
+#         print component_results
 
 
 
-        
-
-    # # get the list of the virtual multi sibs started on that virtualiser
-    # vsibs_query = PREFIXES + """SELECT ?vsib_id
-    # WHERE { ns:""" + virtualiser_id + """ ns:hasVirtualMultiSib ?vsib_id }"""
-    # vsibs = ancillary_sib.execute_sparql_query(vsibs_query)
-    # print "VMsibs found: " + str(vsibs)
+    ##############################################################
+    #
+    #  Delete all the data related to that virtualiser
+    #
+    ##############################################################
 
     # get the triples related to that virtualiser
     triples = ancillary_sib.execute_rdf_query(Triple(URI(ns + virtualiser_id), None, None))
+    for t in triples:
+        print t
 
     # deletion
     try:
+        print "Rimozione triple",
         ancillary_sib.remove(triples)
+        print 'ok'
+
+        print ancillary_sib.execute_rdf_query(triples[0])
+
     except:
         confirm = {"return":"fail", "cause":"Unable to delete the virtualiser triples from the ancillary SIB"}
+        print sys.exc_info()
+        print traceback.print_exc()
         print confirm
         return confirm        
 
