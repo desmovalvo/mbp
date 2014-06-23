@@ -926,7 +926,7 @@ def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
 
     ##############################################################
     #
-    #  Delete all the virtual sibs
+    #  Delete all the virtual sibs from the vmsibs
     #
     ##############################################################
     
@@ -1020,23 +1020,12 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
     WHERE { ns:""" + virtualiser_id + """ ns:hasVirtualMultiSib ?vmsib_id }"""
     vmsibs = ancillary_sib.execute_sparql_query(vmsibs_query)
 
-    # for each vmsib, recreate it on another virtualiser
-#     for vmsib in vmsibs:
-
-#         print "VirtualMultiSIB: " + str(vmsib[0][2])
-
-#         component_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-# PREFIX owl: <http://www.w3.org/2002/07/owl#>
-# PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-# PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-# PREFIX ns: <http://smartM3Lab/Ontology.owl#>
-# SELECT ?sibid
-#     WHERE { """ + vmsib[0][2] + """ rdf:type ns:virtualMultiSib . """ + vmsib[0][2] + """ ns:composedBy ?sibid}"""
-    
-#         component_results = ancillary_sib.execute_sparql_query(component_query)
-#         print component_results
-
-
+    # for all vmsib in vmsibs, delete it!
+    for vmsib in vmsibs:
+        
+        # get all the triples related to that virtual multi sib
+        print "VMSIB: " + str(vmsib[0][2])
+        ancillary_sib.remove(Triple(URI(vmsib[0][2]), None, None))
 
     ##############################################################
     #
