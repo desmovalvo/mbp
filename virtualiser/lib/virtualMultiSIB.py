@@ -43,7 +43,7 @@ ns = "http://smartM3Lab/Ontology.owl#"
 #
 ##############################################################
 
-def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
+def handler(clientsock, addr, port, sibs_info):
     
     # storing received parameters in thread-local variables
     kp_port = port
@@ -297,7 +297,7 @@ def handler(clientsock, addr, port, sibs_info, ancillary_ip, ancillary_port):
 #
 ##########################################################################
 
-def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, sib_list, ancillary_ip, ancillary_port):
+def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, sib_list):
 
     # debug print
     print vmsib_print(True) + ' started a new virtual multi SIB with ip ' + str(virtualiser_ip) + ", kpPort " + str(kp_port) + " and id " + str(virtual_multi_sib_id)
@@ -306,10 +306,6 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
     host = virtualiser_ip
     kp_addr = (host, kp_port)
     sib["virtual_multi_sib_id"] = virtual_multi_sib_id
-
-    # TODO: this parameters may be unnecessary
-    ancillary_ip = ancillary_ip
-    ancillary_port = ancillary_port
 
     # creating and activating the socket for the KPs
     kp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -349,7 +345,7 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
                 clientsock, addr = sock.accept()
                 print vmsib_print(True) + ' incoming connection from ...' + str(addr)
                 logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr, kp_port, sibs_info, ancillary_ip, ancillary_port))
+                thread.start_new_thread(handler, (clientsock, addr, kp_port, sibs_info))
 
             # incoming data
             else:

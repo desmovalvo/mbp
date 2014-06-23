@@ -24,7 +24,7 @@ PREFIX ns: <""" + ns + ">"
 
 #functions
 
-def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port, manager_ip, manager_port):
+def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_id, manager_ip, manager_port):
     # debug print
     print reqhandler_print(True) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -69,7 +69,7 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
     return virtual_sib_info
 
 
-def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip, ancillary_port):
+def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id):
 
     # killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
     threads[t_id[virtual_sib_id]] = False
@@ -89,7 +89,7 @@ def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip,
 #
 ############################################################
     
-def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id, ancillary_ip, ancillary_port):
+def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id):
 
     # debug print
     print reqhandler_print(True) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
@@ -116,7 +116,7 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
 
     # start a virtual multi sib    
     threads[thread_id] = True
-    p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, virtual_multi_sib_id, threads[thread_id], sib_list, ancillary_ip, ancillary_port))
+    p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, virtual_multi_sib_id, threads[thread_id], sib_list))
     p.start()
 
     # return the virtual multi sib info

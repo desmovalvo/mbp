@@ -64,7 +64,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                 # decode 
                 
                 if data["command"] == "DeleteRemoteSIB":
-                    confirm = globals()[cmd.command](cmd.virtual_sib_id, threads, t_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port)
+                    confirm = globals()[cmd.command](cmd.virtual_sib_id, threads, t_id, virtualiser_id)
 
                     if confirm["return"] == "fail":
                         print virtserver_print(False) + 'Deletion failed!' + confirm["cause"]
@@ -87,7 +87,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
 
                     thread_id = str(uuid.uuid4())
 
-                    virtual_sib_info = globals()[cmd.command](cmd.owner, cmd.sib_id, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.ancillary_ip, self.server.ancillary_port, self.server.manager_ip, self.server.manager_port)
+                    virtual_sib_info = globals()[cmd.command](cmd.owner, cmd.sib_id, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.manager_ip, self.server.manager_port)
 
                     
                     if virtual_sib_info["return"] == "fail":
@@ -140,10 +140,7 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                                                 self.server.virtualiser_ip, 
                                                                 self.server.virtualiser_id, 
                                                                 threads, 
-                                                                thread_id, 
-                                                                self.server.ancillary_ip, 
-                                                                self.server.ancillary_port)
-
+                                                                thread_id)
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_info':virtual_multi_sib_info}))
 
@@ -173,8 +170,6 @@ if __name__=='__main__':
         print virtserver_print(False) + """You must specify:
 * virtualiser ip
 * virtualiser port
-* ancillary ip
-* ancillary port
 * manager ip
 * manager port"""
         sys.exit()
@@ -182,10 +177,8 @@ if __name__=='__main__':
         virtualiser_id = str(uuid.uuid4())
         virtualiser_ip = sys.argv[1]
         virtualiser_port = int(sys.argv[2])
-        ancillary_ip = sys.argv[3]
-        ancillary_port = int(sys.argv[4])
-        manager_ip = sys.argv[5]
-        manager_port = int(sys.argv[6])
+        manager_ip = sys.argv[3]
+        manager_port = int(sys.argv[4])
 
     # Create a logger object
     logger = logging.getLogger("virtualiser_server")
@@ -203,8 +196,6 @@ if __name__=='__main__':
             server.virtualiser_id = virtualiser_id
             server.virtualiser_ip =  virtualiser_ip
             server.virtualiser_port = virtualiser_port 
-            server.ancillary_ip = ancillary_ip
-            server.ancillary_port = ancillary_port
             server.manager_ip = manager_ip
             server.manager_port = manager_port
             server.logger = logger
