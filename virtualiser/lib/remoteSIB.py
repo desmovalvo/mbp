@@ -4,6 +4,7 @@
 from xml.etree import ElementTree as ET
 from remoteSIB import *
 from Subreq import *
+import traceback
 from termcolor import *
 import socket, select
 import threading
@@ -554,7 +555,10 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, anci
         # print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' waiting for connections...'
         
         # select the read_sockets
-        read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
+        try:
+            read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
+        except:
+            break
         
         # look for a connection on both the ports
         for sock in read_sockets:

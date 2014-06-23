@@ -65,6 +65,7 @@ def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None,
     
     # Analyze the reply
     confirm = json.loads(confirm_msg)
+    print confirm
     if confirm["return"] == "fail":
         print colored("connection_helpers> ", "red", attrs=["bold"]) + 'Registration failed!' + confirm["cause"]
         manager.close()

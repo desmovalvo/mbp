@@ -7,6 +7,7 @@ import SocketServer
 import logging
 import json
 import time
+from threading import *
 import sys
 
 # logging configuration
@@ -26,6 +27,7 @@ COMMANDS = {
     "DiscoveryWhere" : ["sib_profile"],
     "DeleteRemoteSIB" : ["virtual_sib_id"],
     "DeleteSIB": ["sib_id"],
+    "DeleteVirtualiser" : ["id"],
     "SetSIBStatus": ["sib_id", "status"],
     "AddSIBtoVMSIB": ["vmsib_id", "sib_list"],
     "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"]
@@ -33,23 +35,23 @@ COMMANDS = {
 
 # classes
 class ManagerServer(SocketServer.ThreadingTCPServer):
-    print colored("SIBmanager> ", "blue", attrs=["bold"]) + "sib manager started!"
+    print colored("manager_server> ", "blue", attrs=["bold"]) + "sib manager started!"
     allow_reuse_address = True
 
 class ManagerServerHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         try:
             # Output the received message
-            print colored("SIBmanager> ", "blue", attrs=["bold"]) + "incoming connection"
+            # print colored("manager_server> ", "blue", attrs=["bold"]) + "incoming connection"
             self.server.logger.info(" Incoming connection")
             data = json.loads(self.request.recv(1024).strip())            
-            print colored("SIBmanager> ", "blue", attrs=["bold"]) + "received the following message:"
+            print colored("manager_server> ", "blue", attrs=["bold"]) + "received the following message:"
             print data
 
             # Check if the command is valid
             cmd = Command(data)
             if cmd.valid:
-                print colored("SIBmanager> ", "blue", attrs=["bold"]) + "calling the proper method"
+                # print colored("manager_server> ", "blue", attrs=["bold"]) + "calling the proper method"
 
                 # RegisterPublicSIB request
                 if cmd.command == "RegisterPublicSIB":
@@ -69,6 +71,10 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # NewRemoteSIB request
                 if cmd.command == "NewRemoteSIB":
+
+                    # Acquire the lock
+                    self.server.lock.acquire()
+
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.owner, cmd.sib_id)
                     
                     # send a reply
@@ -82,6 +88,9 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                             # Send DeleteRemoteSIB request to the virtualiser to remove the virtual sib just created
                             confirm = globals()["DeleteRemoteSIB"](confirm["virtual_sib_info"]["virtual_sib_id"])
 
+                    # release the lock
+                    self.server.lock.release()
+
                 # NewVirtualiser request
                 if cmd.command == "NewVirtualiser":
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.id, cmd.ip, cmd.port)
@@ -92,7 +101,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 # DeleteRemoteSIB request
                 elif data["command"] == "DeleteRemoteSIB":
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.virtual_sib_id)
-                                
+                    print "CONFIRM " + str(confirm)
                     # send a reply
                     self.request.sendall(json.dumps(confirm))
 
@@ -102,6 +111,21 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                                 
                     # send a reply
                     self.request.sendall(json.dumps(confirm))      
+
+                # DeleteVirtualiser request
+                elif data["command"] == "DeleteVirtualiser":
+
+                    # acquire the lock
+                    self.server.lock.acquire()
+                    
+                    # calling DeleteVirtualiser
+                    confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.id)
+                                
+                    # send a reply
+                    self.request.sendall(json.dumps(confirm))     
+                    
+                    # release the lock
+                    self.server.lock.release()
 
                 # DiscoveryAll request
                 elif data["command"] == "DiscoveryAll":
@@ -160,14 +184,14 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
             else:
                 # debug print
-                print colored("SIBmanager> ", "red", attrs=["bold"]) + cmd.invalid_cause
+                print colored("manager_server> ", "red", attrs=["bold"]) + cmd.invalid_cause
                 self.server.logger.info(" " + cmd.invalid_cause)
                 
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':cmd.invalid_cause}))                                                
                 
         except ZeroDivisionError: #Exception, e:
-            print colored("SIBmanager> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
+            print colored("manager_server> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
             self.server.logger.info(" Exception while receiving message: " + str(e))
             self.request.sendall(json.dumps({'return':'fail', 'cause':str(e)}))
 
@@ -200,6 +224,7 @@ if __name__=='__main__':
         server = ManagerServer((manager_ip, manager_port), ManagerServerHandler)
         server.logger = logger
         server.logger.info(" Starting server on " + manager_ip + ", Port " + str(manager_port))
+        server.lock = Lock()
         
         # Parameters needed to connect to manager and ancillary sib
         server.manager_ip = manager_ip
@@ -211,4 +236,4 @@ if __name__=='__main__':
         server.serve_forever()
         
     except KeyboardInterrupt:
-        print colored("SIBmanager> ", "blue", attrs=["bold"]) + "Goodbye!"
+        print colored("manager_server> ", "blue", attrs=["bold"]) + "Goodbye!"

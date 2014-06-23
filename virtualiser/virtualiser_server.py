@@ -213,11 +213,21 @@ if __name__=='__main__':
             print virtserver_print(True) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
             server.serve_forever()
         
+        # CTRL-C pressed
         except KeyboardInterrupt:
-            # cleaning the ancillary SIB
-            ancillary_sib.remove(triples)
+            
+            # debug print
+            print virtserver_print(True) + "sending " + colored("DeleteVirtualiser", "cyan", attrs=["bold"]) + " request"
+
+            # build the NewVirtualiser request
+            msg = {"command":"DeleteVirtualiser", "id":virtualiser_id}
+    
+            # send the request to the manager
+            confirm = manager_request(manager_ip, manager_port, msg)
+
+            # debug print
             print virtserver_print(True) + "Goodbye!"
     
     else:
-        print colored("virtualiser_server> ", "red", attrs=["bold"]) + "unable to start the virtualiser. Cause: " + str(confirm["cause"])
+        print virtserver_print(False) + "unable to start the virtualiser. Cause: " + str(confirm["cause"])
         sys.exit(0)
