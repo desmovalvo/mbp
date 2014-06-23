@@ -399,7 +399,6 @@ WHERE { ?id ns:composedBy ns:""" + str(virtual_sib_id) + """ . ?id ns:hasKpIpPor
                 
             confirm = {'return':'ok'}
             return confirm
-
        
     else:
         print "not found!"
@@ -929,8 +928,84 @@ def DeleteVirtualiser(ancillary_ip, ancillary_port, virtualiser_id):
     vsibs = ancillary_sib.execute_sparql_query(vsibs_query)
 
     for vsib in vsibs:
-        ancillary_sib.remove(Triple(URI(vsib[0][2]), None, None))
-        ancillary_sib.remove(Triple(None, None, URI(vsib[0][2])))
+        print vsib
+        ancillary_sib.remove(Triple(URI(vsib[0][2].split("#")[1]), None, None))
+        ancillary_sib.remove(Triple(None, None, URI(vsib[0][2].split("#")[1])))
+
+        # Notify the deletion of the vsib to the vmsibs that use them
+        # just like DeleteRemoteSIB does
+
+        # get the list of the virtual multi sib in which that virtual sib appears
+        query = PREFIXES + """SELECT ?id ?ipport 
+WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:hasKpIpPort ?ipport }"""
+        print query
+        result = ancillary_sib.execute_sparql_query(query)
+        if len(result) > 0:
+
+            # build RemoveSIBfromVMSIB message
+            msg = json.dumps({"command":"RemoveSIBfromVMSIB", "sib_list":[str(vsib[0][2].split("#")[1])]})
+
+            # send the RemoveSIBfromVMSIB request to all the vmsibs
+
+            for multisib in result:
+
+                # get vmsib parameters
+                vmsib_id = multisib[0][2].split("#")[1]
+                vmsib_ip = multisib[1][2].split("#")[1].split("-")[0]
+                vmsib_port = int(multisib[1][2].split("#")[1].split("-")[1])
+                
+                # connect to the vmsib
+                vmsib = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+                # connect to the vmsib
+                try:
+                    vmsib.connect((vmsib_ip, vmsib_port))                  
+                except:
+                    print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to connect to the vmsib'
+                    confirm = {'return':'fail', 'cause':' Unable to connect to the vmsib.'}
+                    return confirm
+            
+                # send the request to the vmsib
+                try:
+                    # build the message
+                    vmsib.send(msg)
+                except:
+                    print colored("requests_handler> ", "red", attrs=['bold']) + 'Unable to send the request to the vmsib'
+                    confirm = {'return':'fail', 'cause':' Unable to send the request to the vmsib.'}
+                    return confirm
+        
+                # wait for a reply
+                try:
+                    while 1:
+                        confirm_msg = vmsib.recv(4096)
+                        confirm_msg = json.loads(confirm_msg)
+
+                        if confirm_msg:
+                            print colored("requests_handler> ", "blue", attrs=["bold"]) + 'Received the following message:'
+                            vmsib.close()
+                            break                    
+
+                except:
+                    print colored("requests_handler> ", "red", attrs=['bold']) + 'Reply not received from the vmsib'
+                    confirm = {'return':'fail', 'cause':' Reply not received from the vmsib'}
+                    return confirm                    
+
+                # eventually update the status
+                if confirm_msg["return"] == "fail":
+                    print colored("requests_handler> ", "red", attrs=['bold']) + 'Negative reply from vmsib'
+                    confirm = {'return':'fail', 'cause':' Negative reply from vmsib'}
+                    return confirm                    
+                else:
+                    ancillary_sib.remove(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), URI(ns + vsib[0][2].split("#")[1])))
+                    r = ancillary_sib.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), None))
+                    if len(r) == 0:
+                        ancillary_sib.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
+                        ancillary_sib.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+
+
+
+
+        
 
     # # get the list of the virtual multi sibs started on that virtualiser
     # vsibs_query = PREFIXES + """SELECT ?vsib_id
