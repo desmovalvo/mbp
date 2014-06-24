@@ -40,7 +40,10 @@ if __name__ == "__main__":
 
         # performing requested action
         if sys.argv[4] == "publish":
-            cnf = manager_request(manager_ip, manager_port, "publish", owner)
+
+            msg = {"command":"NewRemoteSIB", "sib_id":"none", "owner":owner}
+            cnf = manager_request2(manager_ip, manager_port, msg)
+
             if cnf:
                 
                 # setting virtual sib parameters
@@ -57,7 +60,9 @@ if __name__ == "__main__":
 
         elif sys.argv[4] == "register":
 
-            cnf = manager_request(manager_ip, manager_port, "register", owner, realsib_ip, realsib_port)
+            msg = {"command":"RegisterPublicSIB", "owner":owner, "ip":realsib_ip, "port":str(realsib_port)}
+            cnf = manager_request2(manager_ip, manager_port, msg)
+
             if cnf:
 
                 # reading confirm 
@@ -68,7 +73,9 @@ if __name__ == "__main__":
 
             # Sending DeleteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteSIB") + " request:",
-            cnf = manager_request(manager_ip, manager_port, "deletesib", None, None, None, sib_id)
+            msg = {"command":"DeleteSIB", "sib_id":sib_id}
+            cnf = manager_request2(manager_ip, manager_port, msg)
+
 
             sys.exit()
                 
@@ -84,13 +91,15 @@ if __name__ == "__main__":
 
             # Sending DeleteRemoteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteRemoteSIB") + " request:",
-            cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, virtual_sib_id)
+            msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":virtual_sib_id}
+            cnf = manager_request2(manager_ip, manager_port, msg)
 
         elif sys.argv[4] == "register":
 
             # Sending DeleteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteSIB") + " request:",
-            cnf = manager_request(manager_ip, manager_port, "deletesib", None, None, None, sib_id)
+            msg = {"command":"DeleteSIB", "sib_id":sib_id}
+            cnf = manager_request2(manager_ip, manager_port, msg)
 
         
         # Exiting
