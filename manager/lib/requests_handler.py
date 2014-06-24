@@ -158,7 +158,7 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner, sib_id):
 
                 # add the new triples
                 t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), Literal(str(virtualiser_ip) + "-" + str(virtual_sib_pub_port)))]
-                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "remoteSib")))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "virtualSib")))
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), Literal(str(virtualiser_ip) + "-" + str(virtual_sib_kp_port))))
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), Literal(str(owner))))
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), Literal("offline")))
@@ -524,7 +524,7 @@ def DiscoveryAll(ancillary_ip, ancillary_port):
     print " query to the ancillary sib to get all the existing virtual sib "
     query = PREFIXES + """
         SELECT ?s ?o
-        WHERE {?s ns:hasKpIpPort ?o . ?s ns:hasStatus ns:online }
+        WHERE {?s ns:hasKpIpPort ?o . ?s ns:hasStatus "online" }
         """
     a = SibLib(ancillary_ip, ancillary_port)
     result = a.execute_sparql_query(query)
@@ -587,9 +587,10 @@ def SetSIBStatus(ancillary_ip, ancillary_port, sib_id, new_status):
 
     # Setting the status
     try:
-        if (old_status.lower() != new_status.lower()) and (new_status.lower() in ["online", "offline"]):
-            a.update(Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), URI(ns + new_status)),
-                     Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), URI(ns + old_status)))
+        if (str(old_status).lower() != str(new_status).lower()) and (str(new_status).lower() in ["online", "offline"]):
+            new_triple = Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), Literal(new_status))
+            old_triple = Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), Literal(old_status))
+            a.update(new_triple, old_triple)
         else:
             # Nothing to do ...
             confirm = {'return':'ok'}
@@ -675,7 +676,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <http://smartM3Lab/Ontology.owl#>
 SELECT ?s
-WHERE {{ ?s rdf:type ns:remoteSib } UNION { ?s rdf:type ns:virtualMultiSib }}""")
+WHERE {{ ?s rdf:type ns:virtualSib } UNION { ?s rdf:type ns:publicSib } UNION { ?s rdf:type ns:virtualMultiSib }}""")
 
         # extract only the SIBs
         existing_sibs = []
@@ -785,7 +786,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <http://smartM3Lab/Ontology.owl#>
 SELECT ?s
-WHERE {{ ?s rdf:type ns:remoteSib } UNION { ?s rdf:type ns:virtualMultiSib }}""")
+WHERE {{ ?s rdf:type ns:virtualSib } UNION { ?s rdf:type ns:publicSib } UNION { ?s rdf:type ns:virtualMultiSib }}""")
         except:
             print "connection failed to the ancillary sib"
 

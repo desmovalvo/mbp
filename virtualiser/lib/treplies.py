@@ -919,7 +919,7 @@ def handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, 
     for s in sibs_info:
 
         # get connection parameters from the sibs_info dict
-        ip = str(sibs_info[s]["ip"].split("#")[1])
+        ip = str(sibs_info[s]["ip"])
         kp_port = sibs_info[s]["kp_port"]
 
         # socket to the sib
