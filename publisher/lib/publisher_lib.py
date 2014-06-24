@@ -1,22 +1,23 @@
+#!/usr/bin/python
+
 # requirements
 import sys
+import uuid
+import time
+import thread
+import random
+import datetime
+import threading
+import traceback
+from termcolor import *
 from xml_helpers import *
 from lib.SSAPLib import *
-from xml.etree import ElementTree as ET
-import socket, select, string, sys
-from termcolor import colored
-import random
-import uuid
-import threading
-import thread
-from termcolor import *
 from smart_m3.m3_kp import *
-from xml.sax import make_parser
-import time
-import datetime
 from message_helpers import *
-import traceback
+from termcolor import colored
 from connection_helpers import *
+import socket, select, string, sys
+
 
 def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port, check):
 

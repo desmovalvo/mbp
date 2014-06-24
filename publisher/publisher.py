@@ -9,8 +9,8 @@ import random
 import datetime
 from termcolor import *
 from smart_m3.m3_kp import *
-from lib.publisher3 import *
 from lib.SIBLib import SibLib
+from lib.publisher_lib import *
 from lib.output_helpers import *
 import socket, select, string, sys
 from lib.connection_helpers import *
