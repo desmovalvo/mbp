@@ -896,8 +896,8 @@ def NewVirtualiser(ancillary_ip, ancillary_port, virtualiser_id, virtualiser_ip,
     triples = []
     triples.append(Triple(URI(ns + virtualiser_id), URI(rdf + "type"), URI(ns + "virtualiser")))
     triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(0))))
-    triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasIP"), URI(ns + virtualiser_ip)))
-    triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasPort"), URI(ns + str(virtualiser_port))))
+    triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasIP"), Literal(virtualiser_ip)))
+    triples.append(Triple(URI(ns + virtualiser_id), URI(ns + "hasPort"), Literal(str(virtualiser_port))))
 
     # insertion
     try:

@@ -76,10 +76,10 @@ SELECT ?s ?ip ?port ?load
     # create html code
     v = "<h2>Virtualisers</h2><ul>"
     for el in res:
-        v = v + virtualiser_template%(str(el[0][2].replace(ns, "")),
-                                      str(el[1][2].replace(ns, "")), 
-                                      str(el[2][2].replace(ns, "")), 
-                                      str(el[3][2].replace(ns, "")))
+        v = v + virtualiser_template%(str(el[0][2]),
+                                      str(el[1][2]),
+                                      str(el[2][2]),
+                                      str(el[3][2]))
 
     v = v + """</ul>"""
     
