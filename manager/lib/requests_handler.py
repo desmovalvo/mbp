@@ -155,17 +155,20 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner, sib_id):
                 # remove old triples, if any
                 a.remove([Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIp"), None), 
                           Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpPort"), None), 
-                          Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), None),
+                          Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIp"), None),
+                          Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubPort"), None),
                           Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), None)])
 
                 # add the new triples
-                t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), Literal(str(virtualiser_ip) + "-" + str(virtual_sib_pub_port)))]
-                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "virtualSib")))
+                t = []
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIp"), Literal(str(virtualiser_ip))))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubPort"), Literal(str(virtual_sib_pub_port))))
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIp"), Literal(str(virtualiser_ip))))
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpPort"), Literal(str(virtual_sib_kp_port))))
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), Literal(str(owner))))
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), Literal("offline")))
                 t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_sib_id))))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "virtualSib")))
                 a.insert(t)
                 print 'INFORMAZIONI INSERITE'
                 #############################################
