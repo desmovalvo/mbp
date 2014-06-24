@@ -10,9 +10,9 @@ from smart_m3.m3_kp import *
 
 ns = "http://smartM3Lab/Ontology.owl#"
 
-ancillary_ip = '10.143.250.250'
+ancillary_ip = '192.168.1.100'
 ancillary_port = '10088'
-manager_ip = '10.143.250.250'
+manager_ip = '192.168.1.100'
 manager_port = 17714
 
 # class AncillaryHandler:
