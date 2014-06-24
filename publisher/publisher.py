@@ -42,7 +42,7 @@ if __name__ == "__main__":
         if sys.argv[4] == "publish":
 
             msg = {"command":"NewRemoteSIB", "sib_id":"none", "owner":owner}
-            cnf = manager_request2(manager_ip, manager_port, msg)
+            cnf = manager_request(manager_ip, manager_port, msg)
 
             if cnf:
                 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         elif sys.argv[4] == "register":
 
             msg = {"command":"RegisterPublicSIB", "owner":owner, "ip":realsib_ip, "port":str(realsib_port)}
-            cnf = manager_request2(manager_ip, manager_port, msg)
+            cnf = manager_request(manager_ip, manager_port, msg)
 
             if cnf:
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
             # Sending DeleteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteSIB") + " request:",
             msg = {"command":"DeleteSIB", "sib_id":sib_id}
-            cnf = manager_request2(manager_ip, manager_port, msg)
+            cnf = manager_request(manager_ip, manager_port, msg)
 
 
             sys.exit()
@@ -92,14 +92,14 @@ if __name__ == "__main__":
             # Sending DeleteRemoteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteRemoteSIB") + " request:",
             msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":virtual_sib_id}
-            cnf = manager_request2(manager_ip, manager_port, msg)
+            cnf = manager_request(manager_ip, manager_port, msg)
 
         elif sys.argv[4] == "register":
 
             # Sending DeleteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteSIB") + " request:",
             msg = {"command":"DeleteSIB", "sib_id":sib_id}
-            cnf = manager_request2(manager_ip, manager_port, msg)
+            cnf = manager_request(manager_ip, manager_port, msg)
 
         
         # Exiting
