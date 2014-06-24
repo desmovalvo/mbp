@@ -70,7 +70,8 @@ class Application(Tkinter.Tk):
 
         if str(c) == "__main__.SibSearch":
             frame.profile = profile
-        
+            frame.refresh()
+            
     # Destroyer!
     def destroy(self):
         print "Bye!"
@@ -1359,7 +1360,7 @@ class SibSearch(Tkinter.Frame):
 
         """This method is used to fetch the list of registered SIBs"""
 
-        #print self.profile
+        print self.profile
             
         # manager connection
         manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1368,21 +1369,22 @@ class SibSearch(Tkinter.Frame):
             manager_socket.connect((self.manager_ip, self.manager_port))
             print "OK!"
 
-            # discoveryAll request
-            print "Sending DiscoveryAll request to the manager:",
-            msg = {"command":"DiscoveryAll"}
+            # # discoveryAll request
+            # print "Sending DiscoveryAll request to the manager:",
+            # msg = {"command":"DiscoveryAll"}
 
             
-            # if self.profile != None:
-
-            #     # discoveryAll request
-            #     print "Sending DiscoveryAll request to the manager:",
-            #     msg = {"command":"DiscoveryAll"}
+            if self.profile == None:
+                print "discovery all........"
+                # discoveryAll request
+                print "Sending DiscoveryAll request to the manager:",
+                msg = {"command":"DiscoveryAll"}
             
-            # else:
-            #     # discoveryWhere request
-            #     print "Sending DiscoveryWhere request to the manager:",
-            #     msg = {"command":"DiscoveryWhere", "sib_profile":"hasOwner:" + str(self.profile)}
+            else:
+                print "discovery where........"
+                # discoveryWhere request
+                print "Sending DiscoveryWhere request to the manager:",
+                msg = {"command":"DiscoveryWhere", "sib_profile":"hasOwner:" + str(self.profile)}
 
             request = json.dumps(msg)
             manager_socket.send(request)
@@ -1532,7 +1534,7 @@ class SibSearch(Tkinter.Frame):
 
         self.s = Style()
         self.s.theme_use('clam')
-        #self.profile = profile
+        self.profile = None
 
         # Frame constructor
         Tkinter.Frame.__init__(self, parent) 
@@ -1599,6 +1601,8 @@ class SibSearch(Tkinter.Frame):
 
         self.notification_label = Label(self)
         self.notification_label.pack(side = BOTTOM)
+
+        print 'hello'
         
         # call the refresh method to fill the listbox
         self.refresh()
@@ -1611,3 +1615,4 @@ if __name__ == "__main__":
     app = Application()
     app.show_frame(StartPage)
     app.mainloop()
+    

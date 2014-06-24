@@ -15,24 +15,6 @@ ancillary_port = '10088'
 manager_ip = '192.168.1.100'
 manager_port = 17714
 
-# class AncillaryHandler:
-#      def __init__(self, a):
-#          self.a = a
-#          print "handle init"
-#      def handle(self, added, removed):
-#          for i in added:
-#              self.information = str(i[2])
-#              print "handle"
-#              print self.information
-#              vm_sib_ip = self.information.split("-")[0]
-#              vm_sib_port = self.information.split("-")[1]
-#              print vm_sib_ip
-#              print vm_sib_port
-#              # close subscription
-#              self.a.CloseSubscribeTransaction(sub)
-#              print "Subscription closed!"
-             
-                 
 
 #main function
 try:
