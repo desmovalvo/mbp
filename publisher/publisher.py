@@ -6,6 +6,7 @@ import json
 import time
 import uuid
 import random
+import getopt
 import datetime
 from termcolor import *
 from smart_m3.m3_kp import *
@@ -15,31 +16,52 @@ from lib.output_helpers import *
 import socket, select, string, sys
 from lib.connection_helpers import *
 
-
 # main function
 if __name__ == "__main__":
+
+    # initial setup
+    manager_ip = None
+    manager_port = None
+    realsib_ip = None
+    realsib_port = None
+    owner = None
+    action = None
+    
+    # read the parameters
+    try: 
+        opts, args = getopt.getopt(sys.argv[1:], "m:o:a:s:", ["manager=", "owner=", "action=", "sib="])
+        for opt, arg in opts:
+            if opt in ("-m", "--manager"):
+                manager_ip = arg.split(":")[0]
+                manager_port = int(arg.split(":")[1])
+            elif opt in ("-s", "--sib"):
+                realsib_ip = arg.split(":")[0]
+                realsib_port = int(arg.split(":")[1])
+            elif opt in ("-o", "--owner"):
+                owner = arg
+            elif opt in ("-a", "--action"):
+                action = arg
+                if action not in ["publish", "register"]:
+                    print publisher_print(False) + "the only valid actions are 'publish' and 'register'"
+                    sys.exit()
+            else:
+                print publisher_print(False) + "unrecognized option " + str(opt)
+        
+        if not(manager_ip) and not(manager_port) and not(realsib_ip) and not(realsib_port) and not(owner) and not(action):
+            print publisher_print(False) + 'Usage: python publisher.py -m manager_ip:port -o owner -s realsib_ip:port -a action'
+            sys.exit()
+        
+    except getopt.GetoptError:
+        print publisher_print(False) + 'Usage: python publisher.py -m manager_ip:port -o owner -s realsib_ip:port -a action'
+
+
+    # now we can begin!
     try:
         check = []
         check.append(False)
-        
-        if(len(sys.argv) < 5) :
-            print publisher_print(False) + 'Usage : python publisher.py owner manager_ip:port realsib_ip:port action'
-            sys.exit()
-        
-        # manager sib informations
-        manager_ip = sys.argv[2].split(":")[0]
-        manager_port = int(sys.argv[2].split(":")[1])     
-            
-        # real sib information
-        owner = sys.argv[1]
-        realsib_ip = sys.argv[3].split(":")[0]
-        realsib_port = sys.argv[3].split(":")[1]
-        
-        # action to perform
-        action = sys.argv[4]
 
         # performing requested action
-        if sys.argv[4] == "publish":
+        if action == "publish":
 
             msg = {"command":"NewRemoteSIB", "sib_id":"none", "owner":owner}
             cnf = manager_request(manager_ip, manager_port, msg)
@@ -58,7 +80,7 @@ if __name__ == "__main__":
             else:
                 sys.exit()
 
-        elif sys.argv[4] == "register":
+        elif action == "register":
 
             msg = {"command":"RegisterPublicSIB", "owner":owner, "ip":realsib_ip, "port":str(realsib_port)}
             cnf = manager_request(manager_ip, manager_port, msg)
@@ -87,14 +109,14 @@ if __name__ == "__main__":
     # CTRL-C pressed
     except KeyboardInterrupt: 
 
-        if sys.argv[4] == "publish":
+        if action == "publish":
 
             # Sending DeleteRemoteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteRemoteSIB") + " request:",
             msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":virtual_sib_id}
             cnf = manager_request(manager_ip, manager_port, msg)
 
-        elif sys.argv[4] == "register":
+        elif action == "register":
 
             # Sending DeleteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteSIB") + " request:",
