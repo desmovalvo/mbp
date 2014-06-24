@@ -166,19 +166,15 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
 
 if __name__=='__main__':
 
-    if len(sys.argv) < 5:    
-        print virtserver_print(False) + """You must specify:
-* virtualiser ip
-* virtualiser port
-* manager ip
-* manager port"""
+    if len(sys.argv) < 3:    
+        print virtserver_print(False) + """You must specify: virtualiser ip:port and manager ip:port"""
         sys.exit()
     else:
         virtualiser_id = str(uuid.uuid4())
-        virtualiser_ip = sys.argv[1]
-        virtualiser_port = int(sys.argv[2])
-        manager_ip = sys.argv[3]
-        manager_port = int(sys.argv[4])
+        virtualiser_ip = sys.argv[1].split(":")[0]
+        virtualiser_port = int(sys.argv[1].split(":")[1])
+        manager_ip = sys.argv[2].split(":")[0]
+        manager_port = int(sys.argv[2].split(":")[1])
 
     # Create a logger object
     logger = logging.getLogger("virtualiser_server")
