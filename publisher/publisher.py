@@ -23,7 +23,7 @@ if __name__ == "__main__":
         check.append(False)
         
         if(len(sys.argv) < 5) :
-            print publisher_print(False) + 'Usage : python newpublisher.py owner manager_ip:port realsib_ip:port action'
+            print publisher_print(False) + 'Usage : python publisher.py owner manager_ip:port realsib_ip:port action'
             sys.exit()
         
         # manager sib informations
