@@ -43,7 +43,7 @@ def RegisterPublicSIB(ancillary_ip, ancillary_port, owner, sib_ip, sib_port):
         # in realta' non e' una remote sib 
         t = [Triple(URI(ns + str(sib_id)), URI(rdf + "type"), URI(ns + "publicSib"))]
         t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasKpIp"), Literal(str(sib_ip))))
-        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasKpPort"), Literal(str(sib_ip))))
+        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasKpPort"), Literal(str(sib_port))))
         t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasOwner"), Literal(owner)))
         t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), Literal("online")))
         a.insert(t)
