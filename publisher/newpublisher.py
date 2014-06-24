@@ -11,6 +11,7 @@ from termcolor import *
 from smart_m3.m3_kp import *
 from lib.publisher3 import *
 from lib.SIBLib import SibLib
+from lib.output_helpers import *
 import socket, select, string, sys
 from lib.connection_helpers import *
 
@@ -22,7 +23,7 @@ if __name__ == "__main__":
         check.append(False)
         
         if(len(sys.argv) < 5) :
-            print colored("newpublisher> ", "red", attrs=["bold"]) + 'Usage : python newpublisher.py owner manager_ip:port realsib_ip:port action'
+            print publisher_print(False) + 'Usage : python newpublisher.py owner manager_ip:port realsib_ip:port action'
             sys.exit()
         
         # manager sib informations
@@ -55,22 +56,44 @@ if __name__ == "__main__":
                 sys.exit()
 
         elif sys.argv[4] == "register":
+
             cnf = manager_request(manager_ip, manager_port, "register", owner, realsib_ip, realsib_port)
+            if cnf:
+
+                # reading confirm 
+                sib_id = cnf["sib_id"]
+
+            print publisher_print(True), 
+            raw_input("Press Enter to undo...")
+
+            # Sending DeleteSIB request
+            print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteSIB") + " request:",
+            cnf = manager_request(manager_ip, manager_port, "deletesib", None, None, None, sib_id)
+
             sys.exit()
                 
         else:
-            print colored("newpublisher> ", "red", attrs=["bold"]) + '"' + action + '" not valid: "action" parameter must be "register" or "publish"!'
+            print publisher_print(False) + '"' + action + '" not valid: "action" parameter must be "register" or "publish"!'
             sys.exit()
 
 
     # CTRL-C pressed
     except KeyboardInterrupt: 
 
-        # Sending DeleteRemoteSIB request
-        print colored("newpublisher> ", "blue", attrs=["bold"]) + "Keyboard interrupt, sending " + colored("DeleteRemoteSIB", "cyan", attrs=["bold"]) + " request"
-        cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, virtual_sib_id)
+        if sys.argv[4] == "publish":
+
+            # Sending DeleteRemoteSIB request
+            print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteRemoteSIB") + " request:",
+            cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, virtual_sib_id)
+
+        elif sys.argv[4] == "register":
+
+            # Sending DeleteSIB request
+            print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteSIB") + " request:",
+            cnf = manager_request(manager_ip, manager_port, "deletesib", None, None, None, sib_id)
+
         
         # Exiting
-        print colored("newpublisher> ", "blue", attrs=["bold"]) + "Goodbye!"
+        print publisher_print(True) + "Goodbye!"
         sys.exit()
             

@@ -29,6 +29,8 @@ def manager_request(manager_ip, manager_port, request, owner, realsib_ip = None,
         msg = {"command" : "RegisterPublicSIB", "owner" : owner, "ip" : realsib_ip, "port" : realsib_port}
     elif request == "delete":
         msg = {"command" : "DeleteRemoteSIB", "virtual_sib_id" : vsib_id }
+    elif request == "deletesib":
+        msg = {"command" : "DeleteSIB", "sib_id" : vsib_id }
     request = json.dumps(msg)
 
     # Connect to the manager
