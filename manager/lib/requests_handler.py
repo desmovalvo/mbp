@@ -41,10 +41,10 @@ def RegisterPublicSIB(ancillary_ip, ancillary_port, owner, sib_ip, sib_port):
     try:
         a = SibLib(ancillary_ip, ancillary_port)
         # in realta' non e' una remote sib 
-        t = [Triple(URI(ns + str(sib_id)), URI(rdf + "type"), URI(ns + "remoteSib"))]
-        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(sib_ip) + "-" + str(sib_port))))
-        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
-        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
+        t = [Triple(URI(ns + str(sib_id)), URI(rdf + "type"), URI(ns + "publicSib"))]
+        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasKpIpPort"), Literal(str(sib_ip) + "-" + str(sib_port))))
+        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasOwner"), Literal(owner)))
+        t.append(Triple(URI(ns + str(sib_id)), URI(ns + "hasStatus"), Literal("online")))
         a.insert(t)
 
         sib_info = {}
@@ -95,8 +95,8 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner, sib_id):
     # if there are some virtualiser
     if len(result) > 0:
         virtualiser_id = result[0][0][2].split("#")[1]
-        virtualiser_ip = result[0][1][2].split("#")[1]
-        virtualiser_port = int(result[0][2][2].split("#")[1])        
+        virtualiser_ip = result[0][1][2]
+        virtualiser_port = int(result[0][2][2])
 
         virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         virtualiser.settimeout(15)
@@ -157,11 +157,11 @@ def NewRemoteSIB(ancillary_ip, ancillary_port, owner, sib_id):
                           Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), None)])
 
                 # add the new triples
-                t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(virtual_sib_pub_port)))]
+                t = [Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasPubIpPort"), Literal(str(virtualiser_ip) + "-" + str(virtual_sib_pub_port)))]
                 t.append(Triple(URI(ns + str(virtual_sib_id)), URI(rdf + "type"), URI(ns + "remoteSib")))
-                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(virtual_sib_kp_port))))
-                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), URI(ns + str(owner))))
-                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), URI(ns + "offline")))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasKpIpPort"), Literal(str(virtualiser_ip) + "-" + str(virtual_sib_kp_port))))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), Literal(str(owner))))
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasStatus"), Literal("offline")))
                 t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasRemoteSib"), URI(ns + str(virtual_sib_id))))
                 a.insert(t)
                 print 'INFORMAZIONI INSERITE'
@@ -237,12 +237,12 @@ def DeleteSIB(ancillary_ip, ancillary_port, sib_id):
             r = a.execute_rdf_query(t2)
             if len(r) == 0:
                 t3 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), None)
-                t4 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), URI(ns + "offline"))
+                t4 = Triple(URI(vmsib[0]), URI(ns + "hasStatus"), Literal("offline"))
                 r = a.execute_rdf_query(t3)
                 a.remove(r)
                 a.insert(t4)
 
-        # remove the triples related to the remote SIB
+        # remove the triples related to the public SIB
         t = Triple(URI(ns + sib_id), None, None)
         result = a.execute_rdf_query(t)  
         #print result
@@ -273,8 +273,8 @@ def DeleteRemoteSIB(ancillary_ip, ancillary_port, virtual_sib_id):
         
         print "VIRTUALISER TROVATO"
 
-        virtualiser_ip = (result[0][0][2]).split("#")[1]
-        virtualiser_port = (result[0][1][2]).split("#")[1]
+        virtualiser_ip = result[0][0][2]
+        virtualiser_port = result[0][1][2]
         virtualiser_id = (result[0][2][2]).split("#")[1]
 
         # Connect to the virtualiser
@@ -338,8 +338,8 @@ WHERE { ?id ns:composedBy ns:""" + str(virtual_sib_id) + """ . ?id ns:hasKpIpPor
 
                     # get vmsib parameters
                     vmsib_id = multisib[0][2].split("#")[1]
-                    vmsib_ip = multisib[1][2].split("#")[1].split("-")[0]
-                    vmsib_port = int(multisib[1][2].split("#")[1].split("-")[1])
+                    vmsib_ip = multisib[1][2].split("-")[0]
+                    vmsib_port = int(multisib[1][2].split("-")[1])
                     
                     # connect to the vmsib
                     vmsib = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -387,7 +387,7 @@ WHERE { ?id ns:composedBy ns:""" + str(virtual_sib_id) + """ . ?id ns:hasKpIpPor
                         r = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), None))
                         if len(r) == 0:
                             a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
-                            a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+                            a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), Literal("offline")))
                 
             # Remove all the triples related to the virtual sib
             a.remove(Triple(URI(ns + virtual_sib_id), None, None))
@@ -443,8 +443,8 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
     # a virtualiser has been selected
     if len(result) > 0:
         virtualiser_id = result[0][0][2].split("#")[1]
-        virtualiser_ip = result[0][1][2].split("#")[1]
-        virtualiser_port = int(result[0][2][2].split("#")[1])                
+        virtualiser_ip = result[0][1][2]
+        virtualiser_port = int(result[0][2][2])
         virtualiser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         
         # connect to the virtualiser
@@ -495,8 +495,8 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
                 print i
                 t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "composedBy"), URI(ns + str(i))))    
             t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(rdf + "type"), URI(ns + "virtualMultiSib")))
-            t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "hasKpIpPort"), URI(ns + str(virtualiser_ip) + "-" + str(virtual_multisib_kp_port))))
-            t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "hasStatus"), URI(ns + "online")))
+            t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "hasKpIpPort"), Literal(str(virtualiser_ip) + "-" + str(virtual_multisib_kp_port))))
+            t.append(Triple(URI(ns + str(virtual_multisib_id)), URI(ns + "hasStatus"), Literal("online")))
             t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multisib_id))))
             a.insert(t)
 
@@ -534,8 +534,8 @@ def DiscoveryAll(ancillary_ip, ancillary_port):
     for i in result:
         sib_id = str(i[0][2].split('#')[1])
         virtual_sib_list[sib_id] = {} 
-        sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2].split('#')[1]).split("-")[0]
-        sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2].split('#')[1]).split("-")[1]
+        sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2]).split("-")[0]
+        sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2]).split("-")[1]
     print "query results: " + str(virtual_sib_list)
     return virtual_sib_list
 
@@ -561,8 +561,8 @@ WHERE {?s ns:hasKpIpPort ?o .
     for i in result:
         sib_id = str(i[0][2].split('#')[1])
         virtual_sib_list[sib_id] = {} 
-        sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2].split('#')[1]).split("-")[0]
-        sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2].split('#')[1]).split("-")[1]
+        sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2]).split("-")[0]
+        sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2]).split("-")[1]
     return virtual_sib_list
 
 
@@ -580,7 +580,7 @@ def SetSIBStatus(ancillary_ip, ancillary_port, sib_id, new_status):
     # Verify if the new status is different from the old one
     try:
         old_status = a.execute_rdf_query((URI(ns + str(sib_id)), URI(ns + "hasStatus"), None))
-        old_status = str(old_status[0][2]).split("#")[1]
+        old_status = old_status[0][2]
     except:
         confirm = {'return':'fail', 'cause':' query failed.'}
         return confirm
@@ -626,8 +626,8 @@ WHERE { ?vmsib_id ns:hasKpIpPort ?ipport .
          
             try:
                 # connection to the vmsib
-                vms_ip = str(vms[0][2].split("#")[1]).split("-")[0]
-                vms_port = str(vms[0][2].split("#")[1]).split("-")[1]
+                vms_ip = str(vms[0][2]).split("-")[0]
+                vms_port = str(vms[0][2]).split("-")[1]
                 vms_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 vms_socket.connect((vms_ip, int(vms_port)))
                 vms_socket.send(new_status_json_msg)
@@ -716,8 +716,8 @@ WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
         # send a message to the virtualmultisib
         try:
             # connection to the vmsib
-            vms_ip = str(vms[0][0][2].split("#")[1]).split("-")[0]
-            vms_port = str(vms[0][0][2].split("#")[1]).split("-")[1]
+            vms_ip = str(vms[0][0][2]).split("-")[0]
+            vms_port = str(vms[0][0][2]).split("-")[1]
             vms_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             print 'AddSIB: connecting to the vmsib',
             vms_socket.connect((vms_ip, int(vms_port)))
@@ -818,8 +818,8 @@ WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
         try:
             print "contatto la vmsib",
             # connection to the vmsib
-            vms_ip = str(vms[0][0][2].split("#")[1]).split("-")[0]
-            vms_port = str(vms[0][0][2].split("#")[1]).split("-")[1]
+            vms_ip = str(vms[0][0][2]).split("-")[0]
+            vms_port = str(vms[0][0][2]).split("-")[1]
             vms_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             vms_socket.connect((vms_ip, int(vms_port)))
             vms_socket.send(jmsg)
@@ -854,7 +854,7 @@ WHERE { ns:""" + vmsib_id + """ ns:hasKpIpPort ?o }""")
                 r = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), None))
                 if len(r) == 0:
                     a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
-                    a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+                    a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), Literal("offline")))
                 
             # return
             return c
@@ -969,8 +969,8 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
 
                 # get vmsib parameters
                 vmsib_id = multisib[0][2].split("#")[1]
-                vmsib_ip = multisib[1][2].split("#")[1].split("-")[0]
-                vmsib_port = int(multisib[1][2].split("#")[1].split("-")[1])
+                vmsib_ip = multisib[1][2].split("-")[0]
+                vmsib_port = int(multisib[1][2].split("-")[1])
                 
                 # connect to the vmsib
                 vmsib = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1018,7 +1018,7 @@ WHERE { ?id ns:composedBy ns:""" + str(vsib[0][2].split("#")[1]) + """ . ?id ns:
                     r = ancillary_sib.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), None))
                     if len(r) == 0:
                         ancillary_sib.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
-                        ancillary_sib.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+                        ancillary_sib.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), Literal("offline")))
 
     ##############################################################
     #
