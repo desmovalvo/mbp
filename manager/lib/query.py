@@ -9,9 +9,9 @@ PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <http://smartM3Lab/Ontology.owl#>
-SELECT ?ip
-WHERE { ns:""" + sib_id + """ ns:hasStatus ns:online .
-ns:""" + sib_id + """ ns:hasKpIpPort ?ip }"""
+SELECT ?ip ?port
+WHERE { ns:""" + sib_id + """ ns:hasStatus "online" .
+ns:""" + sib_id + """ ns:hasKpIp ?ip . ns:""" + sib_id + """ ns:hasKpPort ?port }"""
 
     results = ancillary.execute_sparql_query(query)
     return results 

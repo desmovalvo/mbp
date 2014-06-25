@@ -919,7 +919,7 @@ def handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, 
     for s in sibs_info:
 
         # get connection parameters from the sibs_info dict
-        ip = str(sibs_info[s]["ip"].split("#")[1])
+        ip = str(sibs_info[s]["ip"])
         kp_port = sibs_info[s]["kp_port"]
 
         # socket to the sib
@@ -980,7 +980,7 @@ def handle_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, nu
 
 
     for s in sibs_info:
-        ip = str(sibs_info[s]["ip"].split("#")[1])
+        ip = str(sibs_info[s]["ip"])
         kp_port = sibs_info[s]["kp_port"]
         # socket to the sib
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1035,7 +1035,7 @@ def handle_sparql_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_l
 
 
     for s in sibs_info:
-        ip = str(sibs_info[s]["ip"].split("#")[1])
+        ip = str(sibs_info[s]["ip"])
         kp_port = sibs_info[s]["kp_port"]
         # socket to the sib
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1084,7 +1084,7 @@ def handle_rdf_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list
 
 
     for s in sibs_info:
-        ip = str(sibs_info[s]["ip"].split("#")[1])
+        ip = str(sibs_info[s]["ip"])
         kp_port = sibs_info[s]["kp_port"]
         # socket to the sib
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1145,7 +1145,7 @@ def handle_rdf_subscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_
 
 
     for s in sibs_info:
-        ip = str(sibs_info[s]["ip"].split("#")[1])
+        ip = str(sibs_info[s]["ip"])
         kp_port = sibs_info[s]["kp_port"]
         # socket to the sib
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1200,7 +1200,7 @@ def handle_rdf_unsubscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, k
     clientsock.close()
 
     for s in sibs_info:
-        ip = str(sibs_info[s]["ip"].split("#")[1])
+        ip = str(sibs_info[s]["ip"])
         kp_port = sibs_info[s]["kp_port"]
         # socket to the sib
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

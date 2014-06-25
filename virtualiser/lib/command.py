@@ -6,7 +6,6 @@ import json
 COMMANDS = {
     "NewRemoteSIB" : ["owner"],
     "NewVirtualMultiSIB": ["sib_list"],
-    "Discovery" : [],
     "DeleteRemoteSIB" : ["virtual_sib_id"]
     }
 

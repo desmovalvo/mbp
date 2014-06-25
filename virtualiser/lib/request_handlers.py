@@ -24,7 +24,7 @@ PREFIX ns: <""" + ns + ">"
 
 #functions
 
-def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_id, ancillary_ip, ancillary_port, manager_ip, manager_port):
+def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_id, manager_ip, manager_port):
     # debug print
     print reqhandler_print(True) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -42,20 +42,18 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
     while True:
         kp_port = random.randint(10000, 11000)
         if s1.connect_ex(("localhost", kp_port)) != 0:
-            print "estratta la porta %s"%(str(kp_port))
             break
 
     while True:
         pub_port = random.randint(10000, 11000)
         if pub_port != kp_port:
             if s2.connect_ex(("localhost", pub_port)) != 0:
-                print "estratta la porta %s"%(str(pub_port))
                 break        
     
 
     # start the virtual sib process
     threads[thread_id] = True
-    p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], ancillary_ip, ancillary_port, manager_ip, manager_port))
+    p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], manager_ip, manager_port))
     p.start()
 
     # build the reply
@@ -71,7 +69,7 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
     return virtual_sib_info
 
 
-def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip, ancillary_port):
+def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id):
 
     # killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
     threads[t_id[virtual_sib_id]] = False
@@ -91,7 +89,7 @@ def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id, ancillary_ip,
 #
 ############################################################
     
-def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id, ancillary_ip, ancillary_port):
+def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id):
 
     # debug print
     print reqhandler_print(True) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
@@ -118,38 +116,9 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
 
     # start a virtual multi sib    
     threads[thread_id] = True
-    p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, virtual_multi_sib_id, threads[thread_id], sib_list, ancillary_ip, ancillary_port))
+    p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, virtual_multi_sib_id, threads[thread_id], sib_list))
     p.start()
 
     # return the virtual multi sib info
     return virtual_multi_sib_info
 
-
-############################################################
-#
-# Discovery
-#
-# This function handles the Discovery request and
-# it's called by the virtualiser_server once it receives
-# a Discovery request message
-#
-############################################################
-
-def Discovery(ancillary_ip, ancillary_port):
-    # debug print
-    print reqhandler_print(True) + "executing method " + colored("Discovery", "cyan", attrs=["bold"])
-    # query to the ancillary sib to get all the existing virtual sib 
-    query = """
-        SELECT ?s ?o
-        WHERE {?s ns:hasKpIpPort ?o}
-        """
-    a = SibLib(ancillary_ip, ancillary_port)
-    result = a.execute_sparql_query(query)
-    
-    virtual_sib_list = {}
-    for i in result:
-        sib_id = str(i[0][2].split('#')[1])
-        virtual_sib_list[sib_id] = {} 
-        sib_ip = virtual_sib_list[sib_id]["ip"] = str(i[1][2].split('#')[1]).split("-")[0]
-        sib_port = virtual_sib_list[sib_id]["port"] = str(i[1][2].split('#')[1]).split("-")[1]
-    return virtual_sib_list

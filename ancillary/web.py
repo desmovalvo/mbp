@@ -21,21 +21,20 @@ virtualiser_template = """
     </ul><p>
 """
 
-remote_sib_template = """
+virtualpublic_sib_template = """
     <li>%s</li><br>
     <ul>
         <li><b>Owner:</b> %s</li>
-        <li><b>Status:</b> %s</li>
-        <li><b>KP ip and port:</b> %s</li>
-        <li><b>Pub ip and port:</b> %s</li>
+        <li><b>IP:</b> %s</li>
+        <li><b>Port:</b> %s</li>
     </ul><p>
 """
 
 vmsib_template = """
     <li>%s</li><br>
     <ul>
-        <li><b>Status:</b> %s</li>
-        <li><b>KP ip and port:</b> %s</li>
+        <li><b>IP:</b> %s</li>
+        <li><b>Port:</b> %s</li>
         <li><b>Composed by:</b> %s</li>
     </ul><p>
 """
@@ -76,10 +75,10 @@ SELECT ?s ?ip ?port ?load
     # create html code
     v = "<h2>Virtualisers</h2><ul>"
     for el in res:
-        v = v + virtualiser_template%(str(el[0][2].replace(ns, "")),
-                                      str(el[1][2].replace(ns, "")), 
-                                      str(el[2][2].replace(ns, "")), 
-                                      str(el[3][2].replace(ns, "")))
+        v = v + virtualiser_template%(str(el[0][2]),
+                                      str(el[1][2]),
+                                      str(el[2][2]),
+                                      str(el[3][2]))
 
     v = v + """</ul>"""
     
@@ -87,40 +86,36 @@ SELECT ?s ?ip ?port ?load
     return v
 
 
-def get_remoteSIBs(a):
+def get_virtualpublicSIBs(a):
     # List of the available virtualisers
-    remoteSIBs_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+    virtualpublicSIBs_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <http://smartM3Lab/Ontology.owl#>
-SELECT ?s ?owner ?status ?kpipport ?pubipport
-    WHERE { ?s ns:hasOwner ?owner .
-      		?s ns:hasStatus ?status .
-          	?s ns:hasKpIpPort ?kpipport .
-          	?s ns:hasPubIpPort ?pubipport }
-"""
+SELECT ?sib ?ip ?port ?owner
+WHERE {?sib ns:hasKpIp ?ip . ?sib ns:hasKpPort ?port . ?sib ns:hasOwner ?owner . ?sib ns:hasStatus "online" }"""
 
     # execute query
-    res = a.execute_sparql_query(remoteSIBs_query)
+    res = a.execute_sparql_query(virtualpublicSIBs_query)
 
     # create html code
-    v = "<h2>Remote SIBs</h2><ul>"
+    v = "<h2>Virtual/Public SIBs</h2><ul>"
     for el in res:
-        ip = str(el[3][2].replace(ns, "")).split("-")[0]
-        port = int(str(el[3][2].replace(ns, "")).split("-")[1])
+        # print el[0]
+        # ip = str(el[3][2].replace(ns, "")).split("-")[0]
+        # port = int(str(el[3][2].replace(ns, "")).split("-")[1])
         
     #     if el[2][2].replace(ns, "") == "online":
     #         c = get_sib_content(ip, port)
     #     else:
     #         c = ""
 
-        v = v + remote_sib_template%(str(el[0][2].replace(ns, "")),
-                                     str(el[1][2].replace(ns, "")),
-                                     str(el[2][2].replace(ns, "")),
-                                     str(el[3][2].replace(ns, "")),
-                                     str(el[4][2].replace(ns, "")))
-
+        v = v + virtualpublic_sib_template%(str(el[0][2].replace(ns, "")),
+                                            str(el[1][2]),
+                                            str(el[2][2]),
+                                            str(el[3][2]))
     v = v + """</ul>"""
     
     # return value
@@ -134,12 +129,12 @@ PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <http://smartM3Lab/Ontology.owl#>
-SELECT ?vmsibid ?status ?port ?sib_id
+SELECT ?vmsibid ?ip ?port ?sib_id
     WHERE { ?vmsibid rdf:type ns:virtualMultiSib .
-            ?vmsibid ns:hasStatus ?status .
-            ?vmsibid ns:hasKpIpPort ?port  .
-            ?vmsibid ns:composedBy ?sib_id}
-"""
+            ?vmsibid ns:hasStatus "online" .
+            ?vmsibid ns:hasKpIp ?ip  .
+            ?vmsibid ns:hasKpPort ?port  .
+            ?vmsibid ns:composedBy ?sib_id}"""
 
     # execute query
     res = a.execute_sparql_query(vmSIBs_query)
@@ -148,11 +143,12 @@ SELECT ?vmsibid ?status ?port ?sib_id
     v = "<h2>Virtual Multi SIBs</h2><ul>"
     vmsib_dict = {}
     for el in res:
+        print el
         if not vmsib_dict.has_key(el[0][2]):
             vmsib_dict[el[0][2]] = {}
-            vmsib_dict[el[0][2]]["status"] = el[1][2].split("#")[1]
+            vmsib_dict[el[0][2]]["ip"] = el[1][2]
             vmsib_dict[el[0][2]]["list"] = []
-            vmsib_dict[el[0][2]]["port"] = el[2][2].split("#")[1]
+            vmsib_dict[el[0][2]]["port"] = el[2][2]
         vmsib_dict[el[0][2]]["list"].append(el[3][2])
         # v = v + "<li>" + el[0][2] + "</li>"
         # v = v + vmsib_template%(str(el[0][2].replace(ns, "")),
@@ -165,7 +161,7 @@ SELECT ?vmsibid ?status ?port ?sib_id
         for sib in vmsib_dict[vmsib]["list"]:
             l = l + "<li>" + sib.split("#")[1] + "</li>"
         l = l + "</ul>"
-        v = v + vmsib_template%(vmsib.split("#")[1], vmsib_dict[vmsib]["status"], vmsib_dict[vmsib]["port"], l)
+        v = v + vmsib_template%(vmsib.split("#")[1], vmsib_dict[vmsib]["ip"], vmsib_dict[vmsib]["port"], l)
 
     v = v + """</ul>"""
     
@@ -189,11 +185,11 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         
         # get the remote SIBs
         print "--- GET the list of the remote SIBs"
-        r = get_remoteSIBs(a)
+        r = get_virtualpublicSIBs(a)
 
-        # # get the virtual multi SIBs
-        # print "--- GET the list of the VMSIBs"
-        # vm = get_vmSIBs(a)
+        # get the virtual multi SIBs
+        print "--- GET the list of the VMSIBs"
+        vm = get_vmSIBs(a)
 
         # output the informations
         s.send_response(200)
@@ -228,7 +224,7 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         s.wfile.write("<body><header><h1>Ancillary SIB Explorer</h1></header>")
         s.wfile.write("<article>%s</article>" % str(v))
         s.wfile.write("<article>%s</article>" % str(r))
-        # s.wfile.write("<article>%s</article>" % str(vm))
+        s.wfile.write("<article>%s</article>" % str(vm))
         s.wfile.write("</body></html>")
 
 

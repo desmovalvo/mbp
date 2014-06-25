@@ -1,22 +1,23 @@
+#!/usr/bin/python
+
 # requirements
 import sys
+import uuid
+import time
+import thread
+import random
+import datetime
+import threading
+import traceback
+from termcolor import *
 from xml_helpers import *
 from lib.SSAPLib import *
-from xml.etree import ElementTree as ET
-import socket, select, string, sys
-from termcolor import colored
-import random
-import uuid
-import threading
-import thread
-from termcolor import *
 from smart_m3.m3_kp import *
-from xml.sax import make_parser
-import time
-import datetime
 from message_helpers import *
-import traceback
+from termcolor import colored
 from connection_helpers import *
+import socket, select, string, sys
+
 
 def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port, check):
 
@@ -86,12 +87,16 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                         
                         # In this case the virtualiser died, so we should look for another virtualiser
                         # We should repeat the registration process
-                        cnf = manager_request(manager_ip, manager_port, "publish", owner, None, None, vsib_id)                    
+                        
+                        msg = {"command":"NewRemoteSIB", "sib_id":vsib_id, "owner":owner}
+                        cnf = manager_request(manager_ip, manager_port, msg)
+
                         if not cnf:
                             
                             # TODO: maybe we should set the status offline, but at the moment
                             # we clear the sib from our information
-                            cnf = manager_request(manager_ip, manager_port, "delete", None, None, None, vsib_id)
+                            msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":vsib_id}
+                            cnf = manager_request(manager_ip, manager_port, msg)                    
                             sys.exit()
 
                         else:
