@@ -24,9 +24,9 @@ virtualiser_template = """
 virtualpublic_sib_template = """
     <li>%s</li><br>
     <ul>
-        <li><b>Owner:</b> %s</li>
         <li><b>IP:</b> %s</li>
         <li><b>Port:</b> %s</li>
+        <li><b>Owner:</b> %s</li>
     </ul><p>
 """
 
