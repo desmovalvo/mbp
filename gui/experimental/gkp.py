@@ -159,20 +159,29 @@ class ModifyMultiSIB(Tkinter.Frame):
             if len(res)==0:
                 owner = "VM SIB"
             else:
-                owner = str(res[0][2]).split("#")[1]
+                owner = str(res[0][2])
             self.multisib_listbox.insert(END, str(id) + " Owner: " + str(owner) )
             self.msib.append(str(id))
 
         # Query to get all the sibs and multi sib but not the multi sib with msib_id
         query = PREFIXES + """ SELECT ?id ?owner 
-        WHERE {{?id ns:hasKpIpPort ?ipport . 
-                ?id ns:hasStatus ns:online . 
-                ?id rdf:type ns:remoteSib . 
+        WHERE {{?id ns:hasKpIp ?ip . 
+                ?id ns:hasKpPort ?port .
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:publicSib . 
                 ?id ns:hasOwner ?owner .
                 }
               UNION
-               {?id ns:hasKpIpPort ?ipport . 
-                ?id ns:hasStatus ns:online . 
+               {?id ns:hasKpIp ?ip . 
+                ?id ns:hasKpPort ?port .
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:virtualSib . 
+                ?id ns:hasOwner ?owner .
+                }
+              UNION
+               {?id ns:hasKpIp ?ip .
+                ?id ns:hasKpPort ?port . 
+                ?id ns:hasStatus "online" . 
                 ?id rdf:type ns:virtualMultiSib . 
                	FILTER(?id != ns:""" + str(msib_id) + """)}}"""
        
@@ -186,7 +195,7 @@ class ModifyMultiSIB(Tkinter.Frame):
             if i[1][2] == None:
                 owner = "VM SIB"
             else:
-                owner = str(i[1][2]).split("#")[1]
+                owner = str(i[1][2])
             sibs.append(str(i[0][2]).split("#")[1])
             if id not in self.msib:
                 self.sibs_listbox.insert(END, str(id) + " Owner: " + str(owner))

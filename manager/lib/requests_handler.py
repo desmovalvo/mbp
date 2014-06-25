@@ -781,14 +781,20 @@ def DiscoveryAll(ancillary_ip, ancillary_port):
     query = PREFIXES + """ SELECT ?id ?ip ?port ?owner 
         WHERE {{?id ns:hasKpIp ?ip . 
                 ?id ns:hasKpPort ?port . 
-                ?id ns:hasStatus ns:online . 
-                ?id rdf:type ns:remoteSib . 
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:virtualSib . 
                 ?id ns:hasOwner ?owner}
                 UNION 
 		{?id ns:hasKpIp ?ip . 
                  ?id ns:hasKpPort ?port . 
-                 ?id ns:hasStatus ns:online . 
-                 ?id rdf:type ns:virtualMultiSib }}"""
+                 ?id ns:hasStatus "online" . 
+                 ?id rdf:type ns:virtualMultiSib }
+                UNION
+                {?id ns:hasKpIp ?ip . 
+                ?id ns:hasKpPort ?port . 
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:publicSib . 
+                ?id ns:hasOwner ?owner}}"""
 
     a = SibLib(ancillary_ip, ancillary_port)
     result = a.execute_sparql_query(query)
@@ -825,15 +831,24 @@ def DiscoveryWhere(ancillary_ip, ancillary_port, sib_profile):
     query = PREFIXES + """ SELECT ?id ?ip ?port ?owner 
         WHERE {{?id ns:hasKpIp ?ip . 
                 ?id ns:hasKpPort ?port .
-                ?id ns:hasStatus ns:online . 
-                ?id rdf:type ns:remoteSib . 
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:virtualSib . 
                 ?id ns:hasOwner ?owner .
-                ?id ns:""" + str(key) + """ ns:""" + str(value) +"""} 
+                ?id ns:""" + str(key) + '"' + str(value) + '"' +  """} 
                 UNION 
 		{?id ns:hasKpIp ?ip .
                  ?id ns:hasKpPort ?port . 
-                 ?id ns:hasStatus ns:online . 
-                 ?id rdf:type ns:virtualMultiSib }}"""
+                 ?id ns:hasStatus "online" . 
+                 ?id rdf:type ns:virtualMultiSib .
+                 ?id ns:""" + str(key) + '"' + str(value) + '"' +  """}
+                UNION
+                {?id ns:hasKpIp ?ip . 
+                ?id ns:hasKpPort ?port . 
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:publicSib . 
+                ?id ns:hasOwner ?owner . 
+                ?id ns:""" + str(key) + '"' + str(value) + '"' +  """}}"""
+
 
     a = SibLib(ancillary_ip, int(ancillary_port))
     result = a.execute_sparql_query(query)
@@ -978,17 +993,28 @@ WHERE {{ ?s rdf:type ns:virtualSib } UNION { ?s rdf:type ns:publicSib } UNION { 
                 print "AddSIB: a sib does not exist"
                 return confirm
             else:
-                sib_list_for_message[s] = {}
-                sib_list_for_message[s]["ip"] = a.execute_rdf_query(Triple(URI(ns + s), URI(ns + "hasKpIp"), None))[0][2]
-                sib_list_for_message[s]["port"] = a.execute_rdf_query(Triple(URI(ns + s), URI(ns + "hasKpPort"), None))[0][2]
+                ip = a.execute_rdf_query(Triple(URI(ns + s), URI(ns + "hasKpIp"), None))[0][2]
+                port = a.execute_rdf_query(Triple(URI(ns + s), URI(ns + "hasKpPort"), None))[0][2]
+                sib_list_for_message[s] = {"ip" : str(ip), "port" : str(port) }
+                print s
+                print sib_list_for_message[s]
+                 # sib_list_for_message[s]["ip"] = a.execute_rdf_query(Triple(URI(ns + s), URI(ns + "hasKpIp"), None))[0][2]
+                # sib_list_for_message[s]["port"] = a.execute_rdf_query(Triple(URI(ns + s), URI(ns + "hasKpPort"), None))[0][2]
+        print sib_list_for_message
 
         print 'AddSIB: all the sib exist'
         print 'AddSIB: ' + str(sib_list_for_message)
 
         # build the json msg for the VirtualMultiSib
-        msg = { "command" : "AddSIBtoVMSIB", "sib_list" : sib_list_for_message, "vmsib_id" : vmsib_id }
+        msg = { "command" : "AddSIBtoVMSIB", "vmsib_id" : vmsib_id, "sib_list" : sib_list_for_message }
+        # msg1 = str(msg)
+        # msg2 = json.loads(msg1)
+
+        print type(msg)
         print 'AddSIB: ' + str(msg)
         jmsg = json.dumps(msg)
+        # print
+        # print jmsg
 
         # get the virtualmultisib parameters
         vms = a.execute_sparql_query("""PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
