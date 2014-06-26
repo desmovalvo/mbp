@@ -1,0 +1,28 @@
+SIBpublisher version 0.1, 17/07/2014
+------------------------------------
+
+Requirements:
+
+* python
+* python's termcolor module
+
+
+
+Usage:
+
+$ python publisher.py --owner NAME --manager=MANAGER_IP:PORT --sib=REALSIB_IP:PORT --action=ACTION
+
+Here's a list of the mandatory parameters: 
+
+* owner: this is the owner of the real SIB. This is needed for the
+registration process that allows a SIB to become discoverable
+
+* manager: this field requires the manager's IP address and the port
+
+* sib: ip address and port of the SIB to publish/register
+
+* action: can be "publish" (to make a SIB reachable and discoverable)
+  or "register" in order to make a pure registration (useful for hosts
+  that already have a public IP address)
+
+Once the software is started, it can be stopped with CTRL-C
