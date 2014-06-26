@@ -10,6 +10,7 @@ from lib.command import *
 from termcolor import *
 import SocketServer
 import logging
+import getopt
 import random
 import json
 import time
@@ -166,16 +167,47 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
 
 if __name__=='__main__':
 
-    if len(sys.argv) < 3:    
-        print virtserver_print(False) + """You must specify: virtualiser ip:port and manager ip:port"""
-        sys.exit()
-    else:
-        virtualiser_id = str(uuid.uuid4())
-        virtualiser_ip = sys.argv[1].split(":")[0]
-        virtualiser_port = int(sys.argv[1].split(":")[1])
-        manager_ip = sys.argv[2].split(":")[0]
-        manager_port = int(sys.argv[2].split(":")[1])
+    try:
+        # initial setup
+        virtualiser_ip = None
+        virtualiser_port = None
+        manager_ip = None
+        manager_port = None
 
+        # read command line arguments
+        opts, args = getopt.getopt(sys.argv[1:], "v:m:", ["manager=", "virtualiser="])
+        for opt, arg in opts:
+
+            if opt in ("-v", "--virtualiser"):
+                virtualiser_ip = arg.split(":")[0]
+                try:
+                    virtualiser_port = int(arg.split(":")[1])
+                except:
+                    print virtserver_print(False) + "Usage: python virtualiser_server.py -m manager_ip:port -v virtualiser_ip:port"
+                    sys.exit()            
+
+            elif opt in ("-m", "--manager"):
+                manager_ip = arg.split(":")[0]
+                try:
+                    manager_port = int(arg.split(":")[1])
+                except IndexError:
+                    print virtserver_print(False) + "Usage: python virtualiser_server.py -m manager_ip:port -v virtualiser_ip:port"
+                    sys.exit()            
+                    
+            else:
+                print virtualiser_print(False) + "unrecognized option " + str(opt)
+
+        if not(manager_ip and manager_port and virtualiser_ip and virtualiser_port):
+            print virtserver_print(False) + "Usage: python virtualiser_server.py -m manager_ip:port -v virtualiser_ip:port"
+            sys.exit()            
+
+    except getopt.GetoptError:
+        print virtserver_print(False) + "Usage: python virtualiser_server.py -m manager_ip:port -v virtualiser_ip:port"
+        sys.exit()
+
+    # now we can begin
+    virtualiser_id = str(uuid.uuid4())
+    
     # Create a logger object
     logger = logging.getLogger("virtualiser_server")
 
@@ -199,6 +231,18 @@ if __name__=='__main__':
             print virtserver_print(True) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
             server.serve_forever()
         
+        # Wrong virtualiser server address specified
+        except socket.gaierror:
+
+            # debug print
+            print virtserver_print(False) + "wrong address for virtualiser server"
+
+            # build the NewVirtualiser request
+            msg = {"command":"DeleteVirtualiser", "id":virtualiser_id}
+    
+            # send the request to the manager
+            confirm = manager_request(manager_ip, manager_port, msg)            
+
         # CTRL-C pressed
         except KeyboardInterrupt:
             

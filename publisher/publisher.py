@@ -53,9 +53,20 @@ if __name__ == "__main__":
         
     except getopt.GetoptError:
         print publisher_print(False) + 'Usage: python publisher.py -m manager_ip:port -o owner -s realsib_ip:port -a action'
-
+        sys.exit()
 
     # now we can begin!
+
+    # check if the real SIB is really online
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((realsib_ip, realsib_port))
+        s.close()
+    except socket.error:
+        print  publisher_print(False) + 'connection to the real SIB failed'
+        sys.exit()
+    
+    # real SIB is online, we can proceed
     try:
         check = []
         check.append(False)
