@@ -86,39 +86,42 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                         check[0] = True
                         
                         # In this case the virtualiser died, so we should look for another virtualiser
-                        # We should repeat the registration process
                         
-                        msg = {"command":"NewRemoteSIB", "sib_id":vsib_id, "owner":owner}
-                        cnf = manager_request(manager_ip, manager_port, msg)
+                        # # Delete old information and repeat the registration process
+                        # msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":vsib_id}
+                        # cnf = manager_request(manager_ip, manager_port, msg)
 
-                        if not cnf:
+                        # We should repeat the registration process                                                
+                        virtualSIB_active = False
+                        while not virtualSIB_active:
                             
-                            # TODO: maybe we should set the status offline, but at the moment
-                            # we clear the sib from our information
-                            msg = {"command":"DeleteRemoteSIB", "virtual_sib_id":vsib_id}
-                            cnf = manager_request(manager_ip, manager_port, msg)                    
-                            sys.exit()
+                            msg = {"command":"NewRemoteSIB", "sib_id":vsib_id, "owner":owner}
+                            cnf = manager_request(manager_ip, manager_port, msg)
+                            time.sleep(5)
 
-                        else:
-                            # A new virtualsib now exists, so we must update the connection parameters
-                            vsib_host = cnf["virtual_sib_info"]["virtual_sib_ip"]
-                            vsib_port = cnf["virtual_sib_info"]["virtual_sib_pub_port"]
-                            print 'new parameters are: ' + str(vsib_host) + ':' + str(vsib_port)
-                            socket_list.remove(vs)
-                            vs.close()
-                            vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                            vs.connect((vsib_host, vsib_port))
-                            socket_list.append(vs)
+                            if cnf:
+                                virtualSIB_active = True
 
-                            # now we have to send a register request
-                            # building and sending the register request
-                            space_id = "X"
-                            transaction_id = random.randint(0, 1000)
-                            register_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(node_id,
-                                                                          space_id,
-                                                                          "REGISTER",
-                                                                          transaction_id, "")
-                            vs.send(register_msg)
+                                
+                        # A new virtualsib now exists, so we must update the connection parameters
+                        vsib_host = cnf["virtual_sib_info"]["virtual_sib_ip"]
+                        vsib_port = cnf["virtual_sib_info"]["virtual_sib_pub_port"]
+                        print 'new parameters are: ' + str(vsib_host) + ':' + str(vsib_port)
+                        socket_list.remove(vs)
+                        vs.close()
+                        vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        vs.connect((vsib_host, vsib_port))
+                        socket_list.append(vs)
+
+                        # now we have to send a register request
+                        # building and sending the register request
+                        space_id = "X"
+                        transaction_id = random.randint(0, 1000)
+                        register_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(node_id,
+                                                                      space_id,
+                                                                      "REGISTER",
+                                                                      transaction_id, "")
+                        vs.send(register_msg)
 
                     # there are messages
                     else:
