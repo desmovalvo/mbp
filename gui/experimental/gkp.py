@@ -64,11 +64,23 @@ class Application(Tkinter.Tk):
 
         if str(c) == "__main__.SibInteraction":
             print "Sib interaction"
+
+            # clear the results field
             frame.results_text.config(state = NORMAL)
             frame.results_text.delete(1.0, END)
             frame.results_text.config(state = DISABLED)
+
+            # if already joined, leave
+            if frame.joined:
+                frame.joinleave()
+
+            # reset the notification area
+            frame.notification_label["text"] = "Waiting for commands..."
+
+            # set the connection fields
             frame.set_connection_fields(sib_addr, sib_port)
-        
+            
+
         if str(c) == "__main__.ModifyMultiSIB":
             frame.show_multi_sib(msib_id)
 
