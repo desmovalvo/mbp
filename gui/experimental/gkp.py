@@ -146,7 +146,7 @@ class ModifyMultiSIB(Tkinter.Frame):
         self.multisib_label["text"] = "Multi SIB: " + str(msib_id) 
 
 
-        self.kp = SibLib("192.168.1.100", 10088)
+        self.kp = SibLib("10.143.250.250", 10088)
         
         # Query to get all the components of the multi sib
         t = Triple(URI(ns + self.multi_sib_id), URI(ns + "composedBy"), None)
@@ -226,7 +226,7 @@ class ModifyMultiSIB(Tkinter.Frame):
             print "contatto il manager"
             # connection to the vmsib
             manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            manager_socket.connect(("192.168.1.100", 17714))
+            manager_socket.connect(("10.143.250.250", 17714))
             manager_socket.send(msg)
 
             # wait for a reply
@@ -283,7 +283,7 @@ class ModifyMultiSIB(Tkinter.Frame):
             print "contatto il manager"
             # connection to the vmsib
             manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            manager_socket.connect(("192.168.1.100", 17714))
+            manager_socket.connect(("10.143.250.250", 17714))
             manager_socket.send(msg)
 
             # wait for a reply

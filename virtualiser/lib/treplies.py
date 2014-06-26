@@ -212,7 +212,7 @@ def leave_confirm_handler(sib_sock, sibs_info, kp_list, n, logger):
                     
                     
         except socket.error:
-            print treplies_print(False) + " socket.error treplies: break! 201"
+#            print treplies_print(False) + " socket.error treplies: break! 201"
             break
 
 

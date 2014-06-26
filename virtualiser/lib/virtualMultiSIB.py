@@ -283,8 +283,8 @@ def handler(clientsock, addr, port, sibs_info):
                         pass
         
         except socket.error:
-            print vmsib_print(False) + " socket.error: break! 266vm"
-            print traceback.print_exc()
+            # print vmsib_print(False) + " socket.error: break! 266vm"
+            # print traceback.print_exc()
             break
 
 
