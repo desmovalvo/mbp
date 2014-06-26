@@ -1,0 +1,14 @@
+SIBmanager version 0.1, 17/07/2014
+------------------------------------
+
+Requirements:
+
+* python
+* python's termcolor module
+
+
+
+Usage:
+
+$ python manager.py [-c config_file]
+
