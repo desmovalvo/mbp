@@ -63,6 +63,10 @@ class Application(Tkinter.Tk):
         frame.tkraise()
 
         if str(c) == "__main__.SibInteraction":
+            print "Sib interaction"
+            frame.results_text.config(state = NORMAL)
+            frame.results_text.delete(1.0, END)
+            frame.results_text.config(state = DISABLED)
             frame.set_connection_fields(sib_addr, sib_port)
         
         if str(c) == "__main__.ModifyMultiSIB":
