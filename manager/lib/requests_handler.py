@@ -1015,3 +1015,75 @@ def GetSIBStatus(ancillary_ip, ancillary_port, sib_id):
 
     # Return
     return confirm
+
+
+
+def MultiSIBInfo(ancillary_ip, ancillary_port, multi_sib_id):
+
+    multisib_info = {}
+    multisib_info["components"] = {}
+    multisib_info["others"] = {}
+
+    a = SibLib(ancillary_ip, int(ancillary_port))
+    
+    try:
+        # Query to get all the components of the multi sib
+        t = Triple(URI(ns + str(multi_sib_id)), URI(ns + "composedBy"), None)
+        result = a.execute_rdf_query(t)
+        for i in result:
+            id = str(i[2]).split("#")[1]
+            t = Triple(URI(ns + str(id)), URI(ns + "hasOwner"), None)
+            res = a.execute_rdf_query(t)
+            if len(res)==0:
+                owner = "VM SIB"
+            else:
+                owner = str(res[0][2])
+            multisib_info["components"][id] = owner
+    
+    
+        # Query to get all the sibs and multi sib but not the multi sib with msib_id
+        query = PREFIXES + """ SELECT ?id ?owner 
+        WHERE {{?id ns:hasKpIp ?ip . 
+                ?id ns:hasKpPort ?port .
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:publicSib . 
+                ?id ns:hasOwner ?owner .
+                }
+              UNION
+               {?id ns:hasKpIp ?ip . 
+                ?id ns:hasKpPort ?port .
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:virtualSib . 
+                ?id ns:hasOwner ?owner .
+                }
+              UNION
+               {?id ns:hasKpIp ?ip .
+                ?id ns:hasKpPort ?port . 
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:virtualMultiSib . 
+               	FILTER(?id != ns:""" + str(multi_sib_id) + """)}}"""
+       
+        result = a.execute_sparql_query(query)
+    
+        for i in result:
+            id = str(i[0][2]).split("#")[1]
+    
+            # get owner
+            if i[1][2] == None:
+                owner = "VM SIB"
+            else:
+                owner = str(i[1][2])
+    
+            if id not in multisib_info["components"]:
+    
+                multisib_info["others"][id] = owner
+
+        confirm = {"return":"ok", "multisib_info":multisib_info}
+        return confirm 
+
+    except:
+        # the sib does not exist
+        confirm = {"return":"fail", "cause":"Failed to connect to the ancillary sib"}
+        return confirm
+    
+
