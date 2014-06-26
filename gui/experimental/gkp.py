@@ -1501,7 +1501,7 @@ class SibSearch(Tkinter.Frame):
             # msg = {"command":"DiscoveryAll"}
 
             
-            if self.profile == None:
+            if self.profile == None or self.profile == "":
                 print "discovery all........"
                 # discoveryAll request
                 print "Sending DiscoveryAll request to the manager:",
@@ -1510,6 +1510,8 @@ class SibSearch(Tkinter.Frame):
             else:
                 print "discovery where........"
                 # discoveryWhere request
+                print "-------------" + str(self.profile)
+                print type(self.profile)
                 print "Sending DiscoveryWhere request to the manager:",
                 msg = {"command":"DiscoveryWhere", "sib_profile":"hasOwner:" + str(self.profile)}
 
