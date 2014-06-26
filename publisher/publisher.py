@@ -53,7 +53,7 @@ if __name__ == "__main__":
         
     except getopt.GetoptError:
         print publisher_print(False) + 'Usage: python publisher.py -m manager_ip:port -o owner -s realsib_ip:port -a action'
-
+        sys.exit()
 
     # now we can begin!
     try:
