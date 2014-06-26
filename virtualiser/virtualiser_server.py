@@ -17,10 +17,9 @@ import time
 import uuid
 import sys
 
-# namespaces
+# namespaces and prefixes
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 ns = "http://smartM3Lab/Ontology.owl#"
-
 PREFIXES = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -93,7 +92,16 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
 
                     thread_id = str(uuid.uuid4())
 
-                    virtual_sib_info = globals()[cmd.command](cmd.owner, cmd.sib_id, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.manager_ip, self.server.manager_port)
+                    # calling NewRemoteSIB function
+                    virtual_sib_info = globals()[cmd.command](cmd.owner, 
+                                                              cmd.sib_id, 
+                                                              self.server.virtualiser_ip, 
+                                                              threads, 
+                                                              thread_id, 
+                                                              virtualiser_id, 
+                                                              self.server.manager_ip, 
+                                                              self.server.manager_port,
+                                                              self.server.config_file)
 
                     if virtual_sib_info["return"] == "fail":
                         # send a reply
@@ -133,7 +141,8 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                                                 self.server.virtualiser_ip, 
                                                                 self.server.virtualiser_id, 
                                                                 threads, 
-                                                                thread_id)
+                                                                thread_id,
+                                                                self.server.config_file)
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_info':virtual_multi_sib_info}))
 
@@ -206,6 +215,7 @@ if __name__=='__main__':
     # read the configuration file 
     config_file_stream = open(config_file, "r")
     conf = json.load(config_file_stream)
+    config_file_stream.close()
 
     # configure the logger
     debug_enabled = conf["debug"]    
@@ -231,12 +241,19 @@ if __name__=='__main__':
             server.virtualiser_id = virtualiser_id
             server.virtualiser_ip =  virtualiser_ip
             server.virtualiser_port = virtualiser_port 
+            server.config_file = config_file
             server.debug_enabled = debug_enabled
+            server.debug_level = debug_level
             server.manager_ip = manager_ip
             server.manager_port = manager_port
             server.logger = logger
-            server.logger.info(" Starting server on IP " + virtualiser_ip + " Port " + str(virtualiser_port))
+            
+            # debug
+            if server.debug_enabled:
+                server.logger.info(" Starting server on IP " + virtualiser_ip + " Port " + str(virtualiser_port))
             print virtserver_print(True) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
+
+            # start serving
             server.serve_forever()
         
         # Wrong virtualiser server address specified
@@ -244,6 +261,8 @@ if __name__=='__main__':
 
             # debug print
             print virtserver_print(False) + "wrong address for virtualiser server"
+            if server.debug_enabled:
+                server.logger.info(" wrong address for virtualiser server")
 
             # build the NewVirtualiser request
             msg = {"command":"DeleteVirtualiser", "id":virtualiser_id}
@@ -256,6 +275,8 @@ if __name__=='__main__':
             
             # debug print
             print virtserver_print(True) + "sending " + colored("DeleteVirtualiser", "cyan", attrs=["bold"]) + " request"
+            if server.debug_enabled:
+                server.logger.info(" CTRL-C pressed. Sending DeleteVirtualiser request")
 
             # build the NewVirtualiser request
             msg = {"command":"DeleteVirtualiser", "id":virtualiser_id}
@@ -267,5 +288,7 @@ if __name__=='__main__':
             print virtserver_print(True) + "Goodbye!"
     
     else:
+        if server.debug_enabled:
+            server.logger.info(" Unable to start the virtualiser. Cause: " + str(confirm["cause"]))
         print virtserver_print(False) + "unable to start the virtualiser. Cause: " + str(confirm["cause"])
         sys.exit(0)

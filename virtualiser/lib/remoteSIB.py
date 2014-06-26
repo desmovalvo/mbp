@@ -31,19 +31,13 @@ kp_list = {}
 active_subscriptions = {}
 val_subscriptions = []
 
-# logging configuration
-LOG_DIRECTORY = "log/"
-LOG_FILE = LOG_DIRECTORY + str(time.strftime("%Y%m%d-%H%M-")) + "remoteSIB.log"
-logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
-logger = logging.getLogger("remoteSIB")
-
 ##############################################################
 #
 # handler
 #
 ##############################################################
 
-def handler(clientsock, addr, port, manager_ip, manager_port):
+def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, remotesib_logger):
 
     # storing received parameters in thread-local variables
     kp_port = port
@@ -124,7 +118,8 @@ def handler(clientsock, addr, port, manager_ip, manager_port):
                                 print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
                     
                             except socket.error:
-                                logger.error("REGISTER CONFIRM not sent!")
+                                if debug_enabled:
+                                    remotesib_logger.error("REGISTER CONFIRM not sent!")
                                 print sys.exc_info()
                         
               
@@ -152,7 +147,8 @@ def handler(clientsock, addr, port, manager_ip, manager_port):
                                 newsub.conn.send(err_msg)
                                 del newsub
                                 
-                                logger.error("SUBSCRIBE REQUEST forwarding failed")
+                                if debug_enabled:
+                                    remotesib_logger.error("SUBSCRIBE REQUEST forwarding failed")
     
      
                         # RDF/SPARQL SUBSCRIBE CONFIRM
@@ -197,7 +193,8 @@ def handler(clientsock, addr, port, manager_ip, manager_port):
                                                                                  '<parameter name="status">m3:Error</parameter>')
                                         s.conn.send(err_msg)
                                             
-                                        logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
+                                        if debug_enabled:
+                                            remotesib_logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
                                         print sys.exc_info()
 
                                     except AttributeError:
@@ -268,7 +265,8 @@ def handler(clientsock, addr, port, manager_ip, manager_port):
                                 # send a notification error to the KP
                                 kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].send(err_msg)
                                 del kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]]
-                                logger.error(ssap_msg_dict["transaction_type"] + " REQUEST forwarding failed")
+                                if debug_enabled:
+                                    remotesib_logger.error(ssap_msg_dict["transaction_type"] + " REQUEST forwarding failed")
                                 print sys.exc_info()
 
                             except AttributeError:
@@ -386,95 +384,43 @@ def subscription_observer(sib, sub):
     return
 
 
-# # SUBSCRIBED KP OBSERVER THREAD
-# def kp_observer(newsub, sib, ancillary_ip, ancillary_port):#, kp, kp_check_var):
-    
-#     #print "kp obs id: " + str(uuid.uuid4())
-    
-#     while True:# kp_check_var:
-        
-#         time.sleep(5)
-#         #print colored("socket_observer> ", "blue", attrs=["bold"]) + " check if socket " + str(sib["socket"]) + " is alive"
-#         try:
-#             while True:
-#                 r, w, e = select.select([newsub.conn], [], [], 0)      # more data waiting?
-#                 print "select: r=%s w=%s e=%s" % (r,w,e)        # debug output to command line
-#                 if r:                                           # yes, data avail to read.
-#                     t = newsub.conn.recv(1024, socket.MSG_PEEK)        # read without remove from queue
-#                     print "peek: len=%d, data=%s" % (len(t),t)  # debug output
-#                     if len(t) > 0:                               # length of data peeked 0?
-#                         print "Client disconnected."            # client disconnected
-#                         break                                   # quit program
-#                 time.sleep(5)    
-#                 newsub.conn.send(" ")                           # echo only if still connected
+############################################################
+#
+# remoteSIB
+#
+# This is the main function related to the virtualSIB
+#
+############################################################
 
-#             # #kp["socket"].send(" ")
-#             # newsub.conn.send(" ")
-#             # t = newsub.conn.recv(1024, socket.MSG_PEEK)        # read without remove from queue
-#             # print "peek: len=" + str(len(t)) + ", data=" + str(t)  # debug output
-#             # if len(t)==0:                               # length of data peeked 0?
-#             #     print colored ("remoteSIB> ", "red", attrs=["bold"]) + "Subscribed kp disconnected. Sending an unsubscribe request"            # client disconnected
-#             #     # build and send an unsubscribe request to the publisher
-#             #     ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(newsub.node_id,
-#             #                                               newsub.space_id,
-#             #                                               "UNSUBSCRIBE",
-#             #                                               newsub.request_transaction_id,
-#             #                                               '<parameter name="status">m3:Error</parameter>',
-#             #                                               '<parameter name = "subscription_id">' + str(newsub.subscription_id) + '</parameter>')
-                
-            # TODO: build and send an unsubscribe request to the publisher
+def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, manager_ip, manager_port, config_file):
 
-#             ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(newsub.node_id,
-#                                                       newsub.space_id,
-#                                                       "UNSUBSCRIBE",
-#                                                       newsub.request_transaction_id,
-#                                                       '<parameter name="status">m3:Error</parameter>',
-#                                                       '<parameter name = "subscription_id">' + newsub.subscription_id + '</parameter>')
-# #             #     sib["socket"].send(ssap_msg)
+    # read the configuration file 
+    config_file_stream = open(config_file, "r")
+    conf = json.load(config_file_stream)
+    config_file_stream.close()
 
-#         except socket.error:
-#             print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket " + str(newsub.conn) + " dead"
-                
-#             # build and send an unsubscribe request to the publisher
+    # configure the remotesib_logger
+    debug_enabled = conf["debug"]    
+    debug_level = conf["debug_level"]
+    remotesib_logger = logging.getLogger("remoteSIB (" + virtual_sib_id + ")")
 
-#             ssap_msg = SSAP_MESSAGE_REQUEST_TEMPLATE%(newsub.node_id,
-#                                                       newsub.space_id,
-#                                                       "UNSUBSCRIBE",
-#                                                       newsub.request_transaction_id,
-#                                                       '<parameter name="status">m3:Error</parameter>',
-#                                                       '<parameter name = "subscription_id">' + newsub.subscription_id + '</parameter>')
-                
-#             sib["socket"].send(ssap_msg)
-            
-#             # set kp["socket"] to None
-#             #kp["socket"] = None
-            
-#             # exit while
-#             # kp_check_var = False
-#             break
-        
-#     print colored("kp_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(newsub.conn)
-
-
-
-
-def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, manager_ip, manager_port):
-
+    # debug print
     print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' started a new remote SIB with ip ' + str(virtualiser_ip) + ", kpPort " + str(kp_port) + ", pubPort " + str(pub_port) + " and id " + str(virtual_sib_id)
 
+    # setting variables
     host = virtualiser_ip
     kp_addr = (host, kp_port)
     pub_addr = (host, pub_port)
-
     sib["virtual_sib_id"] = virtual_sib_id
 
     # creating and activating the socket for the KPs
     kp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    #kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     kp_socket.bind(kp_addr)
     kp_socket.listen(2)
-    # logger.info('Remote SIB waiting for KPs on port ' + str(kp_port))
+    if debug_enabled:
+        print 'scrivo sul file di log'
+        remotesib_logger.info('Remote SIB waiting for KPs on port ' + str(kp_port))
     
     # creating and activating the socket for the Publishers
     pub_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -482,7 +428,8 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, mana
     pub_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     pub_socket.bind(pub_addr)
     pub_socket.listen(2)
-    # logger.info('Remote SIB waiting for publishers on port ' + str(pub_port))
+    if debug_enabled:
+        remotesib_logger.info('Remote SIB waiting for publishers on port ' + str(pub_port))
 
     # sockets
     sockets = [kp_socket, pub_socket]
@@ -490,8 +437,6 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, mana
     # loop
     while check_var:
 
-        # print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' waiting for connections...'
-        
         # select the read_sockets
         try:
             read_sockets,write_sockets,error_sockets = select.select(sockets,[],[])
@@ -504,12 +449,12 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, mana
             # new connection
             if sock in sockets:
                 clientsock, addr = sock.accept()
-                # print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming connection from ...' + str(addr)
-                # logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr, kp_port, manager_ip, manager_port))
+                if debug_enabled:
+                    remotesib_logger.info('Incoming connection from ' + str(addr))
+                thread.start_new_thread(handler, (clientsock, addr, kp_port, manager_ip, manager_port, debug_enabled, remotesib_logger))
 
             # incoming data
             else:
-               # print colored("remoteSIB> ", "blue", attrs=["bold"]) + ' incoming DATA'
                 pass
+
     return
