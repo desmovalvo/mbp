@@ -231,6 +231,18 @@ if __name__=='__main__':
             print virtserver_print(True) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
             server.serve_forever()
         
+        # Wrong virtualiser server address specified
+        except socket.gaierror:
+
+            # debug print
+            print virtserver_print(False) + "wrong address for virtualiser server"
+
+            # build the NewVirtualiser request
+            msg = {"command":"DeleteVirtualiser", "id":virtualiser_id}
+    
+            # send the request to the manager
+            confirm = manager_request(manager_ip, manager_port, msg)            
+
         # CTRL-C pressed
         except KeyboardInterrupt:
             
