@@ -10,29 +10,11 @@ from smart_m3.m3_kp import *
 
 ns = "http://smartM3Lab/Ontology.owl#"
 
-ancillary_ip = '10.143.250.250'
+ancillary_ip = '192.168.1.100'
 ancillary_port = '10088'
-manager_ip = '10.143.250.250'
+manager_ip = '192.168.1.100'
 manager_port = 17714
 
-# class AncillaryHandler:
-#      def __init__(self, a):
-#          self.a = a
-#          print "handle init"
-#      def handle(self, added, removed):
-#          for i in added:
-#              self.information = str(i[2])
-#              print "handle"
-#              print self.information
-#              vm_sib_ip = self.information.split("-")[0]
-#              vm_sib_port = self.information.split("-")[1]
-#              print vm_sib_ip
-#              print vm_sib_port
-#              # close subscription
-#              self.a.CloseSubscribeTransaction(sub)
-#              print "Subscription closed!"
-             
-                 
 
 #main function
 try:

@@ -17,6 +17,14 @@ from SPARQLIndicationHandler import *
 
 # font
 TITLE_FONT = ("Helvetica", 18, "bold")
+SUBTITLE_FONT = ("Helvetica", 14 )
+
+PREFIXES = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <""" + ns + ">"
+
 
 general_sparql_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
@@ -44,20 +52,26 @@ class Application(Tkinter.Tk):
 
         # frames
         self.frames = {}
-        for F in (StartPage, SibInteraction, SibSearch):
+        for F in (StartPage, SibInteraction, SibSearch, ModifyMultiSIB):
             frame = F(self.container, self)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
     # This function puts on top the frame of the given class
-    def show_frame(self, c, sib_addr = None, sib_port = None):
+    def show_frame(self, c, sib_addr = None, sib_port = None, msib_id = None, profile = None):
         frame = self.frames[c]
         frame.tkraise()
 
         if str(c) == "__main__.SibInteraction":
             frame.set_connection_fields(sib_addr, sib_port)
         
+        if str(c) == "__main__.ModifyMultiSIB":
+            frame.show_multi_sib(msib_id)
 
+        if str(c) == "__main__.SibSearch":
+            frame.profile = profile
+            frame.refresh()
+            
     # Destroyer!
     def destroy(self):
         print "Bye!"
@@ -70,7 +84,7 @@ class StartPage(Tkinter.Frame):
         
         self.s = Style()
         self.s.theme_use('clam')
-
+        
         Tkinter.Frame.__init__(self, parent) 
 
         self.s = Style()
@@ -82,9 +96,19 @@ class StartPage(Tkinter.Frame):
         # buttons frame
         buttons_frame = Frame(self)
         buttons_frame.pack()
+        
+        # entry box
+        e = Entry(buttons_frame)
+        e.pack(side = LEFT)
+        e.delete(0, END)
+        
+        # discoveryWhere button
+        discovery_where_button = Button(buttons_frame, text="Discovery Where")
+        discovery_where_button["command"] = lambda: controller.show_frame(SibSearch, None, None, None, e.get())
+        discovery_where_button.pack(side = LEFT)
 
         # sibsearch button
-        sibsearch_button = Button(buttons_frame, text="Look for a SIB")
+        sibsearch_button = Button(buttons_frame, text="Discovery All")
         sibsearch_button["command"] = lambda: controller.show_frame(SibSearch)
         sibsearch_button.pack(side = LEFT)
 
@@ -97,6 +121,309 @@ class StartPage(Tkinter.Frame):
         quit_button = Button(buttons_frame, text="Quit")
         quit_button["command"] = sys.exit
         quit_button.pack(side = LEFT)
+
+
+########################################################
+##
+## Modify Multi SIB Class
+##
+########################################################
+
+class ModifyMultiSIB(Tkinter.Frame):
+
+    ########################################################
+    ##
+    ## show multi sib
+    ##
+    ########################################################
+    def show_multi_sib(self, msib_id):
+        self.multi_sib_id = msib_id
+        # components of the multi sib
+        self.msib = []
+        # other sibs
+        self.other_sibs = []
+        
+        self.multisib_label["text"] = "Multi SIB: " + str(msib_id) 
+
+
+        self.kp = SibLib("192.168.1.100", 10088)
+        
+        # Query to get all the components of the multi sib
+        t = Triple(URI(ns + self.multi_sib_id), URI(ns + "composedBy"), None)
+        result = self.kp.execute_rdf_query(t)
+        self.multisib_listbox.delete(0, END)
+        for i in result:
+            id = str(i[2]).split("#")[1]
+            t = Triple(URI(ns + str(id)), URI(ns + "hasOwner"), None)
+            res = self.kp.execute_rdf_query(t)
+            if len(res)==0:
+                owner = "VM SIB"
+            else:
+                owner = str(res[0][2])
+            self.multisib_listbox.insert(END, str(id) + " Owner: " + str(owner) )
+            self.msib.append(str(id))
+
+        # Query to get all the sibs and multi sib but not the multi sib with msib_id
+        query = PREFIXES + """ SELECT ?id ?owner 
+        WHERE {{?id ns:hasKpIp ?ip . 
+                ?id ns:hasKpPort ?port .
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:publicSib . 
+                ?id ns:hasOwner ?owner .
+                }
+              UNION
+               {?id ns:hasKpIp ?ip . 
+                ?id ns:hasKpPort ?port .
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:virtualSib . 
+                ?id ns:hasOwner ?owner .
+                }
+              UNION
+               {?id ns:hasKpIp ?ip .
+                ?id ns:hasKpPort ?port . 
+                ?id ns:hasStatus "online" . 
+                ?id rdf:type ns:virtualMultiSib . 
+               	FILTER(?id != ns:""" + str(msib_id) + """)}}"""
+       
+        result = self.kp.execute_sparql_query(query)
+
+        self.sibs_listbox.delete(0, END)
+        sibs = []
+        for i in result:
+            id = str(i[0][2]).split("#")[1]
+            
+            if i[1][2] == None:
+                owner = "VM SIB"
+            else:
+                owner = str(i[1][2])
+            sibs.append(str(i[0][2]).split("#")[1])
+            if id not in self.msib:
+                self.sibs_listbox.insert(END, str(id) + " Owner: " + str(owner))
+                self.other_sibs.append(str(id))
+                
+    ########################################################
+    ##
+    ## REMOVE
+    ##
+    ########################################################
+    def remove(self):
+
+        selected = self.multisib_listbox.curselection()
+        if (len(selected) == 0):
+            self.notification_label["text"] = "Select one or more sibs to remove from the multi sib!"
+            return
+
+        ss = []
+        for s in selected:
+            ss.append(self.msib[int(s[0])])
+        print ss
+        # build RemoveSIBfromVMSIB message to send to the manager
+        msg = json.dumps({"command":"RemoveSIBfromVMSIB", "sib_list":ss, "vmsib_id" : str(self.multi_sib_id) })
+
+
+        # send a message to the vmsib
+        try:
+            print "contatto il manager"
+            # connection to the vmsib
+            manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            manager_socket.connect(("192.168.1.100", 17714))
+            manager_socket.send(msg)
+
+            # wait for a reply
+            while 1:
+                try:
+                    confirm_msg = manager_socket.recv(4096)
+                    break
+                except:
+                    print colored("request_handler> ", "red", attrs=["bold"]) + 'Request to the manager failed'
+                    manager_socket.close()
+                    self.notification_label["text"] = 'Request failed!'
+                    
+                    
+
+            print 'RemoveSIB: ' + str(confirm_msg)
+
+            # closing socket
+            manager_socket.close()            
+
+            # check the confirm content
+            c = json.loads(confirm_msg)
+            if c["return"] == "fail":
+                self.notification_label["text"] = 'Request failed!'
+                pass
+            else:
+                self.notification_label["text"] = 'Sib removed!'
+                self.controller.show_frame(SibSearch)                
+        except:
+            pass
+
+
+    ########################################################
+    ##
+    ## ADD
+    ##
+    ########################################################
+    def add(self):
+        selected = self.sibs_listbox.curselection()
+        if (len(selected) == 0):
+            self.notification_label["text"] = "Select one or more sibs to add to the multi sib!"
+            return
+
+        ss = []
+        for s in selected:
+            ss.append(self.other_sibs[int(s[0])])
+        print ss
+
+        # build AddSIBtoVMSIB message to send to the manager
+        msg = json.dumps({"command":"AddSIBtoVMSIB", "sib_list": ss, "vmsib_id" : str(self.multi_sib_id) })
+
+
+        # send a message to the vmsib
+        try:
+            print "contatto il manager"
+            # connection to the vmsib
+            manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            manager_socket.connect(("192.168.1.100", 17714))
+            manager_socket.send(msg)
+
+            # wait for a reply
+            while 1:
+                try:
+                    confirm_msg = manager_socket.recv(4096)
+                    break
+                except:
+                    print colored("request_handler> ", "red", attrs=["bold"]) + 'Request to the vmsib failed'
+                    manager_socket.close()
+                    self.notification_label["text"] = 'Request failed!'
+                    
+            print 'AddSIB: ' + str(confirm_msg)
+            
+            # closing socket
+            manager_socket.close()            
+
+            # check the confirm content
+            c = json.loads(confirm_msg)
+            if c["return"] == "fail":
+                self.notification_label["text"] = 'Request failed!'
+                pass
+            else:
+                self.notification_label["text"] = 'Sib added!'
+                self.controller.show_frame(SibSearch)                
+        except:
+            pass
+
+
+    ########################################################
+    ##
+    ## BACK
+    ##
+    ########################################################
+
+    def back(self):
+        
+        # changing frame
+        self.controller.show_frame(SibSearch)
+        
+
+
+    ########################################################
+    ##
+    ## INIT
+    ##
+    ########################################################
+
+    def __init__(self, parent, controller):
+
+        self.s = Style()
+        self.s.theme_use('clam')
+
+        # Frame
+        Tkinter.Frame.__init__(self, parent) 
+
+        # attributes
+        self.kp = None
+        self.controller = controller
+
+        # Font
+        section_font = tkFont.Font(family="Helvetica", size=14, weight="bold")
+
+        # main frame
+        self.main_frame = Frame(self)
+        self.main_frame.pack()
+
+        # multisib Listbox frame
+        self.multisib_listbox_frame = Frame(self.main_frame)
+        self.multisib_listbox_frame.grid(row = 0, column = 0, sticky = S + N)
+        
+        # Label multi sib
+        self.multisib_label = Label(self.multisib_listbox_frame, text="Multi SIB ", font=SUBTITLE_FONT)
+        self.multisib_label.grid(row = 0, column = 0, pady = (30, 5))
+
+        # multisib Scrollbar
+        self.multisib_scrollbar = Scrollbar(self.multisib_listbox_frame)
+        self.multisib_scrollbar.grid(row = 1, column = 1, sticky = S + N)
+
+        # multisib ListBox
+        self.multisib_listbox = Listbox(self.multisib_listbox_frame, yscrollcommand=self.multisib_scrollbar.set)
+        self.multisib_listbox.config(width = 60, selectmode = MULTIPLE, height = 30)
+        self.multisib_listbox.grid(row = 1, column = 0)
+
+        # buttons frame
+        self.buttons_frame = Frame(self.main_frame)
+        self.buttons_frame.grid(row = 0, column = 3, sticky = S + N)
+
+        # add button
+        self.add_button = Button(self.buttons_frame)
+        self.add_button["text"] = "Add"
+        self.add_button["command"] =  self.add
+        self.add_button.grid(row = 1, column = 0, pady = (140,10), padx = 20)
+        
+        # Remove button
+        self.remove_button = Button(self.buttons_frame)
+        self.remove_button["text"] = "Remove"
+        self.remove_button["command"] =  self.remove
+        self.remove_button.grid(row = 2, column = 0, pady = 0, padx = 20)
+
+        # sibs Listbox frame
+        self.sibs_listbox_frame = Frame(self.main_frame)
+        self.sibs_listbox_frame.grid(row = 0, column = 5, sticky = S + N)
+
+        # Label sibs
+        self.sibs_label = Label(self.sibs_listbox_frame, text="Other SIBs ", font=SUBTITLE_FONT)
+        self.sibs_label.grid(row = 0, column = 0, pady = (30, 5))
+
+        # sibs Scrollbar
+        self.sibs_scrollbar = Scrollbar(self.sibs_listbox_frame)
+        self.sibs_scrollbar.grid(row = 1, column = 6, sticky = S + N)
+
+        # sibs ListBox
+        self.sibs_listbox = Listbox(self.sibs_listbox_frame, yscrollcommand=self.sibs_scrollbar.set)
+        self.sibs_listbox.config(width = 60, selectmode = MULTIPLE, height = 30)
+        self.sibs_listbox.grid(row = 1, column = 0)
+
+        # End buttons frame
+        self.end_buttons_frame = Frame(self.main_frame)
+        self.end_buttons_frame.grid(row = 2, column = 0, columnspan = 8, sticky = E)
+        
+        # Quit button
+        self.quit_button = Button(self.end_buttons_frame, text = "Quit")
+        self.quit_button.pack(side = RIGHT)
+        self.quit_button["command"] = sys.exit
+
+        # Back button
+        self.back_button = Button(self.end_buttons_frame, text = "Back")
+        self.back_button.pack(side = RIGHT)
+        self.back_button["command"] = self.back
+        
+
+        # Notification frame
+        self.notification_frame = LabelFrame(self.main_frame)
+        self.notification_frame.grid(row = 1, column = 0, columnspan = 8, sticky = E+W)
+
+        # Notification Label
+        self.notification_label = Label(self.notification_frame, text="Waiting for commands...")
+        self.notification_label.pack(side = BOTTOM, padx = 10, pady = 2)
+
 
 
 ########################################################
@@ -1101,7 +1428,7 @@ class SibSearch(Tkinter.Frame):
 
     ###################################################
     #
-    # refresh
+    # select all
     #
     ###################################################
     
@@ -1144,16 +1471,32 @@ class SibSearch(Tkinter.Frame):
 
         """This method is used to fetch the list of registered SIBs"""
 
+        print self.profile
+            
         # manager connection
         manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try :
             print "Connecting to the manager:",
             manager_socket.connect((self.manager_ip, self.manager_port))
             print "OK!"
+
+            # # discoveryAll request
+            # print "Sending DiscoveryAll request to the manager:",
+            # msg = {"command":"DiscoveryAll"}
+
             
-            # discovery request
-            print "Sending DiscoveryAll request to the manager:",
-            msg = {"command":"DiscoveryAll"}
+            if self.profile == None:
+                print "discovery all........"
+                # discoveryAll request
+                print "Sending DiscoveryAll request to the manager:",
+                msg = {"command":"DiscoveryAll"}
+            
+            else:
+                print "discovery where........"
+                # discoveryWhere request
+                print "Sending DiscoveryWhere request to the manager:",
+                msg = {"command":"DiscoveryWhere", "sib_profile":"hasOwner:" + str(self.profile)}
+
             request = json.dumps(msg)
             manager_socket.send(request)
         
@@ -1166,9 +1509,10 @@ class SibSearch(Tkinter.Frame):
     
             # was it a success?
             parsed_msg = json.loads(msg)
+            print parsed_msg
             if parsed_msg["return"] == "fail":
                 print colored("failed!", "red", attrs=["bold"])  + "(" + parsed_msg["cause"] +")"
-                self.notification_label["text"] = "DiscoveryAll failed"
+                self.notification_label["text"] = "Discovery failed"
                 
             elif parsed_msg["return"] == "ok":
                 print "OK!"
@@ -1181,16 +1525,19 @@ class SibSearch(Tkinter.Frame):
             self.vsib_list = []
             i = 0
             for vs in virtual_sib_list:
-    
+                
+                print str(i) + ") " + vs
+                
                 # built a dict
                 sib_dict = {}
                 sib_dict["ip"] = virtual_sib_list[vs]["ip"]
                 sib_dict["port"] = virtual_sib_list[vs]["port"]
                 sib_dict["id"] = vs
+                sib_dict["owner"] =  virtual_sib_list[vs]["owner"]
                 self.vsib_list.append(sib_dict)
                 
                 # filling the listbox
-                self.sib_listbox.insert(i, str(sib_dict))
+                self.sib_listbox.insert(i, str(sib_dict["id"]) + "-------" + str(sib_dict["owner"]))
                 
                 # increment the counter
                 i += 1
@@ -1204,6 +1551,31 @@ class SibSearch(Tkinter.Frame):
             self.notification_label["text"] = "Connection to the manager failed"
             self.connect_button.config(state = DISABLED)
             self.selectall_button.config(state = DISABLED)
+
+    ###################################################
+    #
+    # modify
+    #
+    ###################################################
+    def modify(self):
+        """Connects to the selected SIB(s)"""
+
+        # get the list of selected sibs
+        selected = self.sib_listbox.curselection()
+        
+        if len(selected) != 1:
+            pass
+        
+        else:
+            ss = self.vsib_list[int(selected[0])]
+            if ss["owner"] != "Virtual Multi SIB":
+                pass
+            else:
+                # open new frame to show the other sibs
+                self.controller.show_frame(ModifyMultiSIB, None, None, str(ss['id']))
+            
+
+
 
     ###################################################
     #
@@ -1227,7 +1599,7 @@ class SibSearch(Tkinter.Frame):
             
             ss = self.vsib_list[int(selected[0])]
             self.controller.show_frame(SibInteraction, str(ss['ip']), str(ss['port']))
-            
+            #print self.vsib_list[int(selected[0])]
 
         # more than one sib
         else:
@@ -1273,10 +1645,11 @@ class SibSearch(Tkinter.Frame):
 
         self.s = Style()
         self.s.theme_use('clam')
+        self.profile = None
 
         # Frame constructor
         Tkinter.Frame.__init__(self, parent) 
-
+        
         self.controller = controller
         self.sflag = True
         
@@ -1325,6 +1698,10 @@ class SibSearch(Tkinter.Frame):
         self.selectall_button.pack(side = LEFT)
         self.selectall_button["command"] = self.select_all
 
+        self.modify_button = Button(self.buttons_frame, text="Modify")
+        self.modify_button.pack(side = LEFT)        
+        self.modify_button["command"] = self.modify
+
         self.refresh_button = Button(self.buttons_frame, text="Refresh")
         self.refresh_button.pack(side = LEFT)
         self.refresh_button["command"] = self.refresh
@@ -1335,6 +1712,8 @@ class SibSearch(Tkinter.Frame):
 
         self.notification_label = Label(self)
         self.notification_label.pack(side = BOTTOM)
+
+        print 'hello'
         
         # call the refresh method to fill the listbox
         self.refresh()
@@ -1347,3 +1726,4 @@ if __name__ == "__main__":
     app = Application()
     app.show_frame(StartPage)
     app.mainloop()
+    

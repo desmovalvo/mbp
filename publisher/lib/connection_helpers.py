@@ -6,6 +6,8 @@ import random
 import socket
 from SSAPLib import *
 from termcolor import *
+import sys
+import traceback
 
 ######################################################
 #
@@ -40,7 +42,6 @@ def register_request(vsib_ip, vsib_port, node_id, connected):
 
     # return
     return vs
-
 
 
 ######################################################
