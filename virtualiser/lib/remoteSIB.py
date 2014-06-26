@@ -114,12 +114,12 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                                 check_var = True
                                 
                                 # TODO kp_port non serve passarlo: il socket observer non lo usa!!
-                                thread.start_new_thread(socket_observer, (sib, kp_port, check_var, manager_ip, manager_port))                            
+                                thread.start_new_thread(socket_observer, (sib, kp_port, check_var, manager_ip, manager_port, debug_enabled, remotesib_logger))                            
                                 print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
                     
                             except socket.error:
                                 if debug_enabled:
-                                    remotesib_logger.error("REGISTER CONFIRM not sent!")
+                                    remotesib_logger.info("REGISTER CONFIRM not sent!")
                                 print sys.exc_info()
                         
               
@@ -148,7 +148,7 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                                 del newsub
                                 
                                 if debug_enabled:
-                                    remotesib_logger.error("SUBSCRIBE REQUEST forwarding failed")
+                                    remotesib_logger.info("SUBSCRIBE REQUEST forwarding failed")
     
      
                         # RDF/SPARQL SUBSCRIBE CONFIRM
@@ -194,7 +194,7 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                                         s.conn.send(err_msg)
                                             
                                         if debug_enabled:
-                                            remotesib_logger.error("RDF UNSUBSCRIBE REQUEST forwarding failed")
+                                            remotesib_logger.info("RDF UNSUBSCRIBE REQUEST forwarding failed")
                                         print sys.exc_info()
 
                                     except AttributeError:
@@ -217,6 +217,8 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                                         print "close 256"
                                         s.conn.close()
                                     except socket.error:
+                                        if debug_enabled:
+                                            remotesib_logger.info("Error while forwarding UNSUBSCRIBE CONFIRM")
                                         print sys.exc_info()
                                         pass
                                                                             
@@ -241,6 +243,8 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                                     try:
                                         s.conn.send(ssap_msg)
                                     except socket.error:
+                                        if debug_enabled:
+                                            remotesib_logger.info("Error while forwarding an INDICATION")
                                         print colored("remoteSIB>", "red", attrs=["bold"]) + " indication send failed"
                                         print sys.exc_info()
                                     break
@@ -266,7 +270,7 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                                 kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].send(err_msg)
                                 del kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]]
                                 if debug_enabled:
-                                    remotesib_logger.error(ssap_msg_dict["transaction_type"] + " REQUEST forwarding failed")
+                                    remotesib_logger.info(ssap_msg_dict["transaction_type"] + " REQUEST forwarding failed")
                                 print sys.exc_info()
 
                             except AttributeError:
@@ -280,9 +284,13 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                             # update the timer
                             sib["timer"] = datetime.datetime.now()
                         
-                            # forward message to the kp
-                            kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].send(ssap_msg)
-                            kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].close()                        
+                            try:
+                                # forward message to the kp
+                                kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].send(ssap_msg)
+                                kp_list[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]].close()                        
+                            except socket.error:
+                                if debug_enabled:
+                                    remotesib_logger.infos("Error while sending CONFIRM to the kp")
            
                     except ET.ParseError:
                         print colored("remoteSIB> ", "red", attrs=["bold"]) + " ParseError"
@@ -301,7 +309,7 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
 #
 #####################################################
 
-def socket_observer(sib, port, check_var, manager_ip, manager_port):
+def socket_observer(sib, port, check_var, manager_ip, manager_port, debug_enabled, remotesib_logger):
     
     key = sib["socket"]
     
@@ -309,6 +317,8 @@ def socket_observer(sib, port, check_var, manager_ip, manager_port):
         try:            
             if (datetime.datetime.now() - sib["timer"]).total_seconds() > 15:
                 print colored("remoteSIB> ", "red", attrs=["bold"]) + " socket " + str(sib["socket"]) + " dead"
+                if debug_enabled:
+                    remotesib_logger.info("Socket dead")
                 sib["socket"] = None                
 
                 # SetSIBStatus
@@ -337,8 +347,11 @@ def socket_observer(sib, port, check_var, manager_ip, manager_port):
                 
         except IOError:
             pass
-        
+    
+    # debug print
     print colored("socket_observer> ", "red", attrs=["bold"]) + " closed observer thread for socket " + str(key)
+    if debug_enabled:
+        remotesib_logger.info("closed observer thread")
 
 
 
@@ -419,7 +432,6 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, mana
     kp_socket.bind(kp_addr)
     kp_socket.listen(2)
     if debug_enabled:
-        print 'scrivo sul file di log'
         remotesib_logger.info('Remote SIB waiting for KPs on port ' + str(kp_port))
     
     # creating and activating the socket for the Publishers
