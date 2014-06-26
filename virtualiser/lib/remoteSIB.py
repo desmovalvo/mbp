@@ -2,30 +2,26 @@
 
 # requirements
 from connection_helpers import *
-from xml.etree import ElementTree as ET
+from message_helpers import *
+from xml_helpers import *
 from remoteSIB import *
-from Subreq import *
-import traceback
 from termcolor import *
+from SSAPLib import *
 import socket, select
+from Subreq import *
+from SIBLib import *
+import traceback
 import threading
+import datetime
 import logging
 import random
 import thread
 import time
-from xml.sax import make_parser
-from SIBLib import *
-import time
-import datetime
-from SSAPLib import *
-from message_helpers import *
-from xml_helpers import *
-import sys
 import json
+import sys
 
 
-BUFSIZ = 1024
-
+BUFSIZ = 4096
 sib = {}
 kp_list = {}
 active_subscriptions = {}
@@ -37,10 +33,7 @@ val_subscriptions = []
 #
 ##############################################################
 
-def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, remotesib_logger):
-
-    # storing received parameters in thread-local variables
-    kp_port = port
+def handler(clientsock, addr, manager_ip, manager_port, debug_enabled, remotesib_logger):
 
     complete_ssap_msg = ""
     while 1:
@@ -113,8 +106,8 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                                 # Then set it to True and start the new socket observer
                                 check_var = True
                                 
-                                # TODO kp_port non serve passarlo: il socket observer non lo usa!!
-                                thread.start_new_thread(socket_observer, (sib, kp_port, check_var, manager_ip, manager_port, debug_enabled, remotesib_logger))                            
+                                # Starting the socket observer
+                                thread.start_new_thread(socket_observer, (sib, check_var, manager_ip, manager_port, debug_enabled, remotesib_logger))                            
                                 print colored("treplies> ", "blue", attrs=["bold"]) + "Socket observer started for socket " + str(sib["socket"])
                     
                             except socket.error:
@@ -214,8 +207,8 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
                                     try:
                                         if s.unsubscribed == False:
                                             s.conn.send(ssap_msg)
-                                        print "close 256"
                                         s.conn.close()
+
                                     except socket.error:
                                         if debug_enabled:
                                             remotesib_logger.info("Error while forwarding UNSUBSCRIBE CONFIRM")
@@ -309,7 +302,7 @@ def handler(clientsock, addr, port, manager_ip, manager_port, debug_enabled, rem
 #
 #####################################################
 
-def socket_observer(sib, port, check_var, manager_ip, manager_port, debug_enabled, remotesib_logger):
+def socket_observer(sib, check_var, manager_ip, manager_port, debug_enabled, remotesib_logger):
     
     key = sib["socket"]
     
@@ -357,7 +350,7 @@ def socket_observer(sib, port, check_var, manager_ip, manager_port, debug_enable
 
 #####################################################
 #
-# SOCKET OBSERVER THREAD
+# SUBSCRIPTION OBSERVER THREAD
 #
 #####################################################
 
@@ -463,7 +456,7 @@ def remoteSIB(virtualiser_ip, kp_port, pub_port, virtual_sib_id, check_var, mana
                 clientsock, addr = sock.accept()
                 if debug_enabled:
                     remotesib_logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr, kp_port, manager_ip, manager_port, debug_enabled, remotesib_logger))
+                thread.start_new_thread(handler, (clientsock, addr, manager_ip, manager_port, debug_enabled, remotesib_logger))
 
             # incoming data
             else:
