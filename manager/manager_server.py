@@ -31,7 +31,8 @@ COMMANDS = {
     "SetSIBStatus": ["sib_id", "status"],
     "GetSIBStatus": ["sib_id"],
     "AddSIBtoVMSIB": ["vmsib_id", "sib_list"],
-    "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"]
+    "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"],
+    "MultiSIBInfo": ["multi_sib_id"]
     }
 
 # classes
@@ -183,6 +184,15 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 elif data["command"] == "SetSIBStatus":
                     print "manager: set sib status request"
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id, cmd.status)
+
+                    # send a reply                    
+                    print "manager server -------- " + str(confirm)
+                    self.request.sendall(json.dumps(confirm))                    
+
+                # MultiSIBInfo
+                elif data["command"] == "MultiSIBInfo":
+                    print "manager: multi sib info request"
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.multi_sib_id)
 
                     # send a reply                    
                     print "manager server -------- " + str(confirm)

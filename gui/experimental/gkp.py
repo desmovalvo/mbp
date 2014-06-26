@@ -153,69 +153,74 @@ class ModifyMultiSIB(Tkinter.Frame):
     ##
     ########################################################
     def show_multi_sib(self, msib_id):
-        self.multi_sib_id = msib_id
+        self.multi_sib_id = str(msib_id)
         # components of the multi sib
         self.msib = []
         # other sibs
         self.other_sibs = []
         
-        self.multisib_label["text"] = "Multi SIB: " + str(msib_id) 
+        self.multisib_label["text"] = "Multi SIB: " + self.multi_sib_id 
 
+        # build the command to the manager to get the information about the multi sib and the other sibs
+        cmd = {"command":"MultiSIBInfo", "multi_sib_id":str(self.multi_sib_id)}
+        jcmd = json.dumps(cmd)
+                
+        # try to connect to the manager and to send the message
+        try:
+            print "contatto il manager"
+            print self.manager_ip
+            print self.manager_port
 
-        self.kp = SibLib("10.143.250.250", 10088)
-        
-        # Query to get all the components of the multi sib
-        t = Triple(URI(ns + self.multi_sib_id), URI(ns + "composedBy"), None)
-        result = self.kp.execute_rdf_query(t)
-        self.multisib_listbox.delete(0, END)
-        for i in result:
-            id = str(i[2]).split("#")[1]
-            t = Triple(URI(ns + str(id)), URI(ns + "hasOwner"), None)
-            res = self.kp.execute_rdf_query(t)
-            if len(res)==0:
-                owner = "VM SIB"
+            # connection to the manager
+            manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            manager_socket.connect((self.manager_ip, self.manager_port))        
+            manager_socket.send(jcmd)
+
+            # wait for a reply
+            while 1:
+                try:
+                    confirm_msg = manager_socket.recv(4096)
+                    break
+                except:
+                    print colored("request_handler> ", "red", attrs=["bold"]) + 'Request to the manager failed'
+                    manager_socket.close()
+                    self.notification_label["text"] = 'Request failed!'
+                                        
+
+            print 'ShowMultiSib: ' + str(confirm_msg)
+
+            # closing socket
+            manager_socket.close()            
+
+            # check the confirm content
+            c = json.loads(confirm_msg)
+            print "c = " + str(c)
+            if c["return"] == "fail":
+                self.notification_label["text"] = 'Request failed!'
+                pass
             else:
-                owner = str(res[0][2])
-            self.multisib_listbox.insert(END, str(id) + " Owner: " + str(owner) )
-            self.msib.append(str(id))
+                self.multisib_listbox.delete(0, END)
+                self.sibs_listbox.delete(0, END)
+                info = c["multisib_info"]
+                print info["components"]
+                print info["others"]
 
-        # Query to get all the sibs and multi sib but not the multi sib with msib_id
-        query = PREFIXES + """ SELECT ?id ?owner 
-        WHERE {{?id ns:hasKpIp ?ip . 
-                ?id ns:hasKpPort ?port .
-                ?id ns:hasStatus "online" . 
-                ?id rdf:type ns:publicSib . 
-                ?id ns:hasOwner ?owner .
-                }
-              UNION
-               {?id ns:hasKpIp ?ip . 
-                ?id ns:hasKpPort ?port .
-                ?id ns:hasStatus "online" . 
-                ?id rdf:type ns:virtualSib . 
-                ?id ns:hasOwner ?owner .
-                }
-              UNION
-               {?id ns:hasKpIp ?ip .
-                ?id ns:hasKpPort ?port . 
-                ?id ns:hasStatus "online" . 
-                ?id rdf:type ns:virtualMultiSib . 
-               	FILTER(?id != ns:""" + str(msib_id) + """)}}"""
-       
-        result = self.kp.execute_sparql_query(query)
+                for sib in info["components"]:
+                    self.msib.append(str(sib))
+                    owner = info["components"][sib]
+                    self.multisib_listbox.insert(END, str(sib) + " Owner: " + str(owner) )
+                    
+                for sib in info["others"]:
+                    if sib not in self.msib:
+                        self.other_sibs.append(str(sib))
+                        owner = info["others"][sib]
+                        self.sibs_listbox.insert(END, str(sib) + " Owner: " + str(owner))
 
-        self.sibs_listbox.delete(0, END)
-        sibs = []
-        for i in result:
-            id = str(i[0][2]).split("#")[1]
-            
-            if i[1][2] == None:
-                owner = "VM SIB"
-            else:
-                owner = str(i[1][2])
-            sibs.append(str(i[0][2]).split("#")[1])
-            if id not in self.msib:
-                self.sibs_listbox.insert(END, str(id) + " Owner: " + str(owner))
-                self.other_sibs.append(str(id))
+
+        except:
+            pass
+
+
                 
     ########################################################
     ##
@@ -242,7 +247,7 @@ class ModifyMultiSIB(Tkinter.Frame):
             print "contatto il manager"
             # connection to the vmsib
             manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            manager_socket.connect(("10.143.250.250", 17714))
+            manager_socket.connect((self.manager_ip, self.manager_port))        
             manager_socket.send(msg)
 
             # wait for a reply
@@ -299,7 +304,7 @@ class ModifyMultiSIB(Tkinter.Frame):
             print "contatto il manager"
             # connection to the vmsib
             manager_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            manager_socket.connect(("10.143.250.250", 17714))
+            manager_socket.connect((self.manager_ip, self.manager_port))        
             manager_socket.send(msg)
 
             # wait for a reply
@@ -359,6 +364,17 @@ class ModifyMultiSIB(Tkinter.Frame):
         # attributes
         self.kp = None
         self.controller = controller
+
+        # Open the configuration file to read ip and port of the manager server
+        conf_file = open("gkp.conf", "r")
+        conf = json.load(conf_file)
+
+        # Manager parameters
+        self.manager_ip = conf["manager"]["ip"]
+        self.manager_port = conf["manager"]["port"]
+
+        # Closing the configuration file
+        conf_file.close()
 
         # Font
         section_font = tkFont.Font(family="Helvetica", size=14, weight="bold")
@@ -1501,7 +1517,7 @@ class SibSearch(Tkinter.Frame):
             # msg = {"command":"DiscoveryAll"}
 
             
-            if self.profile == None:
+            if self.profile == None or self.profile == "":
                 print "discovery all........"
                 # discoveryAll request
                 print "Sending DiscoveryAll request to the manager:",
@@ -1510,6 +1526,8 @@ class SibSearch(Tkinter.Frame):
             else:
                 print "discovery where........"
                 # discoveryWhere request
+                print "-------------" + str(self.profile)
+                print type(self.profile)
                 print "Sending DiscoveryWhere request to the manager:",
                 msg = {"command":"DiscoveryWhere", "sib_profile":"hasOwner:" + str(self.profile)}
 
