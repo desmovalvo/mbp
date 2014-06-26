@@ -132,6 +132,7 @@ class SibInteraction(Tkinter.Frame):
             # disable all the buttons
             self.insert_button.config(state = DISABLED)
             self.remove_button.config(state = DISABLED)
+            self.update_button.config(state = DISABLED)
             self.rdf_query_button.config(state = DISABLED)
             self.rdf_query_all_button.config(state = DISABLED)
             self.rdf_subscription_button.config(state = DISABLED)
@@ -169,9 +170,12 @@ class SibInteraction(Tkinter.Frame):
 
             # disable rdf/sparql entries
             self.sparql_text.config(state = DISABLED)
-            self.subject_entry.config(state = DISABLED)
-            self.predicate_entry.config(state = DISABLED)
-            self.object_entry.config(state = DISABLED)
+            self.subject_insert_entry.config(state = DISABLED)
+            self.predicate_insert_entry.config(state = DISABLED)
+            self.object_insert_entry.config(state = DISABLED)
+            self.subject_remove_entry.config(state = DISABLED)
+            self.predicate_remove_entry.config(state = DISABLED)
+            self.object_remove_entry.config(state = DISABLED)
 
         else:
 
@@ -190,6 +194,7 @@ class SibInteraction(Tkinter.Frame):
                 # enable all the buttons
                 self.insert_button.config(state = NORMAL)
                 self.remove_button.config(state = NORMAL)
+                self.update_button.config(state = NORMAL)
                 self.rdf_query_button.config(state = NORMAL)
                 self.rdf_query_all_button.config(state = NORMAL)
                 self.rdf_subscription_button.config(state = NORMAL)
@@ -205,9 +210,12 @@ class SibInteraction(Tkinter.Frame):
 
                 # enable rdf/sparql entries
                 self.sparql_text.config(state = NORMAL)
-                self.subject_entry.config(state = NORMAL)
-                self.predicate_entry.config(state = NORMAL)
-                self.object_entry.config(state = NORMAL)                
+                self.subject_insert_entry.config(state = NORMAL)
+                self.predicate_insert_entry.config(state = NORMAL)
+                self.object_insert_entry.config(state = NORMAL)                
+                self.subject_remove_entry.config(state = NORMAL)
+                self.predicate_remove_entry.config(state = NORMAL)
+                self.object_remove_entry.config(state = NORMAL)                
                 self.sparql_text.delete(1.0, END)
                 self.sparql_text.insert(INSERT, general_sparql_query)
 
@@ -228,15 +236,15 @@ class SibInteraction(Tkinter.Frame):
     def rdf_query(self):
         
         # get the subject
-        s = self.subject_entry.get()
+        s = self.subject_insert_entry.get()
         subj = None if s == "*" else URI(s)
 
         # get the predicate
-        p = self.predicate_entry.get()
+        p = self.predicate_insert_entry.get()
         pred = None if p == "*" else URI(p)
 
         # get the object
-        o = self.object_entry.get()
+        o = self.object_insert_entry.get()
         obj = None if o == "*" else URI(o)
 
         # build the Triple object
@@ -316,13 +324,13 @@ class SibInteraction(Tkinter.Frame):
     def insert(self):
         
         # get the subject
-        subj = URI(self.subject_entry.get())
+        subj = URI(self.subject_insert_entry.get())
 
         # get the predicate
-        pred = URI(self.predicate_entry.get())
+        pred = URI(self.predicate_insert_entry.get())
 
         # get the object
-        obj = URI(self.object_entry.get())
+        obj = URI(self.object_insert_entry.get())
 
         # build the triple
         t = Triple(subj, pred, obj)
@@ -355,15 +363,15 @@ class SibInteraction(Tkinter.Frame):
     def remove(self):
 
         # get the subject
-        s = self.subject_entry.get()
+        s = self.subject_remove_entry.get()
         subj = None if s == "*" else URI(s)
 
         # get the predicate
-        p = self.predicate_entry.get()
+        p = self.predicate_remove_entry.get()
         pred = None if p == "*" else URI(p)
 
         # get the object
-        o = self.object_entry.get()
+        o = self.object_remove_entry.get()
         obj = None if o == "*" else URI(o)
 
         # build the triple
@@ -390,6 +398,61 @@ class SibInteraction(Tkinter.Frame):
 
     ########################################################
     ##
+    ## UPDATE
+    ##
+    ########################################################
+
+    def update(self):
+
+        # get the subject to insert
+        new_subj = URI(self.subject_insert_entry.get())
+
+        # get the predicate to insert
+        new_pred = URI(self.predicate_insert_entry.get())
+
+        # get the object to insert
+        new_obj = URI(self.object_insert_entry.get())
+
+        # build the triple
+        new_t = Triple(new_subj, new_pred, new_obj)
+
+
+        # get the subject
+        s = self.subject_remove_entry.get()
+        old_subj = None if s == "*" else URI(s)
+
+        # get the predicate
+        p = self.predicate_remove_entry.get()
+        old_pred = None if p == "*" else URI(p)
+
+        # get the object
+        o = self.object_remove_entry.get()
+        old_obj = None if o == "*" else URI(o)
+
+        # build the triple
+        old_t = Triple(old_subj, old_pred, old_obj)
+
+        # notification
+        print "Update request for triple " + str(old_t) + " to " + str(new_t) + ":",
+
+        try:
+            # remove the triple
+            self.kp.update(new_t, old_t)
+
+            # notification
+            self.notification_label["text"] = 'RDF update succesful'
+            print "OK!"
+
+        except:
+            
+            # failure notification
+            self.notification_label["text"] = 'Error update a triple into the SIB'
+            print colored("failed!", "red", attrs=["bold"])
+            print sys.exc_info()                  
+
+
+    ########################################################
+    ##
     ## RDF SUBSCRIPTION
     ##
     ########################################################
@@ -397,15 +460,15 @@ class SibInteraction(Tkinter.Frame):
     def rdf_subscription(self):
 
         # get the subject
-        s = self.subject_entry.get()
+        s = self.subject_insert_entry.get()
         subj = None if s == "*" else URI(s)
 
         # get the predicate
-        p = self.predicate_entry.get()
+        p = self.predicate_insert_entry.get()
         pred = None if p == "*" else URI(p)
 
         # get the object
-        o = self.object_entry.get()
+        o = self.object_insert_entry.get()
         obj = None if o == "*" else URI(o)
 
         # build the triple
@@ -817,38 +880,70 @@ class SibInteraction(Tkinter.Frame):
         self.rdf_label.grid( row = 0, sticky = NW, columnspan = 3, padx = 20, pady = 3)
         
         # Subject Label
-        self.subject_label = Label(self.rdfsparql_frame, text="Subject")
+        self.subject_label = Label(self.rdfsparql_frame, text="Insert subject")
         self.subject_label.grid(row = 1, column = 0, sticky = SW, padx = 20, pady = 3)
 
         # Subject Entry
-        self.subject_entry = Entry(self.rdfsparql_frame)
-        self.subject_entry.grid(row = 2, column = 0, sticky = W+N+E, padx = 20, pady = 3)
-        self.subject_entry.insert(0, "http://ns#")
-        self.subject_entry.config(state = DISABLED)
+        self.subject_insert_entry = Entry(self.rdfsparql_frame)
+        self.subject_insert_entry.grid(row = 2, column = 0, sticky = W+N+E, padx = 20, pady = 3)
+        self.subject_insert_entry.insert(0, "http://ns#")
+        self.subject_insert_entry.config(state = DISABLED)
 
         # Predicate Label
-        self.predicate_label = Label(self.rdfsparql_frame, text="Predicate")
+        self.predicate_label = Label(self.rdfsparql_frame, text="Insert predicate")
         self.predicate_label.grid(row = 1, column = 1, sticky = SW, padx = 20, pady = 3)
 
         # Predicate Entry
-        self.predicate_entry = Entry(self.rdfsparql_frame)
-        self.predicate_entry.grid(row = 2, column = 1, sticky = W+E+N, padx = 20, pady = 3)
-        self.predicate_entry.insert(0, "http://ns#")
-        self.predicate_entry.config(state = DISABLED)
+        self.predicate_insert_entry = Entry(self.rdfsparql_frame)
+        self.predicate_insert_entry.grid(row = 2, column = 1, sticky = W+E+N, padx = 20, pady = 3)
+        self.predicate_insert_entry.insert(0, "http://ns#")
+        self.predicate_insert_entry.config(state = DISABLED)
 
         # Object Label
-        self.object_label = Label(self.rdfsparql_frame, text="Object")
+        self.object_label = Label(self.rdfsparql_frame, text="Insert object")
         self.object_label.grid(row = 1, column = 2, sticky = SW, padx = 20, pady = 3)
 
         # Object Entry
-        self.object_entry = Entry(self.rdfsparql_frame)
-        self.object_entry.grid(row = 2, column = 2, sticky = W+E+N, padx = 20, pady = 3)
-        self.object_entry.insert(0, "http://ns#")
-        self.object_entry.config(state = DISABLED)
+        self.object_insert_entry = Entry(self.rdfsparql_frame)
+        self.object_insert_entry.grid(row = 2, column = 2, sticky = W+E+N, padx = 20, pady = 3)
+        self.object_insert_entry.insert(0, "http://ns#")
+        self.object_insert_entry.config(state = DISABLED)
+
+        ### Update fields
+
+        # Subject Label
+        self.subject_remove_label = Label(self.rdfsparql_frame, text="Remove subject")
+        self.subject_remove_label.grid(row = 3, column = 0, sticky = SW, padx = 20, pady = 3)
+
+        # Subject Entry
+        self.subject_remove_entry = Entry(self.rdfsparql_frame)
+        self.subject_remove_entry.grid(row = 4, column = 0, sticky = W+N+E, padx = 20, pady = 3)
+        self.subject_remove_entry.insert(0, "http://ns#")
+        self.subject_remove_entry.config(state = DISABLED)
+
+        # Predicate Label
+        self.predicate_remove_label = Label(self.rdfsparql_frame, text="Remove predicate")
+        self.predicate_remove_label.grid(row = 3, column = 1, sticky = SW, padx = 20, pady = 3)
+
+        # Predicate Entry
+        self.predicate_remove_entry = Entry(self.rdfsparql_frame)
+        self.predicate_remove_entry.grid(row = 4, column = 1, sticky = W+E+N, padx = 20, pady = 3)
+        self.predicate_remove_entry.insert(0, "http://ns#")
+        self.predicate_remove_entry.config(state = DISABLED)
+
+        # Object Label
+        self.object_remove_label = Label(self.rdfsparql_frame, text="Remove object")
+        self.object_remove_label.grid(row = 3, column = 2, sticky = SW, padx = 20, pady = 3)
+
+        # Object Entry
+        self.object_remove_entry = Entry(self.rdfsparql_frame)
+        self.object_remove_entry.grid(row = 4, column = 2, sticky = W+E+N, padx = 20, pady = 3)
+        self.object_remove_entry.insert(0, "http://ns#")
+        self.object_remove_entry.config(state = DISABLED)
 
         # Buttons' Frame
         self.rdfbuttons_frame = Frame(self.rdfsparql_frame)
-        self.rdfbuttons_frame.grid(row = 3, column = 0, columnspan = 3, padx = 20, pady = 3)
+        self.rdfbuttons_frame.grid(row = 5, column = 0, columnspan = 3, padx = 20, pady = 3)
 
         # Insert button
         self.insert_button = Button(self.rdfbuttons_frame)
@@ -864,48 +959,55 @@ class SibInteraction(Tkinter.Frame):
         self.remove_button.config( state = DISABLED )
         self.remove_button.grid(row = 0, column = 1)
 
+        # Remove button
+        self.update_button = Button(self.rdfbuttons_frame)
+        self.update_button["text"] = "Update"
+        self.update_button["command"] =  self.update
+        self.update_button.config( state = DISABLED )
+        self.update_button.grid(row = 0, column = 2)
+
         # RDF query button
         self.rdf_query_button = Button(self.rdfbuttons_frame)
         self.rdf_query_button["text"] = "RDF Query"
         self.rdf_query_button["command"] =  self.rdf_query
         self.rdf_query_button.config( state = DISABLED )
-        self.rdf_query_button.grid(row = 0, column = 2)
+        self.rdf_query_button.grid(row = 0, column = 3)
 
         # RDF query all button
         self.rdf_query_all_button = Button(self.rdfbuttons_frame)
         self.rdf_query_all_button["text"] = "RDF Query *"
         self.rdf_query_all_button["command"] = self.rdf_query_all
         self.rdf_query_all_button.config( state = DISABLED )
-        self.rdf_query_all_button.grid(row = 0, column = 3)
+        self.rdf_query_all_button.grid(row = 0, column = 4)
 
         # RDF subscription button
         self.rdf_subscription_button = Button(self.rdfbuttons_frame)
         self.rdf_subscription_button["text"] = "RDF Subscription"
         self.rdf_subscription_button["command"] =  self.rdf_subscription
         self.rdf_subscription_button.config( state = DISABLED )
-        self.rdf_subscription_button.grid(row = 0, column = 4)
+        self.rdf_subscription_button.grid(row = 0, column = 5)
 
         # Rdf_Active_Subs_Label Label
         self.rdf_active_subs_label = Label(self.rdfsparql_frame, text="RDF Active subs (0)")
-        self.rdf_active_subs_label.grid(row = 4, column = 0)
+        self.rdf_active_subs_label.grid(row = 6, column = 0)
 
         # RDF active subscriptions combobox
         self.rdf_active_subs_combobox_var = StringVar(self.rdfsparql_frame)
         self.rdf_active_subs_combobox_items = ()
         self.rdf_active_subs_combobox = OptionMenu(self.rdfsparql_frame, self.rdf_active_subs_combobox_var, self.rdf_active_subs_combobox_items)
         self.rdf_active_subs_combobox.config( state = DISABLED, width = 20 )
-        self.rdf_active_subs_combobox.grid(row = 4, column = 1)
+        self.rdf_active_subs_combobox.grid(row = 6, column = 1)
 
         # Rdf_Unsubscription button
         self.rdf_unsubscription_button = Button(self.rdfsparql_frame)
         self.rdf_unsubscription_button["text"] = "RDF Unsubscription"
         self.rdf_unsubscription_button["command"] =  self.rdf_unsubscription
         self.rdf_unsubscription_button.config( state = DISABLED )
-        self.rdf_unsubscription_button.grid(row = 4, column = 2)
+        self.rdf_unsubscription_button.grid(row = 6, column = 2)
         
         # Separator
         self.sep = Frame(self.rdfsparql_frame, height = 250, relief=SUNKEN)
-        self.sep.grid(row = 0, column = 3, rowspan = 5)
+        self.sep.grid(row = 0, column = 3, rowspan = 7)
 
         # SPARQL Label
         self.sparql_label = Label(self.rdfsparql_frame, text="SPARQL Interaction", font = section_font)
@@ -913,19 +1015,19 @@ class SibInteraction(Tkinter.Frame):
 
         # Sparql Text
         self.sparql_text = Text(self.rdfsparql_frame)
-        self.sparql_text.grid(row = 1, column = 4, rowspan = 2, padx = (20,0), pady = 3, columnspan = 3)
+        self.sparql_text.grid(row = 1, column = 4, rowspan = 4, padx = (20,0), pady = 3, columnspan = 3)
         self.sparql_text.config(height = 8, state = DISABLED)
         self.sparql_text.insert(INSERT, general_sparql_query)
 
         # Sparql scrollbar
         self.sparql_scrollbar = Scrollbar(self.rdfsparql_frame)
-        self.sparql_scrollbar.grid(row = 1, column = 7, rowspan = 2, sticky = N + S, pady = 3, padx = (0,20))
+        self.sparql_scrollbar.grid(row = 1, column = 7, rowspan = 4, sticky = N + S, pady = 3, padx = (0,20))
         self.sparql_scrollbar.config( command = self.sparql_text.yview )
         self.sparql_text.config(yscrollcommand=self.sparql_scrollbar.set)
 
         # Sparql buttons' frame
         self.sparqlbuttons_frame = Frame(self.rdfsparql_frame)
-        self.sparqlbuttons_frame.grid(row = 3, column = 4, padx = 20, pady = 3, columnspan = 4)
+        self.sparqlbuttons_frame.grid(row = 5, column = 4, padx = 20, pady = 3, columnspan = 4)
 
         # Sparql_Query button
         self.sparql_query_button = Button(self.sparqlbuttons_frame)
@@ -950,25 +1052,25 @@ class SibInteraction(Tkinter.Frame):
 
         # SPARQL Active_Subs_Label Label
         self.sparql_active_subs_label = Label(self.rdfsparql_frame, text="SPARQL Active subs (0)")
-        self.sparql_active_subs_label.grid(row = 4, column = 4, sticky = W, padx = 20, pady = 3)
+        self.sparql_active_subs_label.grid(row = 6, column = 4, sticky = W, padx = 20, pady = 3)
 
         # SPARQL active subscriptions combobox
         self.sparql_active_subs_combobox_var = StringVar(self.rdfsparql_frame)
         self.sparql_active_subs_combobox_items = ()
         self.sparql_active_subs_combobox = OptionMenu(self.rdfsparql_frame, self.sparql_active_subs_combobox_var, self.sparql_active_subs_combobox_items)
         self.sparql_active_subs_combobox.config( state = DISABLED, width = 20 )
-        self.sparql_active_subs_combobox.grid(row = 4, column = 5)
+        self.sparql_active_subs_combobox.grid(row = 6, column = 5)
 
         # Sparql_Unsubscription button
         self.sparql_unsubscription_button = Button(self.rdfsparql_frame)
         self.sparql_unsubscription_button["text"] = "SPARQL Unsubscription"
         self.sparql_unsubscription_button["command"] =  self.sparql_unsubscription
         self.sparql_unsubscription_button.config( state = DISABLED )
-        self.sparql_unsubscription_button.grid(row = 4, column = 6)
+        self.sparql_unsubscription_button.grid(row = 6, column = 6)
 
         # Notification frame
         self.notification_frame = LabelFrame(self.rdfsparql_frame)
-        self.notification_frame.grid(row = 5, column = 0, columnspan = 8, sticky = E+W)
+        self.notification_frame.grid(row = 7, column = 0, columnspan = 8, sticky = E+W)
 
         # Notification Label
         self.notification_label = Label(self.notification_frame, text="Waiting for commands...")
@@ -976,7 +1078,7 @@ class SibInteraction(Tkinter.Frame):
 
         # End buttons frame
         self.end_buttons_frame = Frame(self.rdfsparql_frame)
-        self.end_buttons_frame.grid(row = 6, column = 0, columnspan = 8, sticky = E)
+        self.end_buttons_frame.grid(row = 8, column = 0, columnspan = 8, sticky = E)
         
         # Quit button
         self.quit_button = Button(self.end_buttons_frame, text = "Quit")
