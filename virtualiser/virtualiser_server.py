@@ -293,7 +293,7 @@ if __name__=='__main__':
             print virtserver_print(True) + "Goodbye!"
     
     else:
-        if server.debug_enabled:
-            server.logger.info(" Unable to start the virtualiser. Cause: " + str(confirm["cause"]))
+        if debug_enabled:
+            logger.info(" Unable to start the virtualiser. Cause: " + str(confirm["cause"]))
         print virtserver_print(False) + "unable to start the virtualiser. Cause: " + str(confirm["cause"])
         sys.exit(0)
