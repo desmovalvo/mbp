@@ -20,7 +20,7 @@ from connection_helpers import *
 import socket, select, string, sys
 
 
-def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port, check, log_level, logger):
+def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port, check, log_enabled, logger):
 
     # variables
     complete_ssap_msg = ''
@@ -286,7 +286,6 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions, check):
                
                 # forwarding subscription-related message to the virtual sib
                 tvs.send(ssap_msg)
-
 
                 # if it's an unsubscribe confirm we have to close sockets
                 if "<message_type>CONFIRM</message_type>" in ssap_msg and "<transaction_type>UNSUBSCRIBE</transaction_type>" in ssap_msg:

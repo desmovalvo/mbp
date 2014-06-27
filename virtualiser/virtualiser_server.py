@@ -49,7 +49,12 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
             print virtserver_print(True) + "incoming connection, received the following message:",
             if self.server.debug_enabled:
                 self.server.logger.info(" Incoming connection, received the following message:")
-            data = json.loads(self.request.recv(1024).strip())
+
+            msg = self.request.recv(1024).strip()
+            if len(msg) == 0:
+                return
+
+            data = json.loads(msg)
             print data
 
             if self.server.debug_enabled:

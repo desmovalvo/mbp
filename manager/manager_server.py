@@ -1,5 +1,6 @@
 # requirements
 from lib.requests_handler import *
+from lib.ancillary_lib import *
 from collections import Counter
 from lib.command import *
 from threading import *
@@ -33,24 +34,22 @@ COMMANDS = {
 
 # classes
 class ManagerServer(SocketServer.ThreadingTCPServer):
-    print colored("manager_server> ", "blue", attrs=["bold"]) + "sib manager started!"
+    print manager_server_print(True) + "sib manager started!"
     allow_reuse_address = True
 
 class ManagerServerHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         try:
             # Output the received message
-            # print colored("manager_server> ", "blue", attrs=["bold"]) + "incoming connection"
             if self.server.debug_enabled:
                 self.server.logger.info(" Incoming connection")
             data = json.loads(self.request.recv(1024).strip())            
-            print colored("manager_server> ", "blue", attrs=["bold"]) + "received the following message:"
+            print manager_server_print(True) + "received the following message:"
             print data
 
             # Check if the command is valid
             cmd = Command(data)
             if cmd.valid:
-                # print colored("manager_server> ", "blue", attrs=["bold"]) + "calling the proper method"
 
                 # RegisterPublicSIB request
                 if cmd.command == "RegisterPublicSIB":
@@ -69,7 +68,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
 
                 # NewRemoteSIB request
-                if cmd.command == "NewRemoteSIB":
+                elif cmd.command == "NewRemoteSIB":
 
                     # Acquire the lock
                     self.server.lock.acquire()
@@ -91,28 +90,28 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     self.server.lock.release()
 
                 # NewVirtualiser request
-                if cmd.command == "NewVirtualiser":
+                elif cmd.command == "NewVirtualiser":
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.id, cmd.ip, cmd.port)
                     
                     # send a reply
                     self.request.sendall(json.dumps(confirm))
 
                 # DeleteRemoteSIB request
-                elif data["command"] == "DeleteRemoteSIB":
+                elif cmd.command == "DeleteRemoteSIB":
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.virtual_sib_id)
                     print "CONFIRM " + str(confirm)
                     # send a reply
                     self.request.sendall(json.dumps(confirm))
 
                 # DeleteSIB request
-                elif data["command"] == "DeleteSIB":
+                elif cmd.command == "DeleteSIB":
                     confirm = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.sib_id)
                                 
                     # send a reply
                     self.request.sendall(json.dumps(confirm))      
 
                 # DeleteVirtualiser request
-                elif data["command"] == "DeleteVirtualiser":
+                elif cmd.command == "DeleteVirtualiser":
 
                     # acquire the lock
                     self.server.lock.acquire()
@@ -127,35 +126,35 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     self.server.lock.release()
 
                 # DiscoveryAll request
-                elif data["command"] == "DiscoveryAll":
+                elif cmd.command == "DiscoveryAll":
                     virtual_sib_list = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port)
                     
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
 
                 # DiscoveryWhere request
-                elif data["command"] == "DiscoveryWhere":
+                elif cmd.command == "DiscoveryWhere":
                     virtual_sib_list = globals()[cmd.command](self.server.ancillary_ip, self.server.ancillary_port, cmd.sib_profile)
                     
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_list':virtual_sib_list}))
                                 
                 # NewVirtualMultiSIB request
-                elif data["command"] == "NewVirtualMultiSIB":
+                elif cmd.command == "NewVirtualMultiSIB":
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_list)
                 
                     # send a reply                    
                     self.request.sendall(json.dumps(confirm))
 
                 # SetSIBStatus
-                elif data["command"] == "SetSIBStatus":
+                elif cmd.command == "SetSIBStatus":
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id, cmd.status)
 
                     # send a reply                    
                     self.request.sendall(json.dumps(confirm))                    
 
                 # GetSIBStatus
-                elif data["command"] == "GetSIBStatus":
+                elif cmd.command == "GetSIBStatus":
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id)
 
                     # send a reply                    
@@ -163,7 +162,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
 
                 # AddSIBtoVMSIB
-                elif data["command"] == "AddSIBtoVMSIB":
+                elif cmd.command == "AddSIBtoVMSIB":
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.vmsib_id, cmd.sib_list)
                 
                     # send a reply                    
@@ -171,14 +170,14 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
 
                 # RemoveSIBfromVMSIB
-                elif data["command"] == "RemoveSIBfromVMSIB":
+                elif cmd.command == "RemoveSIBfromVMSIB":
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.vmsib_id, cmd.sib_list)
 
                     # send a reply                    
                     self.request.sendall(json.dumps(confirm))                    
 
                 # SetSIBStatus
-                elif data["command"] == "SetSIBStatus":
+                elif cmd.command == "SetSIBStatus":
                     print "manager: set sib status request"
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.sib_id, cmd.status)
 
@@ -187,7 +186,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     self.request.sendall(json.dumps(confirm))                    
 
                 # MultiSIBInfo
-                elif data["command"] == "MultiSIBInfo":
+                elif cmd.command == "MultiSIBInfo":
                     print "manager: multi sib info request"
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port, cmd.multi_sib_id)
 
@@ -199,7 +198,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
             else:
                 # debug print
-                print colored("manager_server> ", "red", attrs=["bold"]) + cmd.invalid_cause
+                print manager_server_print(False) + cmd.invalid_cause
                 if self.server.debug_enabled:
                     self.server.logger.info(" " + cmd.invalid_cause)
                 
@@ -207,7 +206,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                 self.request.sendall(json.dumps({'return':'fail', 'cause':cmd.invalid_cause}))                                                
                 
         except ZeroDivisionError: #Exception, e:
-            print colored("manager_server> ", "red", attrs=["bold"]) + "Exception while receiving message: " + str(e)
+            print manager_server_print(False) + "Exception while receiving message: " + str(e)
             if self.server.debug_enabled:
                 self.server.logger.info(" Exception while receiving message: " + str(e))
             self.request.sendall(json.dumps({'return':'fail', 'cause':str(e)}))
@@ -233,10 +232,10 @@ if __name__=='__main__':
                 config_file = arg
                 
             else:
-                print virtualiser_print(False) + "unrecognized option " + str(opt)
+                print manager_server_print(False) + "unrecognized option " + str(opt)
     
     except getopt.GetoptError:
-        print virtserver_print(False) + "Usage: python manager_server.py [-c config_file]"
+        print manager_server_print(False) + "Usage: python manager_server.py [-c config_file]"
         sys.exit()
 
     # read the configuration file
@@ -260,10 +259,14 @@ if __name__=='__main__':
     logging.basicConfig(filename=log_file, level=debug_level)
     logger = logging.getLogger("manager_server")
 
-    # main 
+    # main
     try:
         # Create a logger object
         logger = logging.getLogger("manager_server")
+
+        # Preliminary check
+        print manager_server_print(True) + "cleaning ancillary SIB from old triples"
+        ancillary_check(ancillary_ip, ancillary_port)
        
         # Start the manager server
         server = ManagerServer((manager_ip, manager_port), ManagerServerHandler)
