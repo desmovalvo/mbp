@@ -113,7 +113,7 @@ if __name__ == "__main__":
                 timer = datetime.datetime.now()
                 StartConnection(manager_ip, manager_port, owner, 
                                 virtual_sib_id, virtual_sib_ip, virtual_sib_pub_port, 
-                                timer, realsib_ip, realsib_port, check, logger)
+                                timer, realsib_ip, realsib_port, check, log_level, logger)
 
             else:
                 sys.exit()

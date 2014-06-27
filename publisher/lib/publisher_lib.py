@@ -6,6 +6,7 @@ import uuid
 import time
 import thread
 import random
+import logging
 import datetime
 import threading
 import traceback
@@ -19,7 +20,7 @@ from connection_helpers import *
 import socket, select, string, sys
 
 
-def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port, check):
+def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_port, timer, realsib_ip, realsib_port, check, log_level, logger):
 
     # variables
     complete_ssap_msg = ''
@@ -28,7 +29,7 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
     node_id = vsib_id
     
     # register request
-    print colored("publisher3> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host) + ":" + str(vsib_port)
+    print colored("publisher_lib> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host) + ":" + str(vsib_port)
     connected = False
     vs = register_request(vsib_host, vsib_port, node_id, connected)
     socket_list = [vs]
@@ -40,7 +41,9 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
       
         if not(read_sockets or write_sockets or error_sockets):
             
-            print colored("publisher3> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB. Trying reconnection...'
+            print colored("publisher_lib> ", "red", attrs=["bold"]) + 'Disconnected from the virtual SIB. Trying reconnection...'
+            if log_enabled:
+                logger.info(" disconnected from the virtual SIB, trying reconnection")
             
             # reconnect to remote host
             connected = False
@@ -52,12 +55,14 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                 vs.close()
 
                 # register request
-                print colored("publisher3> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host) + ":" + str(vsib_port)
+                print colored("publisher_lib> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host) + ":" + str(vsib_port)
                 vs = register_request(vsib_host, vsib_port, node_id)
                 socket_list = [vs]
                 if connected:
+                    if log_enabled:
+                        logger.info(" publisher registered to the virtual SIB")
                     break                    
-   
+
 
         # MAIN LOOP
         for sock in read_sockets:
@@ -79,10 +84,12 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                     
                     # there are no messages
                     if not ssap_msg and not complete_ssap_msg:
-                        print colored("publisher3> ", "red", attrs=["bold"]) + "Connection closed by foreign host"
+                        print colored("publisher_lib> ", "red", attrs=["bold"]) + "Connection closed by foreign host"
 
                         # close all subscriptions
                         print "closing all the subscriptions"
+                        if log_enabled:
+                            logger.info(" closing all the subscriptions")
                         check[0] = True
                         
                         # In this case the virtualiser died, so we should look for another virtualiser
@@ -101,7 +108,6 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
 
                             if cnf:
                                 virtualSIB_active = True
-
                                 
                         # A new virtualsib now exists, so we must update the connection parameters
                         vsib_host = cnf["virtual_sib_info"]["virtual_sib_ip"]
@@ -113,6 +119,9 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                         vs.connect((vsib_host, vsib_port))
                         socket_list.append(vs)
 
+                        if log_enabled:
+                            logger.info(" connected to the virtual SIB. New address is: " + str(vsib_host) + ":" + str(vsib_port))
+
                         # now we have to send a register request
                         # building and sending the register request
                         space_id = "X"
@@ -122,6 +131,8 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
                                                                       "REGISTER",
                                                                       transaction_id, "")
                         vs.send(register_msg)
+                        if log_enabled:
+                            logger.info(" publisher registered to the virtual SIB")
 
                     # there are messages
                     else:
@@ -168,7 +179,6 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip,
     if ssap_msg_dict["transaction_type"] != "REGISTER":
 
         rs.send(ssap_msg)
-        # print colored("publisher3> ", "blue", attrs=["bold"]) + "forwarding " + colored(ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"], "cyan", attrs=["bold"]) + " to the real sib"
 
         # is it a subscribe request?
         if ssap_msg_dict["transaction_type"] == "SUBSCRIBE" and ssap_msg_dict["message_type"] == "REQUEST":
@@ -187,7 +197,7 @@ def handler(sock, ssap_msg, vs, vsib_host, vsib_port, subscriptions, realsib_ip,
         
     # register confirm
     else:
-        print colored("publisher3> ", "blue", attrs=["bold"]) + "REGISTER CONFIRM received"
+        print colored("publisher_lib> ", "blue", attrs=["bold"]) + "REGISTER CONFIRM received"
 
 
 ######################################################
@@ -216,7 +226,6 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             try :
                 
                 # forwarding message to the virtual sib
-                # print colored("publisher3> ", "blue", attrs=["bold"]) + " Received confirm message from the Real Sib, sending it to the Virtual Sib"
                 tvs.send(ssap_msg)
 
                 # closing sockets
@@ -227,7 +236,7 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
 
             # socket error
             except socket.error:
-                print colored("publisher3> ", "red", attrs=["bold"]) + "Socket error"
+                print colored("publisher_lib> ", "red", attrs=["bold"]) + "Socket error"
                 print sys.exc_info() + "\n" + traceback.print_exc()
 
         # no message, closing sockets
@@ -237,7 +246,6 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
             break
     
     # closing thread
-    # print colored("publisher3> ", "red", attrs=[]) + "Closing thread generic_handler"
     return
 
 
@@ -277,7 +285,6 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions, check):
             try:
                
                 # forwarding subscription-related message to the virtual sib
-                # print colored("tpublisher " + str(tn) + ">", "blue", attrs=["bold"]) + " Forwarding subscription-related message to the Virtual Sib"
                 tvs.send(ssap_msg)
 
 
@@ -294,5 +301,4 @@ def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions, check):
                 break
 
     # close thread
-    # print colored("publisher3> ", "red", attrs=[]) + "Closing thread subscription_handler"
     return
