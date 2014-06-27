@@ -264,3 +264,8 @@ def get_multisibs_on_virtualiser(virtualiser_id, a):
         
     return sib_list
 
+
+def get_public_sibs(a):
+    
+    q = PREFIXES + """SELECT ?id ?ip ?port WHERE { ?id rdf:type ns:publicSib . ?id ns:hasKpIp ?ip . ?id ns:hasKpPort ?port }"""
+    return a.execute_sparql_query(q)
