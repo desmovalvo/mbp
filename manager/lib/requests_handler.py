@@ -1087,3 +1087,35 @@ def MultiSIBInfo(ancillary_ip, ancillary_port, multi_sib_id):
         return confirm
     
 
+def GetVirtualisers(ancillary_ip, ancillary_port):
+    try:
+        # List of the available virtualisers
+        virtualisers_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+    SELECT ?s ?ip ?port ?load 
+        WHERE { ?s rdf:type ns:virtualiser .
+              	?s ns:hasIP ?ip .
+              	?s ns:hasPort ?port .
+              	?s ns:load ?load }
+    """
+    
+        # execute query
+        a = SibLib(ancillary_ip, int(ancillary_port))
+        res = a.execute_sparql_query(virtualisers_query)
+        virtualiser_list = {}
+        for el in res:
+            virtualiser_id = str(el[0][2])
+            virtualiser_list[virtualiser_id] = {}
+            virtualiser_list[virtualiser_id][virtualiser_ip] = str(el[1][2])
+            virtualiser_list[virtualiser_id][virtualiser_port] = str(el[2][2])
+            virtualiser_list[virtualiser_id][virtualiser_load] = str(el[3][2])
+        
+        confirm = {"return":"ok", "virtualiser_list":virtualiser_list}
+        return confirm
+
+    except:
+        confirm = {"return":"fail", "cause":"Unabled to connect to the ancillary sib"}
+        return confirm

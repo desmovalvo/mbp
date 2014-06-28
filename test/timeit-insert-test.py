@@ -12,10 +12,10 @@ from smart_m3.m3_kp_api import *
 ns = "http://ns#"
 
 # cli args
-sib_ip = sys.argv[1]
-sib_port = int(sys.argv[2])
-rem_sib_ip = sys.argv[3]
-rem_sib_port = int(sys.argv[4])
+real_sib_ip = sys.argv[1]
+real_sib_port = int(sys.argv[2])
+virtual_sib_ip = sys.argv[3]
+virtual_sib_port = int(sys.argv[4])
 num_iter = int(sys.argv[5])
 
 # variables
@@ -49,9 +49,9 @@ leave_time = None
 #############################################################
 
 kp = []
-kp.append(SibLib(sib_ip, sib_port))
+kp.append(SibLib(real_sib_ip, real_sib_port))
 kp[0].remove(Triple(None, None, None))
-kp.append(SibLib(rem_sib_ip, rem_sib_port))
+kp.append(SibLib(virtual_sib_ip, virtual_sib_port))
 kp[1].remove(Triple(None, None, None))
 
 print "Sibs joined"

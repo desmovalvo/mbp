@@ -4,12 +4,24 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from lib import SIBLib
 import sys
+import json
+from lib.connection_helpers import *
 
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"
-
-anc_ip = "localhost"
+anc_ip = "10.143.250.250"
 anc_port = 10088
+
+# Open the configuration file to read ip and port of the manager server
+conf_file = open("web_exp.conf", "r")
+conf = json.load(conf_file)
+
+# Manager parameters
+manager_ip = conf["manager"]["ip"]
+manager_port = conf["manager"]["port"]
+        
+# Closing the configuration file
+conf_file.close()
 
 # templates
 virtualiser_template = """
@@ -84,6 +96,23 @@ SELECT ?s ?ip ?port ?load
     
     # return value
     return v
+
+
+def show_virtualisers(virtualiser_list):
+
+    # create html code
+    v = "<h2>Virtualisers</h2><ul>"
+    for el in virtualiser_list:
+        v = v + virtualiser_template%(str(el),
+                                      str(el[0]),
+                                      str(el[1]),
+                                      str(el[2]))
+
+    v = v + """</ul>"""
+    
+    # return value
+    return v
+
 
 
 def get_virtualpublicSIBs(a):
@@ -181,15 +210,35 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         
         # get the informations from the Ancillary SIB  
         print "--- GET the list of the virtualisers"
-        v = get_virtualisers(a)
+        # v = get_virtualisers(a)
+        #####
+        cmd = {"command": "GetVirtualisers"}
+        cnf = None
+        while cnf == None:
+            cnf = manager_request(manager_ip, manager_port, cmd)
+
+        virtualiser_list = cnf["virtualiser_list"]
+        v = show_virtualisers(virtualiser_list)
+        #####
         
         # get the remote SIBs
         print "--- GET the list of the remote SIBs"
         r = get_virtualpublicSIBs(a)
+        # #####
+        # cmd = {"command": "GetVirtualPublicSIBs"}
+        # cnf = manager_request(manager_ip, manager_port, cmd)
+        # v = cnf["sib_list"]
+        #####
+
 
         # get the virtual multi SIBs
         print "--- GET the list of the VMSIBs"
         vm = get_vmSIBs(a)
+        # #####
+        # cmd = {"command": "GetVirtualMultiSIBs"}
+        # cnf = manager_request(manager_ip, manager_port, cmd)
+        # v = cnf["vmsib_list"]
+        # #####
 
         # output the informations
         s.send_response(200)

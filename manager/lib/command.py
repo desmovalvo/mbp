@@ -17,7 +17,10 @@ COMMANDS = {
     "SetSIBStatus": ["sib_id", "status"],
     "AddSIBtoVMSIB": ["vmsib_id", "sib_list"],
     "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"],
-    "MultiSIBInfo": ["multi_sib_id"]
+    "MultiSIBInfo": ["multi_sib_id"],
+    "GetVirtualPublicSIBs": [],
+    "GetVirtualMultiSIBs": [],
+    "GetVirtualisers": []
     }
 
 # class

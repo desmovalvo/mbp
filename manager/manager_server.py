@@ -32,7 +32,10 @@ COMMANDS = {
     "GetSIBStatus": ["sib_id"],
     "AddSIBtoVMSIB": ["vmsib_id", "sib_list"],
     "RemoveSIBfromVMSIB": ["vmsib_id", "sib_list"],
-    "MultiSIBInfo": ["multi_sib_id"]
+    "MultiSIBInfo": ["multi_sib_id"],
+    "GetVirtualPublicSIBs": [],
+    "GetVirtualMultiSIBs": [],
+    "GetVirtualisers": []
     }
 
 # classes
@@ -198,6 +201,34 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
                     print "manager server -------- " + str(confirm)
                     self.request.sendall(json.dumps(confirm))                    
 
+
+                # GetVirtualPublicSIBs
+                elif data["command"] == "GetVirtualPublicSIBs":
+                    print "manager: multi sib info request"
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port)
+
+                    # send a reply                    
+                    print "manager server -------- " + str(confirm)
+                    self.request.sendall(json.dumps(confirm))                    
+
+                # GetVirtualMultiSIBs
+                elif data["command"] == "GetVirtualMultiSIBs":
+                    print "manager: multi sib info request"
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port)
+
+                    # send a reply                    
+                    print "manager server -------- " + str(confirm)
+                    self.request.sendall(json.dumps(confirm))                    
+
+
+                # GetVirtualisers
+                elif data["command"] == "GetVirtualisers":
+                    print "manager: multi sib info request"
+                    confirm = globals()[cmd.command](ancillary_ip, ancillary_port)
+
+                    # send a reply                    
+                    print "manager server -------- " + str(confirm)
+                    self.request.sendall(json.dumps(confirm))                    
 
 
             else:
