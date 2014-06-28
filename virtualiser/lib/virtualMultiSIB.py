@@ -30,20 +30,13 @@ sib = {}
 sib_ping = {}
 multi_sib_changed = {}
 
-# logging configuration
-LOG_DIRECTORY = "log/"
-LOG_FILE = LOG_DIRECTORY + str(time.strftime("%Y%m%d-%H%M-")) + "virtualMultiSIB.log"
-logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
-logger = logging.getLogger("virtualMultiSIB")
-ns = "http://smartM3Lab/Ontology.owl#"
-
 ##############################################################
 #
 # handler
 #
 ##############################################################
 
-def handler(clientsock, addr, port, sibs_info):
+def handler(clientsock, addr, port, sibs_info, debug_enabled, debug_level, vmsib_logger):
     
     # storing received parameters in thread-local variables
     kp_port = port
@@ -194,9 +187,10 @@ def handler(clientsock, addr, port, sibs_info):
     
                         # debug info
                         print vmsib_print(True) + " received a " + ssap_msg_dict["transaction_type"] + " " + ssap_msg_dict["message_type"]
-                        logger.info("Received the following  message from " + str(addr))
-                        logger.info(str(complete_ssap_msg).replace("\n", ""))
-                        logger.info("Message identified as a %s %s"%(ssap_msg_dict["transaction_type"], ssap_msg_dict["message_type"]))
+                        if debug_enabled:
+                            vmsib_logger.info("Received the following  message from " + str(addr))
+                            vmsib_logger.info(str(complete_ssap_msg).replace("\n", ""))
+                            vmsib_logger.info("Message identified as a %s %s"%(ssap_msg_dict["transaction_type"], ssap_msg_dict["message_type"]))
                             
                         ### REQUESTS
                         
@@ -222,7 +216,7 @@ def handler(clientsock, addr, port, sibs_info):
                                 kp_list[ssap_msg_dict["node_id"]] = clientsock
                             
                                 # call the method that handles the request and wait for confirms
-                                handle_generic_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]])
+                                handle_generic_request(vmsib_logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]])
             
                         # SPARQL/RDF QUERY REQUEST
                         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "QUERY":
@@ -250,7 +244,7 @@ def handler(clientsock, addr, port, sibs_info):
                                 kp_list[ssap_msg_dict["node_id"]] = clientsock
             
                                 # call the method that handles the request and wait for confirms
-                                handle_query_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], query_results)
+                                handle_query_request(vmsib_logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], query_results)
                 
                         # RDF and SPARQL SUBSCRIBE REQUEST
                         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "SUBSCRIBE":# and ssap_msg_dict["parameter_type"] == "RDF-M3":
@@ -267,7 +261,7 @@ def handler(clientsock, addr, port, sibs_info):
                             kp_list[ssap_msg_dict["node_id"]] = clientsock
         
                             # call the method that handles the request and wait for confirms
-                            handle_rdf_subscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], clientsock, val_subscriptions, active_subscriptions, initial_results)
+                            handle_rdf_subscribe_request(vmsib_logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], clientsock, val_subscriptions, active_subscriptions, initial_results)
             
                         # RDF UNSUBSCRIBE REQUEST
                         elif ssap_msg_dict["message_type"] == "REQUEST" and ssap_msg_dict["transaction_type"] == "UNSUBSCRIBE":
@@ -276,7 +270,7 @@ def handler(clientsock, addr, port, sibs_info):
                             confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]] = len(sibs_info)
         
                             # call the method that handles the request and wait for confirms
-                            handle_rdf_unsubscribe_request(logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], clientsock, val_subscriptions)
+                            handle_rdf_unsubscribe_request(vmsib_logger, ssap_msg_dict, ssap_msg, sibs_info, kp_list, confirms[ssap_msg_dict["node_id"] + "_" + ssap_msg_dict["transaction_id"]], clientsock, val_subscriptions)
                         
                     except ET.ParseError:
                         print vmsib_print(False) + " ParseError"
@@ -297,7 +291,17 @@ def handler(clientsock, addr, port, sibs_info):
 #
 ##########################################################################
 
-def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, sib_list):
+def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, sib_list, config_file):
+
+    # read the configuration file 
+    config_file_stream = open(config_file, "r")
+    conf = json.load(config_file_stream)
+    config_file_stream.close()
+
+    # configure the vmsib_logger
+    debug_enabled = conf["debug"]    
+    debug_level = conf["debug_level"]
+    vmsib_logger = logging.getLogger("virtualMultiSIB (" + virtual_multi_sib_id + ")")
 
     # debug print
     print vmsib_print(True) + ' started a new virtual multi SIB with ip ' + str(virtualiser_ip) + ", kpPort " + str(kp_port) + " and id " + str(virtual_multi_sib_id)
@@ -313,7 +317,8 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
     kp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     kp_socket.bind(kp_addr)
     kp_socket.listen(10)
-    logger.info('Virtual Multi SIB waiting for KPs on ' + str(host) + ":" + str(kp_port))
+    if debug_enabled:
+        vmsib_logger.info('Virtual Multi SIB waiting for KPs on ' + str(host) + ":" + str(kp_port))
     
     # parsing the received sib_list to extract IPs and ports
     for s in sib_list:
@@ -344,8 +349,9 @@ def virtualMultiSIB(virtualiser_ip, kp_port, virtual_multi_sib_id, check_var, si
             if sock in sockets:
                 clientsock, addr = sock.accept()
                 print vmsib_print(True) + ' incoming connection from ...' + str(addr)
-                logger.info('Incoming connection from ' + str(addr))
-                thread.start_new_thread(handler, (clientsock, addr, kp_port, sibs_info))
+                if debug_enabled:
+                    vmsib_logger.info('Incoming connection from ' + str(addr))
+                thread.start_new_thread(handler, (clientsock, addr, kp_port, sibs_info, debug_enabled, debug_level, vmsib_logger))
 
             # incoming data
             else:

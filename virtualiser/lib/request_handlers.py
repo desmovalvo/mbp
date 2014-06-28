@@ -24,7 +24,18 @@ PREFIX ns: <""" + ns + ">"
 
 #functions
 
-def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_id, manager_ip, manager_port):
+############################################################
+#
+# NewRemoteSIB
+#
+# This function handles the NewRemoteSIB request and
+# it's called by the virtualiser_server once it receives
+# a NewRemoteSIB request message
+#
+############################################################
+
+def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_id, manager_ip, manager_port, config_file):
+
     # debug print
     print reqhandler_print(True) + "executing method " + colored("NewRemoteSIB", "cyan", attrs=["bold"])
 
@@ -50,10 +61,9 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
             if s2.connect_ex(("localhost", pub_port)) != 0:
                 break        
     
-
     # start the virtual sib process
     threads[thread_id] = True
-    p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], manager_ip, manager_port))
+    p = Process(target=remoteSIB, args=(virtualiser_ip, kp_port, pub_port, virtual_sib_id, threads[thread_id], manager_ip, manager_port, config_file))
     p.start()
 
     # build the reply
@@ -89,7 +99,7 @@ def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id):
 #
 ############################################################
     
-def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id):
+def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread_id, config_file):
 
     # debug print
     print reqhandler_print(True) + "executing method " + colored("NewVirtualMultiSIB", "cyan", attrs=["bold"])
@@ -116,7 +126,7 @@ def NewVirtualMultiSIB(sib_list, virtualiser_ip, virtualiser_id, threads, thread
 
     # start a virtual multi sib    
     threads[thread_id] = True
-    p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, virtual_multi_sib_id, threads[thread_id], sib_list))
+    p = Process(target=virtualMultiSIB, args=(virtualiser_ip, kp_port, virtual_multi_sib_id, threads[thread_id], sib_list, config_file))
     p.start()
 
     # return the virtual multi sib info

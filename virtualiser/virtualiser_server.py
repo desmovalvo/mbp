@@ -17,10 +17,9 @@ import time
 import uuid
 import sys
 
-# namespaces
+# namespaces and prefixes
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 ns = "http://smartM3Lab/Ontology.owl#"
-
 PREFIXES = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -29,11 +28,6 @@ PREFIX ns: <""" + ns + ">"
 
 threads = {}
 t_id = {}
-
-# logging configuration
-LOG_DIRECTORY = "log/"
-LOG_FILE = LOG_DIRECTORY + str(time.strftime("%Y%m%d-%H%M-")) + "virtualiser_server.log"
-logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 
 # available commands
 # this is a dictionary in which the keys are the available commands,
@@ -53,10 +47,18 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
         try:
             # Output the received message
             print virtserver_print(True) + "incoming connection, received the following message:",
-            self.server.logger.info(" Incoming connection, received the following message:")
-            data = json.loads(self.request.recv(1024).strip())
+            if self.server.debug_enabled:
+                self.server.logger.info(" Incoming connection, received the following message:")
+
+            msg = self.request.recv(1024).strip()
+            if len(msg) == 0:
+                return
+
+            data = json.loads(msg)
             print data
-            self.server.logger.info(" " + str(data))
+
+            if self.server.debug_enabled:
+                self.server.logger.info(" " + str(data))
 
             # Check if the command is valid
             cmd = Command(data)
@@ -84,26 +86,36 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                         except socket.error:
                             print virtserver_print(False) + "Confirm message forwarding failed!"                          
 
+                   
+                ##########################################################################
+                #
+                # NewRemoteSIB
+                #
+                ##########################################################################
+
                 elif data["command"] == "NewRemoteSIB":
 
                     thread_id = str(uuid.uuid4())
 
-                    virtual_sib_info = globals()[cmd.command](cmd.owner, cmd.sib_id, self.server.virtualiser_ip, threads, thread_id, virtualiser_id, self.server.manager_ip, self.server.manager_port)
+                    # calling NewRemoteSIB function
+                    virtual_sib_info = globals()[cmd.command](cmd.owner, 
+                                                              cmd.sib_id, 
+                                                              self.server.virtualiser_ip, 
+                                                              threads, 
+                                                              thread_id, 
+                                                              virtualiser_id, 
+                                                              self.server.manager_ip, 
+                                                              self.server.manager_port,
+                                                              self.server.config_file)
 
-                    
                     if virtual_sib_info["return"] == "fail":
                         # send a reply
                         try:
                             self.request.sendall(json.dumps({'return':'fail', 'cause':virtual_sib_info["cause"]}))
-                            # Il thread virtualiser in
-                            # questo caso non e' stato
-                            # neppure creato, quindi non
-                            # va killato
                         except socket.error:
                             print virtserver_print(False) + "Error message forwarding failed!"
                             pass
-
-                    
+                
                     else: #virtual_sib_info["return"] = "ok"
                         
                         t_id[virtual_sib_info["virtual_sib_id"]] = thread_id
@@ -111,19 +123,12 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                         # send a reply
                         try:
                             self.request.sendall(json.dumps({'return':'ok', 'virtual_sib_info':virtual_sib_info}))
-                        except socket.error:
-                            # remove virtual sib info from the ancillary sib
-                            # a = SibLib(self.server.ancillary_ip, self.server.ancillary_port)
-                            # t = [Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasPubIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_pub_port"]) ))]
-                            # t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasKpIpPort"), URI(ns + virtual_sib_info["virtual_sib_ip"] + "-" + str(virtual_sib_info["virtual_sib_kp_port"]))))
-                            # t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasOwner"), URI(ns + virtual_sib_info["owner"])))
-                            # t.append(Triple(URI(ns + virtual_sib_info["virtual_sib_id"]), URI(ns + "hasStatus"), URI(ns + "online")))
-                            # a.remove(t)
-                            
+
+                        except socket.error:                            
+
                             #killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
                             threads[thread_id] = False
-                            del t_id[virtual_sib_info["virtual_sib_id"]]
-                            
+                            del t_id[virtual_sib_info["virtual_sib_id"]]                        
                             print virtserver_print(False) + "Confirm message forwarding failed!"
 
                    
@@ -141,7 +146,8 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                                                 self.server.virtualiser_ip, 
                                                                 self.server.virtualiser_id, 
                                                                 threads, 
-                                                                thread_id)
+                                                                thread_id,
+                                                                self.server.config_file)
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_info':virtual_multi_sib_info}))
 
@@ -149,14 +155,16 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
             else:
                 # debug print
                 print virtserver_print(False) + cmd.invalid_cause
-                self.server.logger.info(" Error while parsing the json message, " + cmd.invalid_cause)
+                if self.server.debug_enabled:
+                    self.server.logger.info(" Error while parsing the json message, " + cmd.invalid_cause)
 
                 # send a reply
                 self.request.sendall(json.dumps({'return':'fail', 'cause':cmd.invalid_cause}))
 
-        except ZeroDivisionError: #Exception, e:
+        except Exception, e:
             print virtserver_print(False) + "Exception while receiving message: " + str(e)
-            self.server.logger.info(" Exception while receiving message: " + str(e))
+            if self.server.debug_enabled:
+                self.server.logger.info(" Exception while receiving message: " + str(e))
 
 
 ##############################################################
@@ -173,9 +181,10 @@ if __name__=='__main__':
         virtualiser_port = None
         manager_ip = None
         manager_port = None
-
+        config_file = "virtualiser.conf"
+        
         # read command line arguments
-        opts, args = getopt.getopt(sys.argv[1:], "v:m:", ["manager=", "virtualiser="])
+        opts, args = getopt.getopt(sys.argv[1:], "v:m:c:", ["manager=", "virtualiser=", "config="])
         for opt, arg in opts:
 
             if opt in ("-v", "--virtualiser"):
@@ -194,6 +203,9 @@ if __name__=='__main__':
                     print virtserver_print(False) + "Usage: python virtualiser_server.py -m manager_ip:port -v virtualiser_ip:port"
                     sys.exit()            
                     
+            elif opt in ("-c", "--config"):
+                config_file = arg
+
             else:
                 print virtualiser_print(False) + "unrecognized option " + str(opt)
 
@@ -205,12 +217,22 @@ if __name__=='__main__':
         print virtserver_print(False) + "Usage: python virtualiser_server.py -m manager_ip:port -v virtualiser_ip:port"
         sys.exit()
 
+    # read the configuration file 
+    config_file_stream = open(config_file, "r")
+    conf = json.load(config_file_stream)
+    config_file_stream.close()
+
+    # configure the logger
+    debug_enabled = conf["debug"]    
+    debug_level = conf["debug_level"]
+    log_directory = conf["directory"]
+    log_file = log_directory + str(time.strftime("%Y%m%d-%H%M-")) + "virtualiser_server.log"
+    logging.basicConfig(filename=log_file, level=debug_level)
+    logger = logging.getLogger("virtualiser_server")
+
     # now we can begin
     virtualiser_id = str(uuid.uuid4())
     
-    # Create a logger object
-    logger = logging.getLogger("virtualiser_server")
-
     # build the NewVirtualiser request
     msg = {"command":"NewVirtualiser", "ip":virtualiser_ip, "port":str(virtualiser_port), "id":virtualiser_id}
     
@@ -224,11 +246,19 @@ if __name__=='__main__':
             server.virtualiser_id = virtualiser_id
             server.virtualiser_ip =  virtualiser_ip
             server.virtualiser_port = virtualiser_port 
+            server.config_file = config_file
+            server.debug_enabled = debug_enabled
+            server.debug_level = debug_level
             server.manager_ip = manager_ip
             server.manager_port = manager_port
             server.logger = logger
-            server.logger.info(" Starting server on IP " + virtualiser_ip + " Port " + str(virtualiser_port))
+            
+            # debug
+            if server.debug_enabled:
+                server.logger.info(" Starting server on IP " + virtualiser_ip + " Port " + str(virtualiser_port))
             print virtserver_print(True) + "sib virtualiser started on " + virtualiser_ip + ":" + str(virtualiser_port) + " with ID " + virtualiser_id
+
+            # start serving
             server.serve_forever()
         
         # Wrong virtualiser server address specified
@@ -236,6 +266,8 @@ if __name__=='__main__':
 
             # debug print
             print virtserver_print(False) + "wrong address for virtualiser server"
+            if server.debug_enabled:
+                server.logger.info(" wrong address for virtualiser server")
 
             # build the NewVirtualiser request
             msg = {"command":"DeleteVirtualiser", "id":virtualiser_id}
@@ -248,6 +280,8 @@ if __name__=='__main__':
             
             # debug print
             print virtserver_print(True) + "sending " + colored("DeleteVirtualiser", "cyan", attrs=["bold"]) + " request"
+            if server.debug_enabled:
+                server.logger.info(" CTRL-C pressed. Sending DeleteVirtualiser request")
 
             # build the NewVirtualiser request
             msg = {"command":"DeleteVirtualiser", "id":virtualiser_id}
@@ -259,5 +293,7 @@ if __name__=='__main__':
             print virtserver_print(True) + "Goodbye!"
     
     else:
+        if debug_enabled:
+            logger.info(" Unable to start the virtualiser. Cause: " + str(confirm["cause"]))
         print virtserver_print(False) + "unable to start the virtualiser. Cause: " + str(confirm["cause"])
         sys.exit(0)

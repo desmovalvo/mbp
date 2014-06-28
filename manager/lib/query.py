@@ -13,6 +13,23 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ns: <""" + ns + ">"
 
 
+def get_virtualisers(ancillary):
+
+    query = PREFIXES + """SELECT ?id ?ip ?port
+WHERE { ?id rdf:type ns:virtualiser . ?id ns:hasIP ?ip . ?id ns:hasPort ?port }"""
+
+    return ancillary.execute_sparql_query(query)
+
+
+
+def get_multisib_of_a_sib(sib_id, ancillary):
+
+    query = PREFIXES + """SELECT ?s ?ip ?port
+    WHERE { ?s ns:composedBy ns:""" + sib_id + """ . ?s ns:hasKpIp ?ip . ?s ns:hasKpPort ?port }"""
+    return ancillary.execute_sparql_query(query)
+
+
+
 def get_sib_ip_port(sib_id, ancillary):
 
     query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -212,6 +229,20 @@ def get_sibs_on_virtualiser(virtualiser_id, a):
     # get the list of the virtual sibs started on that virtualiser
     vsibs_query = PREFIXES + """SELECT ?vsib_id
     WHERE { ns:""" + virtualiser_id + """ ns:hasRemoteSib ?vsib_id }"""
+
+    vsibs = a.execute_sparql_query(vsibs_query)
+
+    sib_list = []
+    for vsib in vsibs:
+        sib_list.append(vsib[0][2])
+        
+    return sib_list
+
+def get_all_sibs_on_virtualiser(virtualiser_id, a):
+    # get the list of the virtual sibs started on that virtualiser
+    vsibs_query = PREFIXES + """SELECT ?vsib_id
+    WHERE {{ns:""" + virtualiser_id + """ ns:hasRemoteSib ?vsib_id} UNION {ns:""" + virtualiser_id + """ ns:hasVirtualMultiSib ?vsib_id}}"""
+
     vsibs = a.execute_sparql_query(vsibs_query)
 
     sib_list = []
@@ -233,3 +264,8 @@ def get_multisibs_on_virtualiser(virtualiser_id, a):
         
     return sib_list
 
+
+def get_public_sibs(a):
+    
+    q = PREFIXES + """SELECT ?id ?ip ?port WHERE { ?id rdf:type ns:publicSib . ?id ns:hasKpIp ?ip . ?id ns:hasKpPort ?port }"""
+    return a.execute_sparql_query(q)
