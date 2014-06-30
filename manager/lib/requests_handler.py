@@ -414,7 +414,11 @@ def manage_multi_sib(ancillary_ip, ancillary_port, virtual_sib_id):
                 if len(r) == 0:
                     a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
                     a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
-
+                    conf = DeleteRemoteSIB(ancillary_ip, ancillary_port, vmsib_id)
+                    if conf["return"] != "ok":
+                        confirm = {'return':'fail', 'cause':' Failed to remove the wirtual multi sib'}
+                        return confirm                    
+                    
 
         confirm = {'return':'ok'}
         return confirm
