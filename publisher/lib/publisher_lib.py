@@ -257,6 +257,8 @@ def generic_handler(rs, vs, vsib_host, vsib_port):
 
 def subscription_handler(rs, vs, vsib_host, vsib_port, subscriptions, check):
 
+    print "subscription request"
+
     """This function is used to handle subscriptions. This function
     receives and forwards indications (as well as [un]subscribe
     confirms) to the virtual sib"""

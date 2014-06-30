@@ -1011,7 +1011,7 @@ def GetSIBStatus(ancillary_ip, ancillary_port, sib_id):
     else:
 
         # the sib exists
-        confirm = {"return":"ok", "status":str(res[0][2]).split("#")[1]}
+        confirm = {"return":"ok", "status":str(res[0][2])}
 
     # Return
     return confirm
