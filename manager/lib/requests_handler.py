@@ -258,6 +258,8 @@ def DeleteSIB(ancillary_ip, ancillary_port, sib_id):
 
 def DeleteRemoteSIB(ancillary_ip, ancillary_port, virtual_sib_id):
 
+    print "sono in deleteremotesib"
+
     # connection to the ancillary SIB 
     a = SibLib(ancillary_ip, ancillary_port)
 
@@ -412,8 +414,9 @@ def manage_multi_sib(ancillary_ip, ancillary_port, virtual_sib_id):
                 a.remove(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), URI(ns + virtual_sib_id)))
                 r = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), None))
                 if len(r) == 0:
-                    a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
-                    a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+                    # a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
+                    # a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+                    print "Richiamo DeleteRemoteSIB - " + str(vmsib_id)
                     conf = DeleteRemoteSIB(ancillary_ip, ancillary_port, vmsib_id)
                     if conf["return"] != "ok":
                         confirm = {'return':'fail', 'cause':' Failed to remove the wirtual multi sib'}
@@ -827,9 +830,14 @@ def RemoveSIBfromVMSIB(ancillary_ip, ancillary_port, vmsib_id, sib_list):
 
                 r = a.execute_rdf_query(Triple(URI(ns + vmsib_id), URI(ns + "composedBy"), None))
                 if len(r) == 0:
-                    a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
-                    a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), Literal("offline")))
-                
+                    # a.remove(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), None))
+                    # a.insert(Triple(URI(ns + vmsib_id), URI(ns + "hasStatus"), URI(ns + "offline")))
+                    print "Richiamo DeleteRemoteSIB - " + str(vmsib_id)
+                    conf = DeleteRemoteSIB(ancillary_ip, ancillary_port, vmsib_id)
+                    if conf["return"] != "ok":
+                        confirm = {'return':'fail', 'cause':' Failed to remove the wirtual multi sib'}
+                        return confirm                    
+
             # return
             return c
 

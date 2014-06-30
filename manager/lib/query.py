@@ -77,9 +77,11 @@ def get_virtualiser_load(virtualiser_id, a):
 
 
 def get_virtualiser_info(virtual_sib_id, a):
-    query = PREFIXES + """SELECT ?ip ?port ?vid WHERE {?vid ns:hasRemoteSib ns:"""+ str(virtual_sib_id) + """ .
+    query = PREFIXES + """SELECT ?ip ?port ?vid WHERE {{?vid ns:hasVirtualSib ns:"""+ str(virtual_sib_id) + """ .
     ?vid ns:hasIP ?ip .
-    ?vid ns:hasPort ?port}"""
+    ?vid ns:hasPort ?port } UNION { ?vid ns:hasVirtualMultiSib ns:"""+ str(virtual_sib_id) + """ .
+    ?vid ns:hasIP ?ip .
+    ?vid ns:hasPort ?port}}"""
     result = a.execute_sparql_query(query)
     
     # if the virtualiser exists
