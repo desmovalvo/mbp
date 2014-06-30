@@ -1,10 +1,11 @@
 import sys
 import timeit
 import pygal
-from lib.SIBLib import *
+from SIBLib import *
 from termcolor import *
 from smart_m3.m3_kp_api import *
 import time
+import traceback
 
 # namespace
 ns = "http://ns#"
@@ -26,6 +27,8 @@ num_iter = int(sys.argv[6])
 max_ins = int(sys.argv[7])
 sub_at = sys.argv[8]
 
+ns = "http://smartM3Lab/Ontology.owl#"
+
 class TestHandler:
      def __init__(self):
           pass
@@ -33,8 +36,25 @@ class TestHandler:
          pass
 
 
+def insert(client, t):
+     try:
+          client.insert(t)
+     except:
+          print sys.exc_info()
+
+
+# connection to the ancillary_sib
+anci = SibLib("192.168.1.102", 10088)
+
+# get id of virtual sib
+q = """SELECT ?id 
+WHERE {?id <""" + ns + """hasKpIp> """ + '"' + str(virtual_sib_ip) + '"' + """ . ?id <""" + ns + """hasKpPort> """ + '"' + str(virtual_sib_port) + '"' + """}"""
+print q
+vsib_id = anci.execute_sparql_query(q)[0][0][2]
+print vsib_id
+
 # create num_sub kps subscribed at the triple t_sub
-t_sub = Triple(None,None,None)
+t_sub = Triple(URI("http://ns#alessandra"),URI("http://ns#e"),URI("http://ns#fabio"))
 print "Creating the subscriptions..."
 if sub_at == "virtualsib":
      ss = 0
@@ -111,12 +131,31 @@ for client in [ rskp, vskp ]:
             for k in range(((i+1)*step)):
                 tt = Triple(URI(ns + "subject" + str(it) + "_" + str(k)), URI(ns + "predicate" + str(it)), URI(ns + "object" + str(it)))
                 t.append(tt)
+                
+            # triples inserted: len(t)
     
             # insert the triples
             try:
-                 end = timeit.timeit(lambda: client.insert(t), number=1)
+                 end = timeit.timeit(lambda: insert(client, t), number = 1) #client.insert(t), number=1)
             except:
                  print sys.exc_info()
+
+            try: 
+                 check_triples = client.execute_rdf_query(Triple(None, None, None))
+                 if len(check_triples) >= len(t):
+                      print "check ok"
+                 else:
+                      print 'else'
+            except:
+                 print "disconnesso"
+                 it = it - 1
+                 
+                 # get the new IP and port
+                 q = """SELECT ?ip ?port WHERE { <%s> <%s> ?ip . <%s> <%s> ?port }}""" % ( vsib_id, ns + "hasKpIp", vsib_id, ns + "hasKpPort" )
+                 res = anci.execute_sparql_query(q)
+                 print res
+                 
+                 sys.exit()
             
             tot.append(end)
     
@@ -144,7 +183,7 @@ for i in median_arrays:
     print "MEDIAN ARRAY: " + str(i)
 
 
-bar_chart = pygal.Bar(range=(0.0, 50.0))
+bar_chart = pygal.Bar()
 bar_chart.title = 'Insertion time with constant subscriptions varying the number of triples inserted'
 bar_chart.add('Local SIB', median_arrays[0])
 bar_chart.add('Remote SIB', median_arrays[1])

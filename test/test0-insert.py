@@ -118,7 +118,7 @@ bar_chart.render_to_file(filename)
 #############################################################
 
 print "\nCleaning the sib...\n"
-kp1 = SibLib(sib_ip, sib_port)
+kp1 = SibLib(real_sib_ip, real_sib_port)
 kp1.remove(Triple(None, None, None))
 print "Triples expected at this step: 0"
 print "Triples at this step: " + str(len(kp1.execute_rdf_query(Triple(None, None, None))))
