@@ -645,6 +645,31 @@ def SetSIBStatus(ancillary_ip, ancillary_port, sib_id, new_status):
                         break
                     except socket.timeout:
                         print "SetSIBStatus " + colored("request_handler> ", "red", attrs=["bold"]) + 'connection to the virtualiser timed out'            
+                if new_status == "offline":
+                    # eventually set offline the multisib
+                    query = PREFIXES + """SELECT ?sib WHERE {ns:""" + str(multisib) + """ ns:composedBy ?sib .
+                                                             ?sib ns:hasStatus "online"}"""
+                    res = a.execute_sparql_query(query)
+                    if len(res) == 0:
+                        # set the vmsib offline
+                        conf = SetSIBStatus(ancillary_ip, ancillary_port, multisib, "offline")
+                        if conf["return"] != "ok":
+                            confirm = {'return':'fail', 'cause':'Setting status of virtual multi sib failed'}
+                            return confirm
+                            
+                        
+                else:
+                    # eventually set online the multisib
+                    res = a.execute_rdf_query(Triple(URI(ns + str(multisib)),URI(ns + "hasStatus"), Literal("offline")))
+                    if len(res) != 0:
+                        # set the vmsib online
+                        conf = SetSIBStatus(ancillary_ip, ancillary_port, multisib, "online")
+                        if conf["return"] != "ok":
+                            confirm = {'return':'fail', 'cause':'Setting status of virtual multi sib failed'}
+                            return confirm
+                            
+                        
+
 
                 # Close the socket to the vmsib
                 vms_socket.close()

@@ -104,11 +104,16 @@ def handler(clientsock, addr, port, sibs_info, debug_enabled, debug_level, vmsib
                     elif msg["status"] == "online":
                         # update sib list 
                         sibs_info[str(msg["sib_id"])] = {}
-                        t = Triple(URI(ns + str(msg["sib_id"])), URI(ns + "hasKpIpPort"), None)
-                        result = a.execute_rdf_query(t)
                         
-                        sibs_info[str(msg["sib_id"])]["ip"] = str(result[0][2]).split("-")[0]
-                        sibs_info[str(msg["sib_id"])]["kp_port"] = int(str(result[0][2]).split("-")[1])
+                        # get kp ip
+                        t = Triple(URI(ns + str(msg["sib_id"])), URI(ns + "hasKpIp"), None)
+                        result = a.execute_rdf_query(t)
+                        sibs_info[str(msg["sib_id"])]["ip"] = str(result[0][2])
+
+                        # get kp port
+                        t = Triple(URI(ns + str(msg["sib_id"])), URI(ns + "hasKpPort"), None)
+                        result = a.execute_rdf_query(t)
+                        sibs_info[str(msg["sib_id"])]["kp_port"] = int(str(result[0][2]))
                         
                         for i in multi_sib_changed:
                             multi_sib_changed[i] = True
