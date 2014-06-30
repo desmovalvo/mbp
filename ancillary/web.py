@@ -9,8 +9,6 @@ from lib.connection_helpers import *
 
 # constants
 ns = "http://smartM3Lab/Ontology.owl#"
-anc_ip = "10.143.250.250"
-anc_port = 10088
 
 # Open the configuration file to read ip and port of the manager server
 conf_file = open("web_exp.conf", "r")
@@ -67,46 +65,21 @@ def get_sib_content(ip, port):
     return tlist
     
 
-def get_virtualisers(a):
-    # List of the available virtualisers
-    virtualisers_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX ns: <http://smartM3Lab/Ontology.owl#>
-SELECT ?s ?ip ?port ?load 
-    WHERE { ?s rdf:type ns:virtualiser .
-          	?s ns:hasIP ?ip .
-          	?s ns:hasPort ?port .
-          	?s ns:load ?load }
-"""
-
-    # execute query
-    res = a.execute_sparql_query(virtualisers_query)
-
-    # create html code
-    v = "<h2>Virtualisers</h2><ul>"
-    for el in res:
-        v = v + virtualiser_template%(str(el[0][2]),
-                                      str(el[1][2]),
-                                      str(el[2][2]),
-                                      str(el[3][2]))
-
-    v = v + """</ul>"""
-    
-    # return value
-    return v
-
 
 def show_virtualisers(virtualiser_list):
-
+    print "SHOW VIRTUALISER " + str(virtualiser_list)
     # create html code
     v = "<h2>Virtualisers</h2><ul>"
     for el in virtualiser_list:
-        v = v + virtualiser_template%(str(el),
-                                      str(el[0]),
-                                      str(el[1]),
-                                      str(el[2]))
+        virtualiser_id = str(el)
+        ip = virtualiser_list[virtualiser_id]["virtualiser_ip"]
+        port = virtualiser_list[virtualiser_id]["virtualiser_port"]
+        load = virtualiser_list[virtualiser_id]["virtualiser_load"]
+
+        v = v + virtualiser_template%(virtualiser_id,
+                                      str(ip),
+                                      str(port),
+                                      str(load))
 
     v = v + """</ul>"""
     
@@ -114,83 +87,39 @@ def show_virtualisers(virtualiser_list):
     return v
 
 
-
-def get_virtualpublicSIBs(a):
-    # List of the available virtualisers
-
-    virtualpublicSIBs_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX ns: <http://smartM3Lab/Ontology.owl#>
-SELECT ?sib ?ip ?port ?owner
-WHERE {?sib ns:hasKpIp ?ip . ?sib ns:hasKpPort ?port . ?sib ns:hasOwner ?owner . ?sib ns:hasStatus "online" }"""
-
-    # execute query
-    res = a.execute_sparql_query(virtualpublicSIBs_query)
-
+def show_sibs(sib_list):
+    print "SHOW SIBs " + str(sib_list)
     # create html code
     v = "<h2>Virtual/Public SIBs</h2><ul>"
-    for el in res:
-        # print el[0]
-        # ip = str(el[3][2].replace(ns, "")).split("-")[0]
-        # port = int(str(el[3][2].replace(ns, "")).split("-")[1])
-        
-    #     if el[2][2].replace(ns, "") == "online":
-    #         c = get_sib_content(ip, port)
-    #     else:
-    #         c = ""
+    for el in sib_list:
+        sib_id = str(el)
+        ip = sib_list[sib_id]["sib_ip"]
+        port = sib_list[sib_id]["sib_port"]
+        owner = sib_list[sib_id]["sib_owner"]
 
-        v = v + virtualpublic_sib_template%(str(el[0][2].replace(ns, "")),
-                                            str(el[1][2]),
-                                            str(el[2][2]),
-                                            str(el[3][2]))
+        v = v + virtualpublic_sib_template%(sib_id,
+                                            str(ip),
+                                            str(port),
+                                            str(owner))
     v = v + """</ul>"""
     
     # return value
     return v
 
 
-def get_vmSIBs(a):
-    # List of the available virtualisers
-    vmSIBs_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX ns: <http://smartM3Lab/Ontology.owl#>
-SELECT ?vmsibid ?ip ?port ?sib_id
-    WHERE { ?vmsibid rdf:type ns:virtualMultiSib .
-            ?vmsibid ns:hasStatus "online" .
-            ?vmsibid ns:hasKpIp ?ip  .
-            ?vmsibid ns:hasKpPort ?port  .
-            ?vmsibid ns:composedBy ?sib_id}"""
+def show_multi_sibs(multi_sib_list):
+    print "SHOW SIBs " + str(multi_sib_list)
 
-    # execute query
-    res = a.execute_sparql_query(vmSIBs_query)
 
-    # create html code
+
     v = "<h2>Virtual Multi SIBs</h2><ul>"
-    vmsib_dict = {}
-    for el in res:
-        print el
-        if not vmsib_dict.has_key(el[0][2]):
-            vmsib_dict[el[0][2]] = {}
-            vmsib_dict[el[0][2]]["ip"] = el[1][2]
-            vmsib_dict[el[0][2]]["list"] = []
-            vmsib_dict[el[0][2]]["port"] = el[2][2]
-        vmsib_dict[el[0][2]]["list"].append(el[3][2])
-        # v = v + "<li>" + el[0][2] + "</li>"
-        # v = v + vmsib_template%(str(el[0][2].replace(ns, "")),
-        #                              str(el[1][2].replace(ns, "")),
-        #                              str(el[2][2].replace(ns, ""))
-        #     )
-
-    for vmsib in vmsib_dict.keys():
+    for el in multi_sib_list:
+        multi_sib_id = str(el)
         l = "<ul>"
-        for sib in vmsib_dict[vmsib]["list"]:
+        for sib in multi_sib_list[multi_sib_id]["list"]:
             l = l + "<li>" + sib.split("#")[1] + "</li>"
         l = l + "</ul>"
-        v = v + vmsib_template%(vmsib.split("#")[1], vmsib_dict[vmsib]["ip"], vmsib_dict[vmsib]["port"], l)
+        v = v + vmsib_template%(multi_sib_id, multi_sib_list[multi_sib_id]["ip"], multi_sib_list[multi_sib_id]["port"], l)
 
     v = v + """</ul>"""
     
@@ -205,13 +134,8 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
     def do_GET(s):
         """Respond to a GET request."""
 
-        # connection to the Ancillary SIB
-        a = SIBLib.SibLib(anc_ip, anc_port)
-        
-        # get the informations from the Ancillary SIB  
-        print "--- GET the list of the virtualisers"
-        # v = get_virtualisers(a)
-        #####
+        # get the list of the virtualisers
+        # send GetVirtualisers request to the manager
         cmd = {"command": "GetVirtualisers"}
         cnf = None
         while cnf == None:
@@ -219,26 +143,26 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
 
         virtualiser_list = cnf["virtualiser_list"]
         v = show_virtualisers(virtualiser_list)
-        #####
         
-        # get the remote SIBs
-        print "--- GET the list of the remote SIBs"
-        r = get_virtualpublicSIBs(a)
-        # #####
-        # cmd = {"command": "GetVirtualPublicSIBs"}
-        # cnf = manager_request(manager_ip, manager_port, cmd)
-        # v = cnf["sib_list"]
-        #####
-
-
-        # get the virtual multi SIBs
-        print "--- GET the list of the VMSIBs"
-        vm = get_vmSIBs(a)
-        # #####
-        # cmd = {"command": "GetVirtualMultiSIBs"}
-        # cnf = manager_request(manager_ip, manager_port, cmd)
-        # v = cnf["vmsib_list"]
-        # #####
+        # get the list of the virtual and public SIBs"
+        # send GetVirtualPublicSIBs request to the manager
+        cmd = {"command": "GetVirtualPublicSIBs"}
+        cnf = None
+        while cnf == None:
+            cnf = manager_request(manager_ip, manager_port, cmd)
+        
+        sib_list = cnf["sib_list"]
+        r = show_sibs(sib_list)
+        
+        # get the list of the virtual multi SIBs
+        # send GetVirtualMultSIBs request to the manager
+        cmd = {"command": "GetVirtualMultiSIBs"}
+        cnf = None
+        while cnf == None:
+            cnf = manager_request(manager_ip, manager_port, cmd)
+        
+        multi_sib_list = cnf["multi_sib_list"]
+        vm = show_multi_sibs(multi_sib_list)
 
         # output the informations
         s.send_response(200)
@@ -279,12 +203,6 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
 
 
 def run():
-
-    if len(sys.argv) == 3:
-	global anc_ip
-        anc_ip = sys.argv[1]
-        global anc_port 
-	anc_port = int(sys.argv[2])
         
     server_address = ('0.0.0.0', 8000)
     httpd = HTTPServer(server_address, AncillaryRequestHandler)

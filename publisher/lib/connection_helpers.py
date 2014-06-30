@@ -8,6 +8,7 @@ from SSAPLib import *
 from termcolor import *
 import sys
 import traceback
+import time
 
 ######################################################
 #
@@ -21,6 +22,8 @@ def register_request(vsib_ip, vsib_port, node_id, connected):
     vs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
      
     # connect to the virtualiser
+    #while not connected:
+    time.sleep(5)
     try:
         vs.connect((vsib_ip, vsib_port))
         print colored("connection_helpers> ", "blue", attrs=['bold']) + 'sending register request to the virtual sib'
@@ -37,11 +40,12 @@ def register_request(vsib_ip, vsib_port, node_id, connected):
 
     except socket.error:
         print colored("connection_helpers> ", "red", attrs=['bold']) + 'Unable to connect to the virtual SIB'
-        print str(sys.exc_info()) + "\n" + str(traceback.print_exc())
-        sys.exit()    
+        print vs 
+        #print str(sys.exc_info()) + "\n" + str(traceback.print_exc())
+        #sys.exit()    
 
     # return
-    return vs
+    return [vs, connected]
 
 
 ######################################################

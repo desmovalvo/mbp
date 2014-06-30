@@ -90,42 +90,18 @@ def handler(clientsock, addr, port, sibs_info, debug_enabled, debug_level, vmsib
 
                 elif msg["command"] == "StatusChange":
                     if msg["status"] == "offline":
-            #             # set the status offline
-            #             # a = SibLib(ancillary_ip, ancillary_port)
-                        
-            #             t = []
-            #             t.append(Triple(URI(ns + str(msg["idVSIB"])), URI(ns + "hasStatus"), URI(ns + "online")))
-            #             a.remove(t)
-                    
-            #             t = []
-            #             t.append(Triple(URI(ns + str(msg["idVSIB"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-            #             a.insert(t)       
-                        
                         # update sib list but don't remove the triple
-                        # <vmsib><composedBy><sib>
                         if sibs_info.has_key(str(msg["sib_id"])):
                             del sibs_info[str(msg["sib_id"])]
                         
                             for i in multi_sib_changed:
                                 multi_sib_changed[i] = True
 
-                        jmsg = {"return":"ok"}
-                        msg = json.dumps(jmsg)
-                        clientsock.send(msg)
-                        print "messaggio di risposta inoltrato al manager"
+                        clientsock.send(json.dumps({"return":"ok"}))
                         clientsock.close()
 
 
                     elif msg["status"] == "online":
-            #             # set the status online
-            #             t = []
-            #             t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "offline")))
-            #             a.remove(t)
-                    
-            #             t = []
-            #             t.append(Triple(URI(ns + str(sib["virtual_sib_id"])), URI(ns + "hasStatus"), URI(ns + "online")))
-            #             a.insert(t)       
-
                         # update sib list 
                         sibs_info[str(msg["sib_id"])] = {}
                         t = Triple(URI(ns + str(msg["sib_id"])), URI(ns + "hasKpIpPort"), None)

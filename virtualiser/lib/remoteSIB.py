@@ -314,10 +314,10 @@ def socket_observer(sib, check_var, manager_ip, manager_port, debug_enabled, rem
                     remotesib_logger.info("Socket dead")
                 sib["socket"] = None                
 
-                # SetSIBStatus
-                msg = {"command":"SetSIBStatus", "sib_id":str(sib["virtual_sib_id"]), "status":"offline"}
-                confirm = manager_request(manager_ip, manager_port, msg)
-                print confirm
+                # # SetSIBStatus
+                # msg = {"command":"SetSIBStatus", "sib_id":str(sib["virtual_sib_id"]), "status":"offline"}
+                # confirm = manager_request(manager_ip, manager_port, msg)
+                # print confirm
                 
                 # GetSIBStatus
                 msg = {"command":"GetSIBStatus", "sib_id":str(sib["virtual_sib_id"])}

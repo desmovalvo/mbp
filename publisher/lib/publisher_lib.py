@@ -31,7 +31,7 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
     # register request
     print colored("publisher_lib> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host) + ":" + str(vsib_port)
     connected = False
-    vs = register_request(vsib_host, vsib_port, node_id, connected)
+    vs, connected = register_request(vsib_host, vsib_port, node_id, connected)
     socket_list = [vs]
 
     while 1:
@@ -56,7 +56,7 @@ def StartConnection(manager_ip, manager_port, owner, vsib_id, vsib_host, vsib_po
 
                 # register request
                 print colored("publisher_lib> ", "blue", attrs=['bold']) + " Virtual sib is on " + str(vsib_host) + ":" + str(vsib_port)
-                vs = register_request(vsib_host, vsib_port, node_id)
+                vs, connected = register_request(vsib_host, vsib_port, node_id, connected)
                 socket_list = [vs]
                 if connected:
                     if log_enabled:

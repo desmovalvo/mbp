@@ -358,13 +358,14 @@ def manage_multi_sib(ancillary_ip, ancillary_port, virtual_sib_id):
     a = SibLib(ancillary_ip, ancillary_port)
     # get the list of the virtual multi sib in which that virtual sib appear
     vmsib_list = get_vmsib_list(virtual_sib_id, a)
-
+    
     if vmsib_list != None:
 
         for multisib in vmsib_list:
+            print multisib
             vmsib_id = multisib
-            vmsib_ip = multisib["vmsib_ip"]
-            vmsib_port = int(multisib["vmsib_port"])
+            vmsib_ip = vmsib_list[multisib]["vmsib_ip"]
+            vmsib_port = int(vmsib_list[multisib]["vmsib_port"])
         
             # build RemoveSIBfromVMSIB message
             msg = json.dumps({"command":"RemoveSIBfromVMSIB", "sib_list":[str(virtual_sib_id)], "vmsib_id" : vmsib_id })
@@ -538,6 +539,12 @@ def NewVirtualMultiSIB(ancillary_ip, ancillary_port, sib_list):
             t.append(Triple(URI(ns + str(virtualiser_id)), URI(ns + "hasVirtualMultiSib"), URI(ns + str(virtual_multisib_id))))
             a.insert(t)
 
+            # Update the virtualiser's load
+            load_results = a.execute_rdf_query(Triple(URI(ns + virtualiser_id), URI(ns + "load"), None))
+            virtualiser_load = int(str(load_results[0][2]))
+            a.update(Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(virtualiser_load+1))), Triple(URI(ns + virtualiser_id), URI(ns + "load"), Literal(str(virtualiser_load))))
+
+
             for tripla in t:
                 print tripla
             
@@ -634,9 +641,7 @@ def SetSIBStatus(ancillary_ip, ancillary_port, sib_id, new_status):
                 # Wait for a reply
                 while 1:
                     try:
-                        print "SetSIBStatus " + "aspetto conferma"
                         confirm_msg = vms_socket.recv(4096)
-                        print "SetSIBStatus " + "conferma ricevuta"
                         break
                     except socket.timeout:
                         print "SetSIBStatus " + colored("request_handler> ", "red", attrs=["bold"]) + 'connection to the virtualiser timed out'            
@@ -1103,19 +1108,108 @@ def GetVirtualisers(ancillary_ip, ancillary_port):
     """
     
         # execute query
-        a = SibLib(ancillary_ip, int(ancillary_port))
+        a = SibLib(ancillary_ip, ancillary_port)
+        print "connesso all'ancillary sib"
         res = a.execute_sparql_query(virtualisers_query)
+        print "query eseguita"
+        print res
         virtualiser_list = {}
         for el in res:
             virtualiser_id = str(el[0][2])
             virtualiser_list[virtualiser_id] = {}
-            virtualiser_list[virtualiser_id][virtualiser_ip] = str(el[1][2])
-            virtualiser_list[virtualiser_id][virtualiser_port] = str(el[2][2])
-            virtualiser_list[virtualiser_id][virtualiser_load] = str(el[3][2])
+            virtualiser_list[virtualiser_id]["virtualiser_ip"] = str(el[1][2])
+            virtualiser_list[virtualiser_id]["virtualiser_port"] = str(el[2][2])
+            virtualiser_list[virtualiser_id]["virtualiser_load"] = str(el[3][2])
         
         confirm = {"return":"ok", "virtualiser_list":virtualiser_list}
         return confirm
 
     except:
+        print sys.exc_info()
         confirm = {"return":"fail", "cause":"Unabled to connect to the ancillary sib"}
         return confirm
+
+
+def GetVirtualPublicSIBs(ancillary_ip, ancillary_port):
+    try:
+        # List of the available virtual and public sibs
+    
+        virtualpublicSIBs_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+    SELECT ?sib ?ip ?port ?owner
+    WHERE {?sib ns:hasKpIp ?ip . ?sib ns:hasKpPort ?port . ?sib ns:hasOwner ?owner . ?sib ns:hasStatus "online" }"""
+    
+
+        # execute query
+
+        a = SibLib(ancillary_ip, ancillary_port)
+        print "connesso all'ancillary sib"
+
+        res = a.execute_sparql_query(virtualpublicSIBs_query)
+        print "query eseguita"
+        print res
+
+        sib_list = {}
+        for el in res:
+            sib_id = str(el[0][2])
+            sib_list[sib_id] = {}
+            sib_list[sib_id]["sib_ip"] = str(el[1][2])
+            sib_list[sib_id]["sib_port"] = str(el[2][2])
+            sib_list[sib_id]["sib_owner"] = str(el[3][2])
+        
+        confirm = {"return":"ok", "sib_list":sib_list}
+        return confirm
+
+    except:
+        print sys.exc_info()
+        confirm = {"return":"fail", "cause":"Unabled to connect to the ancillary sib"}
+        return confirm
+
+
+def GetVirtualMultiSIBs(ancillary_ip, ancillary_port):
+    try:
+
+        # List of the available virtualisers
+        vmSIBs_query = """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX ns: <http://smartM3Lab/Ontology.owl#>
+    SELECT ?vmsibid ?ip ?port ?sib_id
+        WHERE { ?vmsibid rdf:type ns:virtualMultiSib .
+                ?vmsibid ns:hasStatus "online" .
+                ?vmsibid ns:hasKpIp ?ip  .
+                ?vmsibid ns:hasKpPort ?port  .
+                ?vmsibid ns:composedBy ?sib_id}"""
+    
+        # execute query
+        a = SibLib(ancillary_ip, ancillary_port)
+        print "connesso all'ancillary sib"
+
+        res = a.execute_sparql_query(vmSIBs_query)
+        print "query eseguita"
+        print res
+
+
+        multi_sib_list = {}
+        for el in res:
+            print el
+            if not multi_sib_list.has_key(el[0][2]):
+                multi_sib_list[el[0][2]] = {}
+                multi_sib_list[el[0][2]]["ip"] = el[1][2]
+                multi_sib_list[el[0][2]]["list"] = []
+                multi_sib_list[el[0][2]]["port"] = el[2][2]
+            multi_sib_list[el[0][2]]["list"].append(el[3][2])
+
+        print multi_sib_list
+        confirm = {"return":"ok", "multi_sib_list":multi_sib_list}
+        return confirm
+
+    except:
+        print sys.exc_info()
+        confirm = {"return":"fail", "cause":"Unabled to connect to the ancillary sib"}
+        return confirm
+

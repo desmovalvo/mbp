@@ -200,7 +200,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # GetVirtualPublicSIBs
                 elif data["command"] == "GetVirtualPublicSIBs":
-                    print "manager: multi sib info request"
+                    print "manager: get virtual public sib request"
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port)
 
                     # send a reply                    
@@ -209,7 +209,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # GetVirtualMultiSIBs
                 elif data["command"] == "GetVirtualMultiSIBs":
-                    print "manager: multi sib info request"
+                    print "manager: get virtual multi sib request"
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port)
 
                     # send a reply                    
@@ -219,7 +219,7 @@ class ManagerServerHandler(SocketServer.BaseRequestHandler):
 
                 # GetVirtualisers
                 elif data["command"] == "GetVirtualisers":
-                    print "manager: multi sib info request"
+                    print "manager: get virtualiser request"
                     confirm = globals()[cmd.command](ancillary_ip, ancillary_port)
 
                     # send a reply                    
