@@ -90,7 +90,7 @@ def handler(clientsock, addr, manager_ip, manager_port, debug_enabled, remotesib
                             # try to send, then return
                             try:
                                 clientsock.send(reply)
-    
+                                print "REGISTER CONFIRM sent"
                                 # add the sib to the list
                                 sib["socket"] = clientsock
                                 
@@ -121,7 +121,7 @@ def handler(clientsock, addr, manager_ip, manager_port, debug_enabled, remotesib
     
                             # generating a Subreq instance
                             newsub = Subreq(clientsock, ssap_msg_dict)#, ssap_msg_dict["node_id"], ssap_msg_dict["transaction_id"])
-                            
+                            print "Subscribe request"
                             # forwarding message to the publisher
                             try:
                                 sib["socket"].send(ssap_msg)
@@ -132,6 +132,7 @@ def handler(clientsock, addr, manager_ip, manager_port, debug_enabled, remotesib
                                 clientsock.close()
     
                             except socket.error:
+                                print "socket error"
                                 err_msg = SSAP_MESSAGE_CONFIRM_TEMPLATE%(ssap_msg_dict["node_id"],
                                                                  ssap_msg_dict["space_id"],
                                                                  "SUBSCRIBE",
