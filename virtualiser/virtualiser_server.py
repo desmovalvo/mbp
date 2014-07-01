@@ -64,9 +64,12 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
             cmd = Command(data)
             if cmd.valid:
             
+                print "comando valido"
+
                 # decode 
                 
                 if data["command"] == "DeleteRemoteSIB":
+                    print "deleteremotesib"
                     confirm = globals()[cmd.command](cmd.virtual_sib_id, threads, t_id, virtualiser_id)
 
                     if confirm["return"] == "fail":
@@ -148,6 +151,8 @@ class VirtualiserServerHandler(SocketServer.BaseRequestHandler):
                                                                 threads, 
                                                                 thread_id,
                                                                 self.server.config_file)
+                    print virtual_multi_sib_info
+                    t_id[virtual_multi_sib_info["virtual_multi_sib_id"]] = thread_id
                     # send a reply
                     self.request.sendall(json.dumps({'return':'ok', 'virtual_multi_sib_info':virtual_multi_sib_info}))
 

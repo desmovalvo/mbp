@@ -9,9 +9,11 @@ from SIBLib import SibLib
 from smart_m3.m3_kp import *
 from remoteSIB import *
 from virtualMultiSIB import *
+import traceback
 import threading
 import thread
 import random
+import sys
 
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 ns = "http://smartM3Lab/Ontology.owl#"
@@ -81,10 +83,16 @@ def NewRemoteSIB(owner, sib_id, virtualiser_ip, threads, thread_id, virtualiser_
 
 def DeleteRemoteSIB(virtual_sib_id, threads, t_id, virtualiser_id):
 
+    print "son nella funzione"
+
     # killare il thread virtualiser lanciato all'interno del metodo NewRemoteSib
-    threads[t_id[virtual_sib_id]] = False
-    print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' killed ' 
-    confirm = {'return':'ok'}
+    try:
+        threads[t_id[virtual_sib_id]] = False
+        print colored("virtualiser_server> ", "blue", attrs=["bold"]) + 'Virtual Sib ' + virtual_sib_id + ' killed ' 
+        confirm = {'return':'ok'}
+    except:
+        print sys.exc_info()
+        print traceback.print_exc()
     return confirm
                                         
 
