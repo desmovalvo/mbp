@@ -180,12 +180,17 @@ for s in xrange(len(sib_list)):
 
 # Creating the graph
 print colored("Drawing the graph...", "green", attrs=["bold"])
-bar_chart = pygal.Bar()
-bar_chart.title = 'Insertion time increasing the number of triples'
+bar_chart = pygal.Bar(human_readable=True, x_title='Triples inserted at once', y_title='Time (in milliseconds)', x_label_rotation = 60)
+bar_chart.title = 'Insertion times increasing the number of triples'
 bar_chart.add('Real SIB', real_sib_results)
 for i in xrange(len(sib_list)):
     bar_chart.add('VMSIB (size' + str(i+1) + ')', vmsib_results[i])
-
-filename_template = """test1-%s step_%s max_%s iter_%s vmsibs.svg"""
+xlabels = []
+for c in range(0, maxn/step):
+    xlabels.append(str((c+1) * 25))
+print xlabels
+print type(xlabels)
+bar_chart.x_labels = map(str, xlabels)
+filename_template = """test1-%sstep_%smax_%siter_%svmsibs.svg"""
 filename = filename_template % (step, maxn, iterations, len(sib_list))
 bar_chart.render_to_file(filename)
