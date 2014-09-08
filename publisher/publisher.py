@@ -89,6 +89,7 @@ if __name__ == "__main__":
     
     # real SIB is online, we can proceed
     try:
+
         check = []
         check.append(False)
 
@@ -104,6 +105,12 @@ if __name__ == "__main__":
                 virtual_sib_id = cnf["virtual_sib_info"]["virtual_sib_id"]
                 virtual_sib_ip = cnf["virtual_sib_info"]["virtual_sib_ip"]
                 virtual_sib_pub_port = cnf["virtual_sib_info"]["virtual_sib_pub_port"]
+
+                # write info on the real sib                
+                a = SibLib(realsib_ip, realsib_port)
+                t = []
+                t.append(Triple(URI(ns + str(virtual_sib_id)), URI(ns + "hasOwner"), Literal(owner)))
+                a.insert(t)
 
                 # log
                 if log_enabled:
