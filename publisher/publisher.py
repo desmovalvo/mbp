@@ -17,6 +17,9 @@ from lib.output_helpers import *
 import socket, select, string, sys
 from lib.connection_helpers import *
 
+# namespaces
+ns = "http://mml.arces.unibo.it#"
+
 # main function
 if __name__ == "__main__":
 
@@ -45,8 +48,8 @@ if __name__ == "__main__":
                 config_file = arg
             elif opt in ("-a", "--action"):
                 action = arg
-                if action not in ["publish", "register"]:
-                    print publisher_print(False) + "the only valid actions are 'publish' and 'register'"
+                if action not in ["virtualise", "publish"]:
+                    print publisher_print(False) + "the only valid actions are 'publish' and 'virtualise'"
                     sys.exit()
             else:
                 print publisher_print(False) + "unrecognized option " + str(opt)
@@ -71,6 +74,8 @@ if __name__ == "__main__":
     log_level = conf["log_level"]
     log_directory = conf["directory"]
     log_file = log_directory + str(time.strftime("%Y%m%d-%H%M-")) + "publisher.log"
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
     logging.basicConfig(filename=log_file, level=log_level)
     logger = logging.getLogger("publisher")
 
@@ -94,7 +99,7 @@ if __name__ == "__main__":
         check.append(False)
 
         # performing requested action
-        if action == "publish":
+        if action == "virtualise":
 
             msg = {"command":"NewRemoteSIB", "sib_id":"none", "owner":owner}
             cnf = manager_request(manager_ip, manager_port, msg)
@@ -125,7 +130,7 @@ if __name__ == "__main__":
             else:
                 sys.exit()
 
-        elif action == "register":
+        elif action == "publish":
 
             msg = {"command":"RegisterPublicSIB", "owner":owner, "ip":realsib_ip, "port":str(realsib_port)}
             cnf = manager_request(manager_ip, manager_port, msg)
@@ -154,14 +159,14 @@ if __name__ == "__main__":
             sys.exit()
                 
         else:
-            print publisher_print(False) + '"' + action + '" not valid: "action" parameter must be "register" or "publish"!'
+            print publisher_print(False) + '"' + action + '" not valid: "action" parameter must be "register" or "virtualise"!'
             sys.exit()
 
 
     # CTRL-C pressed
     except KeyboardInterrupt: 
 
-        if action == "publish":
+        if action == "virtualise":
 
             # Sending DeleteRemoteSIB request
             print publisher_print(True) + "Keyboard interrupt, sending " + command_print("DeleteRemoteSIB") + " request:",

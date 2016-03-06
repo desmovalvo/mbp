@@ -11,6 +11,7 @@ import getopt
 import json
 import time
 import sys
+import os
 
 # available commands
 # this is a dictionary in which the keys are the available commands,
@@ -287,6 +288,8 @@ if __name__=='__main__':
     debug_level = conf["debug_level"]
     log_directory = conf["directory"]
     log_file = log_directory + str(time.strftime("%Y%m%d-%H%M-")) + "manager_server.log"
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
     logging.basicConfig(filename=log_file, level=debug_level)
     logger = logging.getLogger("manager_server")
 

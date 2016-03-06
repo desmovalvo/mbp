@@ -16,6 +16,7 @@ import json
 import time
 import uuid
 import sys
+import os
 
 # namespaces and prefixes
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -232,6 +233,8 @@ if __name__=='__main__':
     debug_level = conf["debug_level"]
     log_directory = conf["directory"]
     log_file = log_directory + str(time.strftime("%Y%m%d-%H%M-")) + "virtualiser_server.log"
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
     logging.basicConfig(filename=log_file, level=debug_level)
     logger = logging.getLogger("virtualiser_server")
 

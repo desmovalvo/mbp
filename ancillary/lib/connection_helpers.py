@@ -60,7 +60,9 @@ def manager_request(manager_ip, manager_port, msg):
     # Connect to the manager
     manager = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
+        print "provo a connettermi al manager"
         manager.connect((manager_ip, manager_port))
+        print "ok"
 
     except socket.error:
         print colored("connection_helpers> ", "red", attrs=['bold']) + 'Unable to connect to the manager'

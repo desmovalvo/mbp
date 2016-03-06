@@ -136,6 +136,7 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
 
         # get the list of the virtualisers
         # send GetVirtualisers request to the manager
+        print "getting the list of virtualisers"
         cmd = {"command": "GetVirtualisers"}
         cnf = None
         while cnf == None:
@@ -199,7 +200,6 @@ class AncillaryRequestHandler(BaseHTTPRequestHandler):
         s.wfile.write("<article>%s</article>" % str(r))
         s.wfile.write("<article>%s</article>" % str(vm))
         s.wfile.write("</body></html>")
-
 
 
 def run():
