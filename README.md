@@ -1,2 +1,1 @@
-virtualsib-part2bis
-Implementation of the SmartM3 Virtualsib
+Implementation of the SmartM3 Multi Broker Platform
